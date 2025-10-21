@@ -107,14 +107,12 @@ The server provides the following endpoints:
 - `GET /manufacturers` - List of MIDI manufacturers
 - `GET /patchfiles/*.middev` - Device definition files
 - `GET /patchfiles/*.midnam` - MIDI name documents
-- `POST /save_d4.php` - Save D4 configuration (legacy)
-- `POST /validate_d4.php` - Validate XML structure (legacy)
-- `GET /midnam_catalog` - A comprehensive catalog endpoint that scans all .midnam files in `patchlist/`
-- `GET /analyze_file/{file_path}` - File analysis endpoint for getting detailed file statistics
-- `POST /save_file` - A more general file saving endpoint (replaces the D4-specific one)
-- `POST /merge_files` - File merging functionality
-- `POST /delete_file` - File deletion functionality
-- `POST /clear_cache` - Cache management
+- `GET /midnam_catalog` - Catalog of all .midnam files with device information
+- `GET /analyze_file/{file_path}` - Analyze a .midnam file and return bank/patch counts
+- `POST /save_file` - Save any file with automatic backup
+- `POST /clear_cache` - Clear the midnam catalog cache
+- `POST /merge_files` - Merge multiple .midnam files into one
+- `POST /delete_file` - Delete a .midnam file
 
 ## Development
 

@@ -4290,40 +4290,6 @@ ${analysis.bank_details.map(bank => `  ${bank.name}: ${bank.patch_count} patches
             }
         }
 
-        async function loadNoteListData(listName) {
-            try {
-                const response = await fetch('/load_d4.php');
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-                
-                const xmlText = await response.text();
-                const parser = new DOMParser();
-                const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
-                
-                // Find the specific note name list
-                const noteNameLists = xmlDoc.querySelectorAll('NoteNameList');
-                let targetList = null;
-                
-                for (let noteList of noteNameLists) {
-                    if (noteList.getAttribute('Name') === listName) {
-                        targetList = noteList;
-                        break;
-                    }
-                }
-                
-                if (targetList) {
-                    // Initialize the note editor with the loaded data
-                    initializeNoteEditorWithData(selectedDevice, targetList, selectedPatch);
-                } else {
-                    alert(`Note Name List "${listName}" not found in D4.midnam`);
-                }
-                
-            } catch (error) {
-                alert(`Error loading note list data: ${error.message}`);
-            }
-        }
-
         function initializeNoteEditorWithData(device, noteList, patchContext) {
             const container = document.getElementById('patch-editor-container');
             
@@ -5871,17 +5837,13 @@ ${analysis.bank_details.map(bank => `  ${bank.name}: ${bank.patch_count} patches
 
         async function loadNoteListDataForPatch(noteListName) {
             try {
-                const response = await fetch('/load_d4.php');
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                if (!currentMidnam) {
+                    alert('No device XML loaded. Please select a device first.');
+                    return;
                 }
                 
-                const xmlText = await response.text();
-                const parser = new DOMParser();
-                const xmlDoc = parser.parseFromString(xmlText, 'text/xml');
-                
-                // Find the specific note name list
-                const noteNameLists = xmlDoc.querySelectorAll('NoteNameList');
+                // Find the specific note name list in the current device XML
+                const noteNameLists = currentMidnam.querySelectorAll('NoteNameList');
                 let targetList = null;
                 
                 for (let noteList of noteNameLists) {
