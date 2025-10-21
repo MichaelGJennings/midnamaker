@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE MIDIDeviceTypes PUBLIC "-//MIDI Manufacturers Association//DTD MIDIDeviceTypes 0.3//EN" "http://www.sonosphere.com/dtds/MIDIDeviceTypes.dtd">
+
+<MIDIDeviceTypes>
+	<Author>Mark of the Unicorn - converted from FreeMIDI</Author>
+	<MIDIDeviceType Manufacturer="Radikal Technologies" Model="SAC-2K" SupportsGeneralMIDI="false" SupportsMMC="false" IsSampler="false" IsDrumMachine="false" IsMixer="false" IsEffectUnit="false" >
+		<DeviceID Min="1" Max="16" Default="1" Base="1" />
+		<Receives MaxChannels="16" MTC="false" Clock="false" Notes="true" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" PanDisruptsStereo="false" />
+		<Transmits MaxChannels="16" MTC="false" Clock="false" Notes="true" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" />
+	</MIDIDeviceType>
+	<MIDIDeviceType Manufacturer="Radikal Technologies" Model="SAC-2K Exp" SupportsGeneralMIDI="false" SupportsMMC="false" IsSampler="false" IsDrumMachine="false" IsMixer="false" IsEffectUnit="false" >
+		<DeviceID Min="1" Max="16" Default="1" Base="1" />
+		<Receives MaxChannels="16" MTC="false" Clock="false" Notes="true" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" PanDisruptsStereo="false" />
+		<Transmits MaxChannels="16" MTC="false" Clock="false" Notes="true" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" />
+	</MIDIDeviceType>
+</MIDIDeviceTypes>

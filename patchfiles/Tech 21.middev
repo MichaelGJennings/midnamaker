@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE MIDIDeviceTypes PUBLIC "-//MIDI Manufacturers Association//DTD MIDIDeviceTypes 0.3//EN" "http://www.sonosphere.com/dtds/MIDIDeviceTypes.dtd">
+
+<MIDIDeviceTypes>
+	<Author>Mark of the Unicorn - converted from FreeMIDI</Author>
+	<MIDIDeviceType Manufacturer="Tech 21" Model="PSA-1" SupportsGeneralMIDI="false" SupportsMMC="false" IsSampler="false" IsDrumMachine="false" IsMixer="false" IsEffectUnit="true" >
+		<InquiryResponse Manufacturer="53" Family="6E 00" Member="00 00" />
+		<DeviceID Min="1" Max="17" Default="1" Base="1" />
+		<Receives MaxChannels="1" MTC="false" Clock="false" Notes="false" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" PanDisruptsStereo="false" />
+		<Transmits MaxChannels="0" MTC="false" Clock="false" Notes="false" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" />
+	</MIDIDeviceType>
+</MIDIDeviceTypes>

@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE MIDIDeviceTypes PUBLIC "-//MIDI Manufacturers Association//DTD MIDIDeviceTypes 0.3//EN" "http://www.sonosphere.com/dtds/MIDIDeviceTypes.dtd">
+
+<MIDIDeviceTypes>
+	<Author>Mark of the Unicorn - converted from FreeMIDI</Author>
+	<MIDIDeviceType Manufacturer="Casio" Model="CZ-1" SupportsGeneralMIDI="false" SupportsMMC="false" IsSampler="false" IsDrumMachine="false" IsMixer="false" IsEffectUnit="false" >
+		<InquiryResponse Manufacturer="44" Family="00 00" Member="05 00" />
+		<DeviceID Min="1" Max="16" Default="1" Base="1" />
+		<Receives MaxChannels="1" MTC="false" Clock="false" Notes="true" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" PanDisruptsStereo="false" />
+		<Transmits MaxChannels="1" MTC="false" Clock="false" Notes="true" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" />
+	</MIDIDeviceType>
+	<MIDIDeviceType Manufacturer="Casio" Model="CZ-101" SupportsGeneralMIDI="false" SupportsMMC="false" IsSampler="false" IsDrumMachine="false" IsMixer="false" IsEffectUnit="false" >
+		<InquiryResponse Manufacturer="44" Family="00 00" Member="00 00" />
+		<Receives MaxChannels="1" MTC="false" Clock="false" Notes="true" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" PanDisruptsStereo="false" />
+		<Transmits MaxChannels="1" MTC="false" Clock="false" Notes="true" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" />
+	</MIDIDeviceType>
+	<MIDIDeviceType Manufacturer="Casio" Model="CZ-230s" SupportsGeneralMIDI="false" SupportsMMC="false" IsSampler="false" IsDrumMachine="false" IsMixer="false" IsEffectUnit="false" >
+		<InquiryResponse Manufacturer="44" Family="00 00" Member="01 00" />
+		<Receives MaxChannels="1" MTC="false" Clock="false" Notes="true" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" PanDisruptsStereo="false" />
+		<Transmits MaxChannels="1" MTC="false" Clock="false" Notes="true" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" />
+	</MIDIDeviceType>
+	<MIDIDeviceType Manufacturer="Casio" Model="CZ-1000" SupportsGeneralMIDI="false" SupportsMMC="false" IsSampler="false" IsDrumMachine="false" IsMixer="false" IsEffectUnit="false" >
+		<InquiryResponse Manufacturer="44" Family="00 00" Member="02 00" />
+		<Receives MaxChannels="1" MTC="false" Clock="false" Notes="true" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" PanDisruptsStereo="false" />
+		<Transmits MaxChannels="1" MTC="false" Clock="false" Notes="true" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" />
+	</MIDIDeviceType>
+	<MIDIDeviceType Manufacturer="Casio" Model="CZ-3000" SupportsGeneralMIDI="false" SupportsMMC="false" IsSampler="false" IsDrumMachine="false" IsMixer="false" IsEffectUnit="false" >
+		<InquiryResponse Manufacturer="44" Family="00 00" Member="03 00" />
+		<Receives MaxChannels="1" MTC="false" Clock="false" Notes="true" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" PanDisruptsStereo="false" />
+		<Transmits MaxChannels="1" MTC="false" Clock="false" Notes="true" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" />
+	</MIDIDeviceType>
+	<MIDIDeviceType Manufacturer="Casio" Model="CZ-5000" SupportsGeneralMIDI="false" SupportsMMC="false" IsSampler="false" IsDrumMachine="false" IsMixer="false" IsEffectUnit="false" >
+		<InquiryResponse Manufacturer="44" Family="00 00" Member="04 00" />
+		<Receives MaxChannels="1" MTC="false" Clock="false" Notes="true" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" PanDisruptsStereo="false" />
+		<Transmits MaxChannels="1" MTC="false" Clock="false" Notes="true" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" />
+	</MIDIDeviceType>
+	<MIDIDeviceType Manufacturer="Casio" Model="FZ-1" SupportsGeneralMIDI="false" SupportsMMC="false" IsSampler="false" IsDrumMachine="false" IsMixer="false" IsEffectUnit="false" >
+		<InquiryResponse Manufacturer="44" Family="02 00" Member="00 00" />
+		<Receives MaxChannels="1" MTC="false" Clock="false" Notes="true" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" PanDisruptsStereo="false" />
+		<Transmits MaxChannels="1" MTC="false" Clock="false" Notes="true" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" />
+	</MIDIDeviceType>
+	<MIDIDeviceType Manufacturer="Casio" Model="RZ-1" SupportsGeneralMIDI="false" SupportsMMC="false" IsSampler="false" IsDrumMachine="false" IsMixer="false" IsEffectUnit="false" >
+		<InquiryResponse Manufacturer="44" Family="01 00" Member="00 00" />
+		<Receives MaxChannels="1" MTC="false" Clock="false" Notes="true" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" PanDisruptsStereo="false" />
+		<Transmits MaxChannels="0" MTC="false" Clock="false" Notes="true" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" />
+	</MIDIDeviceType>
+	<MIDIDeviceType Manufacturer="Casio" Model="VZ-1" SupportsGeneralMIDI="false" SupportsMMC="false" IsSampler="false" IsDrumMachine="false" IsMixer="false" IsEffectUnit="false" >
+		<InquiryResponse Manufacturer="44" Family="03 00" Member="00 00" />
+		<Receives MaxChannels="1" MTC="false" Clock="false" Notes="true" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" PanDisruptsStereo="false" />
+		<Transmits MaxChannels="1" MTC="false" Clock="false" Notes="true" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" />
+	</MIDIDeviceType>
+	<MIDIDeviceType Manufacturer="Casio" Model="VZ-8m" SupportsGeneralMIDI="false" SupportsMMC="false" IsSampler="false" IsDrumMachine="false" IsMixer="false" IsEffectUnit="false" >
+		<InquiryResponse Manufacturer="44" Family="03 00" Member="00 00" />
+		<Receives MaxChannels="1" MTC="false" Clock="false" Notes="true" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" PanDisruptsStereo="false" />
+		<Transmits MaxChannels="0" MTC="false" Clock="false" Notes="true" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" />
+	</MIDIDeviceType>
+	<MIDIDeviceType Manufacturer="Casio" Model="VZ-10m" SupportsGeneralMIDI="false" SupportsMMC="false" IsSampler="false" IsDrumMachine="false" IsMixer="false" IsEffectUnit="false" >
+		<InquiryResponse Manufacturer="44" Family="03 00" Member="00 00" />
+		<Receives MaxChannels="1" MTC="false" Clock="false" Notes="true" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" PanDisruptsStereo="false" />
+		<Transmits MaxChannels="0" MTC="false" Clock="false" Notes="true" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" />
+	</MIDIDeviceType>
+</MIDIDeviceTypes>

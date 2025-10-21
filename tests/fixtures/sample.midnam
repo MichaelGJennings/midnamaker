@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<MIDINameDocument>
+    <Author>Test Author</Author>
+    <MasterDeviceNames>
+        <DeviceName Name="Test Drum Machine">
+            <ChannelNameSet Name="Channel 1">
+                <PatchBank Name="Factory Drumsets" ROM="false">
+                    <PatchNameList>
+                        <Patch Number="0" Name="Standard Kit">
+                            <UsesNoteNameList Name="Standard Kit Notes"/>
+                        </Patch>
+                        <Patch Number="1" Name="Rock Kit">
+                            <UsesNoteNameList Name="Rock Kit Notes"/>
+                        </Patch>
+                        <Patch Number="2" Name="Jazz Kit">
+                            <UsesNoteNameList Name="Jazz Kit Notes"/>
+                        </Patch>
+                    </PatchNameList>
+                </PatchBank>
+                <PatchBank Name="User Drumsets" ROM="false">
+                    <PatchNameList>
+                        <Patch Number="0" Name="Custom Kit 1"/>
+                        <Patch Number="1" Name="Custom Kit 2"/>
+                    </PatchNameList>
+                </PatchBank>
+            </ChannelNameSet>
+            <NoteNameList Name="Standard Kit Notes">
+                <Note Number="36" Name="Kick"/>
+                <Note Number="38" Name="Snare"/>
+                <Note Number="42" Name="Hi-Hat Closed"/>
+                <Note Number="46" Name="Hi-Hat Open"/>
+                <Note Number="49" Name="Crash"/>
+                <Note Number="51" Name="Ride"/>
+            </NoteNameList>
+            <NoteNameList Name="Rock Kit Notes">
+                <Note Number="36" Name="Kick"/>
+                <Note Number="38" Name="Snare"/>
+                <Note Number="42" Name="Hi-Hat Closed"/>
+                <Note Number="46" Name="Hi-Hat Open"/>
+                <Note Number="49" Name="Crash"/>
+                <Note Number="51" Name="Ride"/>
+            </NoteNameList>
+            <NoteNameList Name="Jazz Kit Notes">
+                <Note Number="36" Name="Kick"/>
+                <Note Number="38" Name="Snare"/>
+                <Note Number="42" Name="Hi-Hat Closed"/>
+                <Note Number="46" Name="Hi-Hat Open"/>
+                <Note Number="49" Name="Crash"/>
+                <Note Number="51" Name="Ride"/>
+            </NoteNameList>
+        </DeviceName>
+    </MasterDeviceNames>
+</MIDINameDocument>
+
+
+

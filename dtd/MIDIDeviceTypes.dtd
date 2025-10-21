@@ -1,0 +1,64 @@
+<!--
+	XML DTD for MIDIDeviceTypes
+	Based on analysis of existing .middev files
+	
+	Version 0.3, 19 January 2003
+	
+	Formal Public Identifier:
+		"-//MIDI Manufacturers Association//DTD MIDIDeviceTypes 0.3//EN"
+	URI:
+		"http://www.sonosphere.com/dtds/MIDIDeviceTypes.dtd"
+-->
+
+<!--
+	ELEMENTS AND ATTRIBUTES
+-->
+
+<!ELEMENT MIDIDeviceTypes (Author, MIDIDeviceType+) >
+
+<!ELEMENT Author (#PCDATA)>
+
+<!ELEMENT MIDIDeviceType (InquiryResponse?, DeviceID?, Receives?, Transmits?) >
+<!ATTLIST MIDIDeviceType
+				Manufacturer		CDATA	#REQUIRED
+				Model				CDATA	#REQUIRED
+				SupportsGeneralMIDI	(true | false)	"false"
+				SupportsMMC			(true | false)	"false"
+				IsSampler			(true | false)	"false"
+				IsDrumMachine		(true | false)	"false"
+				IsMixer				(true | false)	"false"
+				IsEffectUnit		(true | false)	"false">
+
+<!ELEMENT InquiryResponse EMPTY>
+<!ATTLIST InquiryResponse
+				Manufacturer	CDATA	#REQUIRED
+				Family			CDATA	#REQUIRED
+				Member			CDATA	#REQUIRED>
+
+<!ELEMENT DeviceID EMPTY>
+<!ATTLIST DeviceID
+				Min		NMTOKEN	#REQUIRED
+				Max		NMTOKEN	#REQUIRED
+				Default	NMTOKEN	#REQUIRED
+				Base	NMTOKEN	#REQUIRED>
+
+<!ELEMENT Receives EMPTY>
+<!ATTLIST Receives
+				MaxChannels			NMTOKEN	#REQUIRED
+				MTC					(true | false)	"false"
+				Clock				(true | false)	"false"
+				Notes				(true | false)	"false"
+				ProgramChanges		(true | false)	"false"
+				BankSelectMSB		(true | false)	"false"
+				BankSelectLSB		(true | false)	"false"
+				PanDisruptsStereo	(true | false)	"false">
+
+<!ELEMENT Transmits EMPTY>
+<!ATTLIST Transmits
+				MaxChannels			NMTOKEN	#REQUIRED
+				MTC					(true | false)	"false"
+				Clock				(true | false)	"false"
+				Notes				(true | false)	"false"
+				ProgramChanges		(true | false)	"false"
+				BankSelectMSB		(true | false)	"false"
+				BankSelectLSB		(true | false)	"false">

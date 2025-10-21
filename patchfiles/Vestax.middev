@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE MIDIDeviceTypes PUBLIC "-//MIDI Manufacturers Association//DTD MIDIDeviceTypes 0.3//EN" "http://www.sonosphere.com/dtds/MIDIDeviceTypes.dtd">
+
+<MIDIDeviceTypes>
+	<Author>Mark of the Unicorn - converted from FreeMIDI</Author>
+	<MIDIDeviceType Manufacturer="Vestax" Model="HDR-6" SupportsGeneralMIDI="false" SupportsMMC="true" IsSampler="false" IsDrumMachine="false" IsMixer="false" IsEffectUnit="false" >
+		<InquiryResponse Manufacturer="56" Family="00 00" Member="00 00" />
+		<DeviceID Min="1" Max="16" Default="1" Base="1" />
+		<Receives MaxChannels="16" MTC="false" Clock="false" Notes="true" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" PanDisruptsStereo="false" />
+		<Transmits MaxChannels="1" MTC="true" Clock="true" Notes="true" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" />
+	</MIDIDeviceType>
+</MIDIDeviceTypes>

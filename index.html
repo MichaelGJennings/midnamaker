@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MIDI Name Editor</title>
+    
+    <!-- Core CSS -->
+    <link rel="stylesheet" href="css/core.css">
+    <link rel="stylesheet" href="css/layout.css">
+    <link rel="stylesheet" href="css/components.css">
+    
+    <!-- Feature CSS -->
+    <link rel="stylesheet" href="css/manufacturer.css">
+    <link rel="stylesheet" href="css/device.css">
+    <link rel="stylesheet" href="css/patch.css">
+    <link rel="stylesheet" href="css/catalog.css">
+    <link rel="stylesheet" href="css/builder.css">
+    <link rel="stylesheet" href="css/midi.css">
+</head>
+<body>
+    <!-- Main Application Container -->
+    <div id="app">
+        <!-- Header with Navigation -->
+        <header class="app-header">
+            <h1>MIDI Name Editor</h1>
+            <nav class="tab-navigation">
+                <div class="tab" data-tab="manufacturer">Manufacturer</div>
+                <div class="tab" data-tab="device">Device</div>
+                <div class="tab" data-tab="patch">Patch</div>
+                <div class="tab" data-tab="builder">Builder</div>
+                <div class="tab" data-tab="catalog">Catalog</div>
+                <div class="tab" data-tab="debug">Debug</div>
+            </nav>
+            
+            <!-- Global MIDI Controls -->
+            <div class="global-midi-controls" id="global-midi-controls">
+                <div class="midi-toggle" id="midi-toggle">
+                    <div class="midi-dot" id="midi-dot"></div>
+                    <span class="midi-label" id="midi-label">MIDI</span>
+                </div>
+                <div class="midi-device-section">
+                    <select id="midi-device-select" class="midi-device-select" disabled>
+                        <option value="">Select a MIDI Device</option>
+                    </select>
+                    <div class="midi-device-info" id="midi-device-info">Not connected</div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content Area -->
+        <main class="app-main">
+            <!-- Manufacturer Selection Tab -->
+            <div class="tab-content active" id="manufacturer-tab">
+                <h2>Select Manufacturer</h2>
+                <div class="manufacturer-search">
+                    <input type="text" id="manufacturer-search" placeholder="Type manufacturer name..." autocomplete="off">
+                    <div class="manufacturer-dropdown-list" id="manufacturer-dropdown-list"></div>
+                </div>
+                <div class="manufacturer-devices" id="manufacturer-devices"></div>
+            </div>
+
+            <!-- Device Configuration Tab -->
+            <div class="tab-content" id="device-tab">
+                <div class="device-header">
+                    <h2 id="device-title">Select a Device</h2>
+                    <div class="device-actions">
+                        <button class="btn btn-primary" id="save-device-btn" disabled>Save Device</button>
+                        <button class="btn btn-secondary" id="validate-device-btn" disabled>Validate</button>
+                    </div>
+                </div>
+                <div class="device-content" id="device-content">
+                    <div class="empty-state">Please select a device from the Manufacturer tab</div>
+                </div>
+            </div>
+
+            <!-- Patch Editor Tab -->
+            <div class="tab-content" id="patch-tab">
+                <div class="patch-header">
+                    <h2>Patch Editor</h2>
+                    <div class="patch-actions">
+                        <button class="btn btn-primary" id="save-patch-btn" disabled>Save Patch</button>
+                        <button class="btn btn-secondary" id="validate-patch-btn" disabled>Validate</button>
+                    </div>
+                </div>
+                <div class="patch-content" id="patch-content">
+                    <div class="empty-state">Select a patch from the Device tab to edit</div>
+                </div>
+            </div>
+
+            <!-- Builder Tab -->
+            <div class="tab-content" id="builder-tab">
+                <div class="builder-header">
+                    <h2>MIDI Name Builder</h2>
+                    <div class="builder-actions">
+                        <button class="btn btn-primary" id="create-midnam-btn">Create New</button>
+                        <button class="btn btn-secondary" id="load-template-btn">Load Template</button>
+                    </div>
+                </div>
+                <div class="builder-content" id="builder-content">
+                    <div class="empty-state">Create a new MIDI name document or load a template</div>
+                </div>
+            </div>
+
+            <!-- Catalog Tab -->
+            <div class="tab-content" id="catalog-tab">
+                <div class="catalog-header">
+                    <h2>MIDI Name Catalog</h2>
+                    <div class="catalog-actions">
+                        <button class="btn btn-primary" id="refresh-catalog-btn">Refresh Catalog</button>
+                        <button class="btn btn-secondary" id="analyze-catalog-btn">Analyze</button>
+                    </div>
+                </div>
+                <div class="catalog-content" id="catalog-content">
+                    <div class="loading" id="catalog-loading">Loading catalog...</div>
+                    <div class="catalog-status" id="catalog-status"></div>
+                </div>
+            </div>
+
+            <!-- Debug Tab -->
+            <div class="tab-content" id="debug-tab">
+                <div class="debug-header">
+                    <h2>Debug Console</h2>
+                    <div class="debug-actions">
+                        <button class="btn btn-secondary" id="clear-console-btn">Clear Console</button>
+                        <button class="btn btn-warning" id="test-midi-btn">Test MIDI</button>
+                    </div>
+                </div>
+                <div class="debug-content" id="debug-content">
+                    <div class="debug-console" id="debug-console"></div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Modals -->
+        <div id="modal-overlay" class="modal-overlay" style="display: none;">
+            <div class="modal" id="modal">
+                <div class="modal-header">
+                    <h3 id="modal-title">Modal Title</h3>
+                    <button class="modal-close" id="modal-close">&times;</button>
+                </div>
+                <div class="modal-body" id="modal-body">
+                    Modal content goes here
+                </div>
+                <div class="modal-footer" id="modal-footer">
+                    <button class="btn btn-secondary" id="modal-cancel">Cancel</button>
+                    <button class="btn btn-primary" id="modal-confirm">Confirm</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Keyboard Tooltip -->
+        <div id="keyboard-tooltip" class="keyboard-tooltip" style="display: none;"></div>
+
+        <!-- Disambiguation Modal -->
+        <div id="disambiguation-modal" class="modal-overlay" style="display: none;">
+            <div class="modal">
+                <div class="modal-header">
+                    <h3>Multiple Devices Found</h3>
+                </div>
+                <div class="modal-body">
+                    <p>Multiple devices found for this manufacturer. Please select one:</p>
+                    <div id="disambiguation-list"></div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" id="disambiguation-cancel">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Core JavaScript Modules -->
+    <script type="module" src="js/core/app.js"></script>
+    <script type="module" src="js/core/state.js"></script>
+    <script type="module" src="js/core/utils.js"></script>
+    
+    <!-- Component Modules -->
+    <script type="module" src="js/components/tabs.js"></script>
+    <script type="module" src="js/components/modal.js"></script>
+    <script type="module" src="js/components/keyboard.js"></script>
+    
+    <!-- Feature Modules -->
+    <script type="module" src="js/modules/midi.js"></script>
+    <script type="module" src="js/modules/manufacturer.js"></script>
+    <script type="module" src="js/modules/device.js"></script>
+    <script type="module" src="js/modules/patch.js"></script>
+    <script type="module" src="js/modules/catalog.js"></script>
+    <script type="module" src="js/modules/builder.js"></script>
+    
+    <!-- Application Bootstrap -->
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
+

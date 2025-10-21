@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE MIDIDeviceTypes PUBLIC "-//MIDI Manufacturers Association//DTD MIDIDeviceTypes 0.3//EN" "http://www.sonosphere.com/dtds/MIDIDeviceTypes.dtd">
+
+<MIDIDeviceTypes>
+	<Author>Mark of the Unicorn - converted from FreeMIDI</Author>
+	<MIDIDeviceType Manufacturer="Sequential" Model="Drumtrax" SupportsGeneralMIDI="false" SupportsMMC="false" IsSampler="false" IsDrumMachine="true" IsMixer="false" IsEffectUnit="false" >
+		<InquiryResponse Manufacturer="01" Family="06 00" Member="00 00" />
+		<DeviceID Min="1" Max="16" Default="1" Base="1" />
+		<Receives MaxChannels="16" MTC="false" Clock="false" Notes="true" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" PanDisruptsStereo="false" />
+		<Transmits MaxChannels="1" MTC="false" Clock="false" Notes="true" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" />
+	</MIDIDeviceType>
+	<MIDIDeviceType Manufacturer="Sequential" Model="Max" SupportsGeneralMIDI="false" SupportsMMC="false" IsSampler="false" IsDrumMachine="false" IsMixer="false" IsEffectUnit="false" >
+		<InquiryResponse Manufacturer="01" Family="08 00" Member="00 00" />
+		<DeviceID Min="1" Max="16" Default="1" Base="1" />
+		<Receives MaxChannels="16" MTC="false" Clock="false" Notes="true" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" PanDisruptsStereo="false" />
+		<Transmits MaxChannels="1" MTC="false" Clock="false" Notes="true" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" />
+	</MIDIDeviceType>
+	<MIDIDeviceType Manufacturer="Sequential" Model="Multi-Trak" SupportsGeneralMIDI="false" SupportsMMC="false" IsSampler="false" IsDrumMachine="false" IsMixer="false" IsEffectUnit="false" >
+		<InquiryResponse Manufacturer="01" Family="09 00" Member="00 00" />
+		<DeviceID Min="1" Max="16" Default="1" Base="1" />
+		<Receives MaxChannels="1" MTC="false" Clock="false" Notes="true" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" PanDisruptsStereo="false" />
+		<Transmits MaxChannels="1" MTC="false" Clock="false" Notes="true" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" />
+	</MIDIDeviceType>
+	<MIDIDeviceType Manufacturer="Sequential" Model="Prophet 5" SupportsGeneralMIDI="false" SupportsMMC="false" IsSampler="false" IsDrumMachine="false" IsMixer="false" IsEffectUnit="false" >
+		<InquiryResponse Manufacturer="01" Family="01 00" Member="00 00" />
+		<DeviceID Min="1" Max="16" Default="1" Base="1" />
+		<Receives MaxChannels="1" MTC="false" Clock="false" Notes="true" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" PanDisruptsStereo="false" />
+		<Transmits MaxChannels="1" MTC="false" Clock="false" Notes="true" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" />
+	</MIDIDeviceType>
+	<MIDIDeviceType Manufacturer="Sequential" Model="Prophet 600" SupportsGeneralMIDI="false" SupportsMMC="false" IsSampler="false" IsDrumMachine="false" IsMixer="false" IsEffectUnit="false" >
+		<InquiryResponse Manufacturer="01" Family="02 00" Member="00 00" />
+		<DeviceID Min="1" Max="16" Default="1" Base="1" />
+		<Receives MaxChannels="1" MTC="false" Clock="false" Notes="true" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" PanDisruptsStereo="false" />
+		<Transmits MaxChannels="1" MTC="false" Clock="false" Notes="true" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" />
+	</MIDIDeviceType>
+	<MIDIDeviceType Manufacturer="Sequential" Model="Prophet 2000" SupportsGeneralMIDI="false" SupportsMMC="false" IsSampler="false" IsDrumMachine="false" IsMixer="false" IsEffectUnit="false" >
+		<InquiryResponse Manufacturer="01" Family="11 00" Member="00 00" />
+		<DeviceID Min="1" Max="16" Default="1" Base="1" />
+		<Receives MaxChannels="1" MTC="false" Clock="false" Notes="true" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" PanDisruptsStereo="false" />
+		<Transmits MaxChannels="1" MTC="false" Clock="false" Notes="true" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" />
+	</MIDIDeviceType>
+	<MIDIDeviceType Manufacturer="Sequential" Model="Prophet VS" SupportsGeneralMIDI="false" SupportsMMC="false" IsSampler="false" IsDrumMachine="false" IsMixer="false" IsEffectUnit="false" >
+		<InquiryResponse Manufacturer="01" Family="0A 00" Member="00 00" />
+		<DeviceID Min="1" Max="16" Default="1" Base="1" />
+		<Receives MaxChannels="1" MTC="false" Clock="false" Notes="true" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" PanDisruptsStereo="false" />
+		<Transmits MaxChannels="1" MTC="false" Clock="false" Notes="true" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" />
+	</MIDIDeviceType>
+	<MIDIDeviceType Manufacturer="Sequential" Model="Six Trak" SupportsGeneralMIDI="false" SupportsMMC="false" IsSampler="false" IsDrumMachine="false" IsMixer="false" IsEffectUnit="false" >
+		<InquiryResponse Manufacturer="01" Family="05 00" Member="00 00" />
+		<DeviceID Min="1" Max="16" Default="1" Base="1" />
+		<Receives MaxChannels="1" MTC="false" Clock="false" Notes="true" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" PanDisruptsStereo="false" />
+		<Transmits MaxChannels="1" MTC="false" Clock="false" Notes="true" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" />
+	</MIDIDeviceType>
+	<MIDIDeviceType Manufacturer="Sequential" Model="Split-Eight" SupportsGeneralMIDI="false" SupportsMMC="false" IsSampler="false" IsDrumMachine="false" IsMixer="false" IsEffectUnit="false" >
+		<DeviceID Min="1" Max="16" Default="1" Base="1" />
+		<Receives MaxChannels="1" MTC="false" Clock="false" Notes="true" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" PanDisruptsStereo="false" />
+		<Transmits MaxChannels="1" MTC="false" Clock="false" Notes="true" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" />
+	</MIDIDeviceType>
+</MIDIDeviceTypes>

@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE MIDIDeviceTypes PUBLIC "-//MIDI Manufacturers Association//DTD MIDIDeviceTypes 0.3//EN" "http://www.sonosphere.com/dtds/MIDIDeviceTypes.dtd">
+
+<MIDIDeviceTypes>
+	<Author>Mark of the Unicorn - converted from FreeMIDI</Author>
+	<MIDIDeviceType Manufacturer="Akai" Model="DR4d" SupportsGeneralMIDI="false" SupportsMMC="true" IsSampler="false" IsDrumMachine="false" IsMixer="false" IsEffectUnit="false" >
+		<InquiryResponse Manufacturer="47" Family="5A 00" Member="00 00" />
+		<DeviceID Min="0" Max="126" Default="0" Base="0" />
+		<Receives MaxChannels="1" MTC="true" Clock="false" Notes="false" ProgramChanges="false" BankSelectMSB="false" BankSelectLSB="false" PanDisruptsStereo="false" />
+		<Transmits MaxChannels="0" MTC="true" Clock="false" Notes="false" ProgramChanges="false" BankSelectMSB="false" BankSelectLSB="false" />
+	</MIDIDeviceType>
+	<MIDIDeviceType Manufacturer="Akai" Model="MPC2000" SupportsGeneralMIDI="false" SupportsMMC="false" IsSampler="false" IsDrumMachine="true" IsMixer="false" IsEffectUnit="false" >
+		<InquiryResponse Manufacturer="47" Family="00 00" Member="00 00" />
+		<Receives MaxChannels="16" MTC="true" Clock="true" Notes="true" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" PanDisruptsStereo="false" />
+		<Transmits MaxChannels="1" MTC="true" Clock="true" Notes="true" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" />
+	</MIDIDeviceType>
+	<MIDIDeviceType Manufacturer="Akai" Model="MPC2000XL" SupportsGeneralMIDI="false" SupportsMMC="false" IsSampler="false" IsDrumMachine="true" IsMixer="false" IsEffectUnit="false" >
+		<InquiryResponse Manufacturer="47" Family="00 00" Member="00 00" />
+		<Receives MaxChannels="16" MTC="true" Clock="true" Notes="true" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" PanDisruptsStereo="false" />
+		<Transmits MaxChannels="1" MTC="true" Clock="true" Notes="true" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" />
+	</MIDIDeviceType>
+	<MIDIDeviceType Manufacturer="Akai" Model="MPC3000" SupportsGeneralMIDI="false" SupportsMMC="false" IsSampler="false" IsDrumMachine="true" IsMixer="false" IsEffectUnit="false" >
+		<InquiryResponse Manufacturer="47" Family="00 00" Member="00 00" />
+		<Receives MaxChannels="16" MTC="true" Clock="true" Notes="true" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" PanDisruptsStereo="false" />
+		<Transmits MaxChannels="1" MTC="true" Clock="true" Notes="true" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" />
+	</MIDIDeviceType>
+	<MIDIDeviceType Manufacturer="Akai" Model="S612" SupportsGeneralMIDI="false" SupportsMMC="false" IsSampler="true" IsDrumMachine="false" IsMixer="false" IsEffectUnit="false" >
+		<InquiryResponse Manufacturer="47" Family="20 00" Member="00 00" />
+		<Receives MaxChannels="1" MTC="false" Clock="false" Notes="true" ProgramChanges="false" BankSelectMSB="false" BankSelectLSB="false" PanDisruptsStereo="false" />
+		<Transmits MaxChannels="0" MTC="false" Clock="false" Notes="true" ProgramChanges="false" BankSelectMSB="false" BankSelectLSB="false" />
+	</MIDIDeviceType>
+	<MIDIDeviceType Manufacturer="Akai" Model="S900" SupportsGeneralMIDI="false" SupportsMMC="false" IsSampler="true" IsDrumMachine="false" IsMixer="false" IsEffectUnit="false" >
+		<Receives MaxChannels="1" MTC="false" Clock="false" Notes="true" ProgramChanges="false" BankSelectMSB="false" BankSelectLSB="false" PanDisruptsStereo="false" />
+		<Transmits MaxChannels="0" MTC="false" Clock="false" Notes="true" ProgramChanges="false" BankSelectMSB="false" BankSelectLSB="false" />
+	</MIDIDeviceType>
+	<MIDIDeviceType Manufacturer="Akai" Model="S950" SupportsGeneralMIDI="false" SupportsMMC="false" IsSampler="true" IsDrumMachine="false" IsMixer="false" IsEffectUnit="false" >
+		<Receives MaxChannels="1" MTC="false" Clock="false" Notes="true" ProgramChanges="false" BankSelectMSB="false" BankSelectLSB="false" PanDisruptsStereo="false" />
+		<Transmits MaxChannels="0" MTC="false" Clock="false" Notes="true" ProgramChanges="false" BankSelectMSB="false" BankSelectLSB="false" />
+	</MIDIDeviceType>
+	<MIDIDeviceType Manufacturer="Akai" Model="S01" SupportsGeneralMIDI="false" SupportsMMC="false" IsSampler="true" IsDrumMachine="false" IsMixer="false" IsEffectUnit="false" >
+		<Receives MaxChannels="16" MTC="false" Clock="false" Notes="true" ProgramChanges="false" BankSelectMSB="false" BankSelectLSB="false" PanDisruptsStereo="false" />
+		<Transmits MaxChannels="0" MTC="false" Clock="false" Notes="true" ProgramChanges="false" BankSelectMSB="false" BankSelectLSB="false" />
+	</MIDIDeviceType>
+	<MIDIDeviceType Manufacturer="Akai" Model="S1000" SupportsGeneralMIDI="false" SupportsMMC="false" IsSampler="true" IsDrumMachine="false" IsMixer="false" IsEffectUnit="false" >
+		<InquiryResponse Manufacturer="47" Family="48 00" Member="00 00" />
+		<Receives MaxChannels="16" MTC="false" Clock="false" Notes="true" ProgramChanges="false" BankSelectMSB="false" BankSelectLSB="false" PanDisruptsStereo="false" />
+		<Transmits MaxChannels="0" MTC="false" Clock="false" Notes="true" ProgramChanges="false" BankSelectMSB="false" BankSelectLSB="false" />
+	</MIDIDeviceType>
+	<MIDIDeviceType Manufacturer="Akai" Model="S1100" SupportsGeneralMIDI="false" SupportsMMC="false" IsSampler="true" IsDrumMachine="false" IsMixer="false" IsEffectUnit="false" >
+		<Receives MaxChannels="16" MTC="false" Clock="false" Notes="true" ProgramChanges="false" BankSelectMSB="false" BankSelectLSB="false" PanDisruptsStereo="false" />
+		<Transmits MaxChannels="0" MTC="false" Clock="false" Notes="true" ProgramChanges="false" BankSelectMSB="false" BankSelectLSB="false" />
+	</MIDIDeviceType>
+	<MIDIDeviceType Manufacturer="Akai" Model="S2800" SupportsGeneralMIDI="false" SupportsMMC="false" IsSampler="true" IsDrumMachine="false" IsMixer="false" IsEffectUnit="false" >
+		<Receives MaxChannels="16" MTC="false" Clock="false" Notes="true" ProgramChanges="false" BankSelectMSB="false" BankSelectLSB="false" PanDisruptsStereo="false" />
+		<Transmits MaxChannels="0" MTC="false" Clock="false" Notes="true" ProgramChanges="false" BankSelectMSB="false" BankSelectLSB="false" />
+	</MIDIDeviceType>
+	<MIDIDeviceType Manufacturer="Akai" Model="S2800 Studio" SupportsGeneralMIDI="false" SupportsMMC="false" IsSampler="true" IsDrumMachine="false" IsMixer="false" IsEffectUnit="false" >
+		<Receives MaxChannels="16" MTC="false" Clock="false" Notes="true" ProgramChanges="false" BankSelectMSB="false" BankSelectLSB="false" PanDisruptsStereo="false" />
+		<Transmits MaxChannels="0" MTC="false" Clock="false" Notes="true" ProgramChanges="false" BankSelectMSB="false" BankSelectLSB="false" />
+	</MIDIDeviceType>
+	<MIDIDeviceType Manufacturer="Akai" Model="S3000" SupportsGeneralMIDI="false" SupportsMMC="false" IsSampler="true" IsDrumMachine="false" IsMixer="false" IsEffectUnit="false" >
+		<InquiryResponse Manufacturer="47" Family="48 00" Member="00 00" />
+		<Receives MaxChannels="16" MTC="false" Clock="false" Notes="true" ProgramChanges="false" BankSelectMSB="false" BankSelectLSB="false" PanDisruptsStereo="false" />
+		<Transmits MaxChannels="0" MTC="false" Clock="false" Notes="true" ProgramChanges="false" BankSelectMSB="false" BankSelectLSB="false" />
+	</MIDIDeviceType>
+	<MIDIDeviceType Manufacturer="Akai" Model="S3200" SupportsGeneralMIDI="false" SupportsMMC="false" IsSampler="true" IsDrumMachine="false" IsMixer="false" IsEffectUnit="false" >
+		<InquiryResponse Manufacturer="47" Family="48 00" Member="00 00" />
+		<Receives MaxChannels="16" MTC="false" Clock="false" Notes="true" ProgramChanges="false" BankSelectMSB="false" BankSelectLSB="false" PanDisruptsStereo="false" />
+		<Transmits MaxChannels="0" MTC="false" Clock="false" Notes="true" ProgramChanges="false" BankSelectMSB="false" BankSelectLSB="false" />
+	</MIDIDeviceType>
+	<MIDIDeviceType Manufacturer="Akai" Model="CD3000" SupportsGeneralMIDI="false" SupportsMMC="false" IsSampler="true" IsDrumMachine="false" IsMixer="false" IsEffectUnit="false" >
+		<Receives MaxChannels="16" MTC="false" Clock="false" Notes="true" ProgramChanges="false" BankSelectMSB="false" BankSelectLSB="false" PanDisruptsStereo="false" />
+		<Transmits MaxChannels="0" MTC="false" Clock="false" Notes="true" ProgramChanges="false" BankSelectMSB="false" BankSelectLSB="false" />
+	</MIDIDeviceType>
+	<MIDIDeviceType Manufacturer="Akai" Model="S2000" SupportsGeneralMIDI="false" SupportsMMC="false" IsSampler="true" IsDrumMachine="false" IsMixer="false" IsEffectUnit="false" >
+		<InquiryResponse Manufacturer="47" Family="48 00" Member="00 00" />
+		<Receives MaxChannels="16" MTC="false" Clock="false" Notes="true" ProgramChanges="false" BankSelectMSB="false" BankSelectLSB="false" PanDisruptsStereo="false" />
+		<Transmits MaxChannels="0" MTC="false" Clock="false" Notes="true" ProgramChanges="false" BankSelectMSB="false" BankSelectLSB="false" />
+	</MIDIDeviceType>
+	<MIDIDeviceType Manufacturer="Akai" Model="S3000XL" SupportsGeneralMIDI="false" SupportsMMC="false" IsSampler="true" IsDrumMachine="false" IsMixer="false" IsEffectUnit="false" >
+		<InquiryResponse Manufacturer="47" Family="48 00" Member="00 00" />
+		<Receives MaxChannels="16" MTC="false" Clock="false" Notes="true" ProgramChanges="false" BankSelectMSB="false" BankSelectLSB="false" PanDisruptsStereo="false" />
+		<Transmits MaxChannels="0" MTC="false" Clock="false" Notes="true" ProgramChanges="false" BankSelectMSB="false" BankSelectLSB="false" />
+	</MIDIDeviceType>
+	<MIDIDeviceType Manufacturer="Akai" Model="S3200XL" SupportsGeneralMIDI="false" SupportsMMC="false" IsSampler="true" IsDrumMachine="false" IsMixer="false" IsEffectUnit="false" >
+		<InquiryResponse Manufacturer="47" Family="48 00" Member="00 00" />
+		<Receives MaxChannels="16" MTC="false" Clock="false" Notes="true" ProgramChanges="false" BankSelectMSB="false" BankSelectLSB="false" PanDisruptsStereo="false" />
+		<Transmits MaxChannels="0" MTC="false" Clock="false" Notes="true" ProgramChanges="false" BankSelectMSB="false" BankSelectLSB="false" />
+	</MIDIDeviceType>
+	<MIDIDeviceType Manufacturer="Akai" Model="CD3000XL" SupportsGeneralMIDI="false" SupportsMMC="false" IsSampler="true" IsDrumMachine="false" IsMixer="false" IsEffectUnit="false" >
+		<Receives MaxChannels="16" MTC="false" Clock="false" Notes="true" ProgramChanges="false" BankSelectMSB="false" BankSelectLSB="false" PanDisruptsStereo="false" />
+		<Transmits MaxChannels="0" MTC="false" Clock="false" Notes="true" ProgramChanges="false" BankSelectMSB="false" BankSelectLSB="false" />
+	</MIDIDeviceType>
+</MIDIDeviceTypes>

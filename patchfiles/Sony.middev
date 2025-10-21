@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE MIDIDeviceTypes PUBLIC "-//MIDI Manufacturers Association//DTD MIDIDeviceTypes 0.3//EN" "http://www.sonosphere.com/dtds/MIDIDeviceTypes.dtd">
+
+<MIDIDeviceTypes>
+	<Author>Mark of the Unicorn - converted from FreeMIDI</Author>
+	<MIDIDeviceType Manufacturer="Sony" Model="DPS-D7" SupportsGeneralMIDI="false" SupportsMMC="false" IsSampler="false" IsDrumMachine="false" IsMixer="false" IsEffectUnit="true" >
+		<InquiryResponse Manufacturer="4C" Family="01 00" Member="01 00" />
+		<DeviceID Min="1" Max="16" Default="1" Base="1" />
+		<Receives MaxChannels="1" MTC="false" Clock="false" Notes="false" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" PanDisruptsStereo="false" />
+		<Transmits MaxChannels="0" MTC="false" Clock="false" Notes="false" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" />
+	</MIDIDeviceType>
+	<MIDIDeviceType Manufacturer="Sony" Model="DPS-R7" SupportsGeneralMIDI="false" SupportsMMC="false" IsSampler="false" IsDrumMachine="false" IsMixer="false" IsEffectUnit="true" >
+		<InquiryResponse Manufacturer="4C" Family="01 00" Member="02 00" />
+		<DeviceID Min="1" Max="16" Default="1" Base="1" />
+		<Receives MaxChannels="1" MTC="false" Clock="false" Notes="false" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" PanDisruptsStereo="false" />
+		<Transmits MaxChannels="0" MTC="false" Clock="false" Notes="false" ProgramChanges="true" BankSelectMSB="false" BankSelectLSB="false" />
+	</MIDIDeviceType>
+</MIDIDeviceTypes>

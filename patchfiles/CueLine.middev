@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE MIDIDeviceTypes PUBLIC "-//MIDI Manufacturers Association//DTD MIDIDeviceTypes 0.3//EN" "http://www.sonosphere.com/dtds/MIDIDeviceTypes.dtd">
+
+<MIDIDeviceTypes>
+	<Author>Mark of the Unicorn</Author>
+	<MIDIDeviceType Manufacturer="CueLine" Model="ProCue 1M1" SupportsGeneralMIDI="false" SupportsMMC="false" IsSampler="false" IsDrumMachine="false" IsMixer="false" IsEffectUnit="false" >
+		<InquiryResponse Manufacturer="00 00 33" Family="01 00" Member="01 00" />
+		<DeviceID Min="1" Max="127" Default="1" Base="1" />
+		<Receives MaxChannels="0" MTC="false" Clock="false" Notes="false" ProgramChanges="false" BankSelectMSB="false" BankSelectLSB="false" PanDisruptsStereo="false" />
+		<Transmits MaxChannels="0" MTC="false" Clock="false" Notes="false" ProgramChanges="false" BankSelectMSB="false" BankSelectLSB="false" />
+	</MIDIDeviceType>
+</MIDIDeviceTypes>
