@@ -1,61 +1,28 @@
 # MIDI Name Editor
 
-A comprehensive web-based editor for creating and editing MIDI Name Documents (.midnam files) and MIDI Device Types (.middev files). This tool provides an intuitive interface for managing MIDI device configurations, patch names, and note mappings.
+A comprehensive web-based editor for creating and editing MIDI Name Documents (.midnam files) and MIDI Device Types (.middev files). This tool provides an intuitive interface for managing MIDI device configurations, patch names, and note mappings. In some DAWs (notably Pro Tools and Digital Performer), these files provide automatic access to patch banks and individual patch names within the DAW.  Pro Tools even shows you individual note names in piano roll editors (think drum kits or noteswitches). (Hey MOTU! Add support for this!)
+
+I've used this tool to add note name lists for the Alesis D4.  If you're using that with a supported DAW, you're welcome to install it into your system.
 
 ## Features
 
-### 🏭 **Manufacturer Selection**
-- Browse and search through official MIDI manufacturer IDs
-- Integration with [midi-manufacturers npm package](https://studiocode.dev/doc/midi-manufacturers/)
-- Automatic device detection from existing .middev files
+Existing midnam and middev files can be dropped into the ptchlist directory and will be cataloged at app startup.  You can select from a list of manufacturers, and it will display device names from the middev files that have corresponding midnam files.
 
-### 🎛️ **Device Management**
-- Load existing device definitions from .middev files
-- Create new device configurations
-- Support for various device types (Drum Machines, Samplers, Effect Units, etc.)
-- Device capability detection (General MIDI, MMC, etc.)
+After selecting the device, you'll see patch bank lists and other items from the midnam file.  At this point you may wish to select your device from the MIDI menu in the upper right. (See list of supported browsers below.)  This adds a few convenience features detailed below.
 
-### 🏗️ **Structure Editor**
-- Visual editing of MIDI Name Document structure
-- Channel Name Set configuration
-- Patch Bank management
-- Note Name List creation and editing
-- Real-time XML validation
+When selecting a bank, a list of the patches in that bank will be expanded. You can add or edit patches, and add or edit note name lists for when you want to see individual note names in Pro Tools.  When editing note lists you can add, insert or delete items, and enter or update their names.  A dropdown will allow you to select names that have already been used elsewhere in the patch bank.  Note numbers corresponding to black keys are displayed as white on black to more easily correlate with a keyboard controller.
 
-### 🎵 **Note Name Editor**
-- Intuitive note mapping interface
-- Piano-style keyboard visualization
-- MIDI note number display with musical note names
-- WebMIDI integration for real-time testing
-- Bulk editing capabilities
-- Export/import functionality
+If you have set your output device to your MIDI device, clicing the note number will send that note number, which is super helpful for double-checking that, for example, the drums are what you think they are, or even for auditioning sounds. 
 
-## File Structure
-
-```
-midnams/
-├── midi_name_editor.html      # Main application interface
-├── d4_editor.html            # Legacy D4-specific editor
-├── server.py                 # Python HTTP server
-├── dtd/                      # XML DTD definitions
-│   ├── MIDINameDocument10.dtd
-│   └── MIDIDeviceTypes.dtd
-├── patchfiles/               # Device definitions and examples
-│   ├── Alesis/
-│   │   ├── Alesis.middev
-│   │   └── D4.midnam
-│   ├── Yamaha/
-│   ├── Roland/
-│   └── ...
-└── Alesis/                   # Legacy D4 files
-    └── D4.midnam
-```
+Save your changes with the button at the bottom. A backup of the old version of the file wil be created in the directory. 
 
 ## Getting Started
 
+This is a web application meant to be run locally on your machine, and you will need to install Python 3.6 or later to run it.  Here are further details:
+
 ### Prerequisites
 - Python 3.6 or higher
-- Modern web browser with WebMIDI support (Chrome, Edge, Opera)
+- Modern web browser with WebMIDI support (Chrome, Edge, Opera) (optional -- this is just for MIDI convenience features)
 
 ### Installation
 
@@ -76,15 +43,14 @@ midnams/
 ## Usage Guide
 
 ### 1. Manufacturer Selection
-- Browse the grid of available manufacturers
 - Use the search box to filter manufacturers
-- Click on a manufacturer card to select it
-- The system will automatically load available devices
+- Click on a manufacturer to select it
+- The system will automatically load the manufacturer's devices list based on the contents of the manufacturer .middev file.
 
 ### 2. Device Configuration
 - Select from existing devices or create a new one
-- View device capabilities and MIDI specifications
-- Load existing .midnam files for editing
+- If there is already a midnam file for the device in the `patchlist` directory it will be loaded and ready for editing.
+- Optionally, set the MIDI output device to your device (list is provided on Mac via Audio/MIDI Setup) for some convenience features.
 
 ### 3. Structure Editing
 - Configure Channel Name Sets
@@ -93,10 +59,8 @@ midnams/
 - Validate XML structure in real-time
 
 ### 4. Note Name Editing
-- Switch to the "Note Names" tab
-- Edit note mappings with piano-style interface
-- Use WebMIDI to test note triggers
-- Export configurations for use in DAWs
+- When you see a patch, use the button labeled "Edit Note Names" or "Add Note Names"
+- Clicking the 
 
 ## File Formats
 
@@ -119,7 +83,6 @@ XML files that define MIDI device capabilities and specifications. Contains:
 MIDI Name Documents are primarily supported by:
 - **Avid Pro Tools** - Full support for note names and patch names
 - **Steinberg Cubase** - Limited support
-- **Apple Logic Pro** - Basic support
 - **PreSonus Studio One** - Basic support
 
 *Note: Note Names will only appear in a few specific DAWs like Avid Pro Tools. Most DAWs will show generic note numbers.*
@@ -127,16 +90,15 @@ MIDI Name Documents are primarily supported by:
 ## WebMIDI Integration
 
 The editor includes WebMIDI support for:
+- MIDI device selection
 - Real-time note triggering
 - Device connection status
 - Program change testing
-- MIDI device selection
 
 ### Enabling WebMIDI
-1. Click "Enable MIDI" in the interface
-2. Grant browser permissions for MIDI access
+2. When prompted, grant browser permissions for MIDI access
 3. Select your MIDI device from the dropdown
-4. Test note triggers by clicking the piano keys
+4. Test note triggers by clicking the note numbers in the Note Name editor
 
 ## API Endpoints
 
@@ -147,6 +109,12 @@ The server provides the following endpoints:
 - `GET /patchfiles/*.midnam` - MIDI name documents
 - `POST /save_d4.php` - Save D4 configuration (legacy)
 - `POST /validate_d4.php` - Validate XML structure (legacy)
+- `GET /midnam_catalog` - A comprehensive catalog endpoint that scans all .midnam files in `patchlist/`
+- `GET /analyze_file/{file_path}` - File analysis endpoint for getting detailed file statistics
+- `POST /save_file` - A more general file saving endpoint (replaces the D4-specific one)
+- `POST /merge_files` - File merging functionality
+- `POST /delete_file` - File deletion functionality
+- `POST /clear_cache` - Cache management
 
 ## Development
 
@@ -156,7 +124,7 @@ The server provides the following endpoints:
 3. Update the manufacturer file mapping in the HTML
 
 ### Extending Device Support
-1. Create .middev files following the MIDIDeviceTypes DTD
+1. Create .middev files following the MIDIDeviceTypes DTD (included)
 2. Add device-specific .midnam templates
 3. Update the device loading logic
 
@@ -199,8 +167,5 @@ This project is open source. Please check the license file for details.
 - MIDI Manufacturers Association for the DTD specifications
 - [StudioCode.dev](https://studiocode.dev/doc/midi-manufacturers/) for manufacturer ID data
 - The MIDI community for device definitions and examples
-
-## Version History
-
-- **v2.0** - Complete rewrite with multi-tab interface and manufacturer support
-- **v1.0** - Initial D4-specific editor with note name functionality
+- The [Ardour project](https://github.com/ardour) for their collection of midnam files, which were great for testing
+- [Digicake.com](http://digicake.com/midnams) for more files to test with
