@@ -667,7 +667,7 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
             self.send_error(500, f"Error clearing cache: {str(e)}")
 
 if __name__ == "__main__":
-    PORT = 8000
+    PORT = int(os.environ.get('PORT', 8000))
     
     with socketserver.TCPServer(("", PORT), MIDINameHandler) as httpd:
         print(f"Server running at http://localhost:{PORT}/")

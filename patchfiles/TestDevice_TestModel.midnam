@@ -1,0 +1,246 @@
+<?xml version="1.0" encoding="UTF-8"?>
+	<!DOCTYPE MIDINameDocument PUBLIC "-//MIDI Manufacturers Association//DTD MIDINameDocument 1.0//EN" "http://www.midi.org/dtds/MIDINameDocument10.dtd">
+		<MIDINameDocument>
+			<Author>Test MIDNAM for Append/Save Regression Testing</Author>
+				<MasterDeviceNames>
+					<Manufacturer>TestDevice</Manufacturer>
+						<Model>TestModel</Model>
+							<CustomDeviceMode Name="Mode 1">
+								<ChannelNameSetAssignments>
+									<ChannelNameSetAssign Channel="1" NameSet="Name Set 1"/>
+									<ChannelNameSetAssign Channel="2" NameSet="Name Set 1"/>
+									<ChannelNameSetAssign Channel="3" NameSet="Name Set 1"/>
+									<ChannelNameSetAssign Channel="4" NameSet="Name Set 1"/>
+									<ChannelNameSetAssign Channel="5" NameSet="Name Set 1"/>
+									<ChannelNameSetAssign Channel="6" NameSet="Name Set 1"/>
+									<ChannelNameSetAssign Channel="7" NameSet="Name Set 1"/>
+									<ChannelNameSetAssign Channel="8" NameSet="Name Set 1"/>
+									<ChannelNameSetAssign Channel="9" NameSet=""/>
+									<ChannelNameSetAssign Channel="10" NameSet="Name Set 2"/>
+									<ChannelNameSetAssign Channel="11" NameSet=""/>
+									<ChannelNameSetAssign Channel="12" NameSet=""/>
+									<ChannelNameSetAssign Channel="13" NameSet=""/>
+									<ChannelNameSetAssign Channel="14" NameSet=""/>
+									<ChannelNameSetAssign Channel="15" NameSet=""/>
+									<ChannelNameSetAssign Channel="16" NameSet=""/>
+								</ChannelNameSetAssignments>
+							</CustomDeviceMode>
+							<ChannelNameSet Name="Name Set 1">
+								<AvailableForChannels>
+									<AvailableChannel Channel="1" Available="true"/>
+									<AvailableChannel Channel="2" Available="true"/>
+									<AvailableChannel Channel="3" Available="true"/>
+									<AvailableChannel Channel="4" Available="true"/>
+									<AvailableChannel Channel="5" Available="true"/>
+									<AvailableChannel Channel="6" Available="true"/>
+									<AvailableChannel Channel="7" Available="true"/>
+									<AvailableChannel Channel="8" Available="true"/>
+									<AvailableChannel Channel="9" Available="false"/>
+									<AvailableChannel Channel="10" Available="false"/>
+									<AvailableChannel Channel="11" Available="false"/>
+									<AvailableChannel Channel="12" Available="false"/>
+									<AvailableChannel Channel="13" Available="false"/>
+									<AvailableChannel Channel="14" Available="false"/>
+									<AvailableChannel Channel="15" Available="false"/>
+									<AvailableChannel Channel="16" Available="false"/>
+								</AvailableForChannels>
+								<PatchBank Name="Tones">
+									<PatchNameList>
+										<Patch Number="A11" Name="Acoustic Piano" ProgramChange="0"/>
+										<Patch Number="A12" Name="Electric Piano" ProgramChange="1"/>
+										<Patch Number="A13" Name="Harpsichord" ProgramChange="2"/>
+										<Patch Number="A14" Name="Organ" ProgramChange="3"/>
+										<Patch Number="A15" Name="Strings" ProgramChange="4"/>
+										<Patch Number="A16" Name="Brass" ProgramChange="5"/>
+										<Patch Number="A17" Name="Woodwinds" ProgramChange="6"/>
+										<Patch Number="A18" Name="Synth Lead" ProgramChange="7"/>
+									</PatchNameList>
+								</PatchBank>
+							</ChannelNameSet>
+							<ChannelNameSet Name="Name Set 2">
+								<AvailableForChannels>
+									<AvailableChannel Channel="1" Available="false"/>
+									<AvailableChannel Channel="2" Available="false"/>
+									<AvailableChannel Channel="3" Available="false"/>
+									<AvailableChannel Channel="4" Available="false"/>
+									<AvailableChannel Channel="5" Available="false"/>
+									<AvailableChannel Channel="6" Available="false"/>
+									<AvailableChannel Channel="7" Available="false"/>
+									<AvailableChannel Channel="8" Available="false"/>
+									<AvailableChannel Channel="9" Available="false"/>
+									<AvailableChannel Channel="10" Available="true"/>
+									<AvailableChannel Channel="11" Available="false"/>
+									<AvailableChannel Channel="12" Available="false"/>
+									<AvailableChannel Channel="13" Available="false"/>
+									<AvailableChannel Channel="14" Available="false"/>
+									<AvailableChannel Channel="15" Available="false"/>
+									<AvailableChannel Channel="16" Available="false"/>
+								</AvailableForChannels>
+								<PatchBank Name="Rhythm">
+									<PatchNameList>
+										<Patch Number="R01" Name="Standard Kit" ProgramChange="0">
+											<UsesNoteNameList Name="Standard Kit Notes"/>
+										</Patch>
+										<Patch Number="R02" Name="Rock Kit" ProgramChange="1">
+											<UsesNoteNameList Name="Rock Kit Notes"/>
+										</Patch>
+										<Patch Number="R03" Name="Jazz Kit" ProgramChange="2">
+											<UsesNoteNameList Name="Jazz Kit Notes"/>
+										</Patch>
+									</PatchNameList>
+								</PatchBank>
+							</ChannelNameSet>
+						</MasterDeviceNames>
+						<!-- Note Name Lists for Rhythm Patches -->
+							<NoteNameList Name="Standard Kit Notes">
+								<Note Number="36" Name="Kick Drum"/>
+								<Note Number="37" Name="Side Stick"/>
+								<Note Number="38" Name="Snare Drum"/>
+								<Note Number="39" Name="Hand Clap"/>
+								<Note Number="40" Name="Snare Drum 2"/>
+								<Note Number="41" Name="Low Tom"/>
+								<Note Number="42" Name="Closed Hi-Hat"/>
+								<Note Number="43" Name="High Tom"/>
+								<Note Number="44" Name="Pedal Hi-Hat"/>
+								<Note Number="45" Name="Mid Tom"/>
+								<Note Number="46" Name="Open Hi-Hat"/>
+								<Note Number="47" Name="Mid Tom 2"/>
+								<Note Number="48" Name="High Tom 2"/>
+								<Note Number="49" Name="Crash Cymbal"/>
+								<Note Number="50" Name="High Tom 3"/>
+								<Note Number="51" Name="Ride Cymbal"/>
+								<Note Number="52" Name="Chinese Cymbal"/>
+								<Note Number="53" Name="Ride Bell"/>
+								<Note Number="54" Name="Tambourine"/>
+								<Note Number="55" Name="Splash Cymbal"/>
+								<Note Number="56" Name="Cowbell"/>
+								<Note Number="57" Name="Crash Cymbal 2"/>
+								<Note Number="58" Name="Vibra Slap"/>
+								<Note Number="59" Name="Ride Cymbal 2"/>
+								<Note Number="60" Name="High Bongo"/>
+								<Note Number="61" Name="Low Bongo"/>
+								<Note Number="62" Name="Mute High Conga"/>
+								<Note Number="63" Name="Open High Conga"/>
+								<Note Number="64" Name="Low Conga"/>
+								<Note Number="65" Name="High Timbale"/>
+								<Note Number="66" Name="Low Timbale"/>
+								<Note Number="67" Name="High Agogo"/>
+								<Note Number="68" Name="Low Agogo"/>
+								<Note Number="69" Name="Cabasa"/>
+								<Note Number="70" Name="Maracas"/>
+								<Note Number="71" Name="Short Whistle"/>
+								<Note Number="72" Name="Long Whistle"/>
+								<Note Number="73" Name="Short Guiro"/>
+								<Note Number="74" Name="Long Guiro"/>
+								<Note Number="75" Name="Claves"/>
+								<Note Number="76" Name="High Wood Block"/>
+								<Note Number="77" Name="Low Wood Block"/>
+								<Note Number="78" Name="Mute Cuica"/>
+								<Note Number="79" Name="Open Cuica"/>
+								<Note Number="80" Name="Mute Triangle"/>
+								<Note Number="81" Name="Open Triangle"/>
+							</NoteNameList>
+							<NoteNameList Name="Rock Kit Notes">
+								<Note Number="36" Name="Rock Kick"/>
+								<Note Number="37" Name="Rock Rim"/>
+								<Note Number="38" Name="Rock Snare"/>
+								<Note Number="39" Name="Rock Clap"/>
+								<Note Number="40" Name="Rock Snare 2"/>
+								<Note Number="41" Name="Rock Low Tom"/>
+								<Note Number="42" Name="Rock Closed Hat"/>
+								<Note Number="43" Name="Rock High Tom"/>
+								<Note Number="44" Name="Rock Pedal Hat"/>
+								<Note Number="45" Name="Rock Mid Tom"/>
+								<Note Number="46" Name="Rock Open Hat"/>
+								<Note Number="47" Name="Rock Mid Tom 2"/>
+								<Note Number="48" Name="Rock High Tom 2"/>
+								<Note Number="49" Name="Rock Crash"/>
+								<Note Number="50" Name="Rock High Tom 3"/>
+								<Note Number="51" Name="Rock Ride"/>
+								<Note Number="52" Name="Rock China"/>
+								<Note Number="53" Name="Rock Ride Bell"/>
+								<Note Number="54" Name="Rock Tambourine"/>
+								<Note Number="55" Name="Rock Splash"/>
+								<Note Number="56" Name="Rock Cowbell"/>
+								<Note Number="57" Name="Rock Crash 2"/>
+								<Note Number="58" Name="Rock Vibra"/>
+								<Note Number="59" Name="Rock Ride 2"/>
+								<Note Number="60" Name="Rock High Bongo"/>
+								<Note Number="61" Name="Rock Low Bongo"/>
+								<Note Number="62" Name="Rock Mute Conga"/>
+								<Note Number="63" Name="Rock Open Conga"/>
+								<Note Number="64" Name="Rock Low Conga"/>
+								<Note Number="65" Name="Rock High Timbale"/>
+								<Note Number="66" Name="Rock Low Timbale"/>
+								<Note Number="67" Name="Rock High Agogo"/>
+								<Note Number="68" Name="Rock Low Agogo"/>
+								<Note Number="69" Name="Rock Cabasa"/>
+								<Note Number="70" Name="Rock Maracas"/>
+								<Note Number="71" Name="Rock Short Whistle"/>
+								<Note Number="72" Name="Rock Long Whistle"/>
+								<Note Number="73" Name="Rock Short Guiro"/>
+								<Note Number="74" Name="Rock Long Guiro"/>
+								<Note Number="75" Name="Rock Claves"/>
+								<Note Number="76" Name="Rock High Block"/>
+								<Note Number="77" Name="Rock Low Block"/>
+								<Note Number="78" Name="Rock Mute Cuica"/>
+								<Note Number="79" Name="Rock Open Cuica"/>
+								<Note Number="80" Name="Rock Mute Triangle"/>
+								<Note Number="81" Name="Rock Open Triangle"/>
+								<Note Number="82" Name="Regression Test Note 1761082946"/>
+								<Note Number="83" Name="Regression Test Note 1761082969"/>
+								<Note Number="84" Name="Regression Test Note 1761083009"/>
+								<Note Number="85" Name="Regression Test Note 1761083045"/>
+								<Note Number="86" Name="Regression Test Note 1761083073"/>
+								<Note Number="87" Name="Regression Test Note 1761083100"/>
+								<Note Number="88" Name="Regression Test Note 1761083500"/>
+							</NoteNameList>
+							<NoteNameList Name="Jazz Kit Notes">
+								<Note Number="36" Name="Jazz Kick"/>
+								<Note Number="37" Name="Jazz Rim"/>
+								<Note Number="38" Name="Jazz Snare"/>
+								<Note Number="39" Name="Jazz Clap"/>
+								<Note Number="40" Name="Jazz Snare 2"/>
+								<Note Number="41" Name="Jazz Low Tom"/>
+								<Note Number="42" Name="Jazz Closed Hat"/>
+								<Note Number="43" Name="Jazz High Tom"/>
+								<Note Number="44" Name="Jazz Pedal Hat"/>
+								<Note Number="45" Name="Jazz Mid Tom"/>
+								<Note Number="46" Name="Jazz Open Hat"/>
+								<Note Number="47" Name="Jazz Mid Tom 2"/>
+								<Note Number="48" Name="Jazz High Tom 2"/>
+								<Note Number="49" Name="Jazz Crash"/>
+								<Note Number="50" Name="Jazz High Tom 3"/>
+								<Note Number="51" Name="Jazz Ride"/>
+								<Note Number="52" Name="Jazz China"/>
+								<Note Number="53" Name="Jazz Ride Bell"/>
+								<Note Number="54" Name="Jazz Tambourine"/>
+								<Note Number="55" Name="Jazz Splash"/>
+								<Note Number="56" Name="Jazz Cowbell"/>
+								<Note Number="57" Name="Jazz Crash 2"/>
+								<Note Number="58" Name="Jazz Vibra"/>
+								<Note Number="59" Name="Jazz Ride 2"/>
+								<Note Number="60" Name="Jazz High Bongo"/>
+								<Note Number="61" Name="Jazz Low Bongo"/>
+								<Note Number="62" Name="Jazz Mute Conga"/>
+								<Note Number="63" Name="Jazz Open Conga"/>
+								<Note Number="64" Name="Jazz Low Conga"/>
+								<Note Number="65" Name="Jazz High Timbale"/>
+								<Note Number="66" Name="Jazz Low Timbale"/>
+								<Note Number="67" Name="Jazz High Agogo"/>
+								<Note Number="68" Name="Jazz Low Agogo"/>
+								<Note Number="69" Name="Jazz Cabasa"/>
+								<Note Number="70" Name="Jazz Maracas"/>
+								<Note Number="71" Name="Jazz Short Whistle"/>
+								<Note Number="72" Name="Jazz Long Whistle"/>
+								<Note Number="73" Name="Jazz Short Guiro"/>
+								<Note Number="74" Name="Jazz Long Guiro"/>
+								<Note Number="75" Name="Jazz Claves"/>
+								<Note Number="76" Name="Jazz High Block"/>
+								<Note Number="77" Name="Jazz Low Block"/>
+								<Note Number="78" Name="Jazz Mute Cuica"/>
+								<Note Number="79" Name="Jazz Open Cuica"/>
+								<Note Number="80" Name="Jazz Mute Triangle"/>
+								<Note Number="81" Name="Jazz Open Triangle"/>
+							</NoteNameList>
+						</MIDINameDocument>

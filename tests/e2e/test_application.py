@@ -26,7 +26,7 @@ class TestApplicationWorkflow:
         
         for tab in tabs:
             await helpers.click_tab(app_page, tab)
-            await expect(app_page.locator(f"#{tab}-tab")).to_have_class(/active/)
+            await expect(app_page.locator(f"#{tab}-tab")).to_have_class("active")
             await expect(app_page.locator(f"#{tab}-tab .tab-content")).to_be_visible()
     
     async def test_manufacturer_search(self, app_page: Page, helpers):

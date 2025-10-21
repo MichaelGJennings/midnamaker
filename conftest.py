@@ -13,12 +13,12 @@ except ImportError:
     PLAYWRIGHT_AVAILABLE = False
 
 # Test configuration
-BASE_URL = "http://localhost:8000"
+BASE_URL = "http://localhost:8001"
 TEST_TIMEOUT = 30000  # 30 seconds
 
 # Playwright fixtures (only available if Playwright is installed)
 if PLAYWRIGHT_AVAILABLE:
-    @pytest.fixture(scope="session")
+    @pytest.fixture(scope="function")
     async def browser_context_args():
         """Configure browser context for all tests"""
         return {
@@ -27,7 +27,7 @@ if PLAYWRIGHT_AVAILABLE:
             "accept_downloads": True,
         }
 
-    @pytest.fixture(scope="session")
+    @pytest.fixture(scope="function")
     async def browser_type_launch_args():
         """Configure browser launch arguments"""
         return {
@@ -35,9 +35,9 @@ if PLAYWRIGHT_AVAILABLE:
             "slow_mo": 0,      # Add delay between actions (ms)
         }
 
-    @pytest.fixture(scope="session")
+    @pytest.fixture(scope="function")
     async def playwright_browser(browser_type_launch_args, browser_context_args):
-        """Session-scoped browser instance"""
+        """Function-scoped browser instance"""
         async with async_playwright() as p:
             browser = await p.chromium.launch(**browser_type_launch_args)
             context = await browser.new_context(**browser_context_args)
@@ -54,8 +54,14 @@ if PLAYWRIGHT_AVAILABLE:
         # Set default timeout
         page.set_default_timeout(TEST_TIMEOUT)
         
-        # Add console logging for debugging
-        page.on("console", lambda msg: print(f"Console {msg.type}: {msg.text}"))
+        # Add console logging for debugging (filter out MIDI-related messages)
+        def console_handler(msg):
+            # Filter out MIDI-related console messages during testing
+            if any(keyword in msg.text.lower() for keyword in ['midi', 'notallowederror', 'webmidi', 'skipped for testing']):
+                return
+            print(f"Console {msg.type}: {msg.text}")
+        
+        page.on("console", console_handler)
         page.on("pageerror", lambda error: print(f"Page error: {error}"))
         
         yield page
@@ -64,7 +70,13 @@ if PLAYWRIGHT_AVAILABLE:
     @pytest.fixture
     async def app_page(page: Page):
         """Navigate to the main application page"""
-        await page.goto(f"{BASE_URL}/index.html")
+        # Set environment variable to disable MIDI during testing
+        await page.add_init_script("""
+            // Disable MIDI initialization during testing
+            window.DISABLE_MIDI_FOR_TESTING = true;
+        """)
+        
+        await page.goto(f"{BASE_URL}/midi_name_editor.html")
         await page.wait_for_load_state("networkidle")
         return page
 
@@ -108,7 +120,7 @@ if PLAYWRIGHT_AVAILABLE:
         async def wait_for_tab_content(page: Page, tab_name: str):
             """Wait for tab content to load"""
             await page.wait_for_selector(f"#{tab_name}-tab.active")
-            await page.wait_for_selector(f"#{tab_name}-tab .tab-content")
+            await page.wait_for_selector(f"#{tab_name}-tab")
         
         @staticmethod
         async def click_tab(page: Page, tab_name: str):
@@ -119,7 +131,7 @@ if PLAYWRIGHT_AVAILABLE:
         @staticmethod
         async def fill_manufacturer_search(page: Page, manufacturer: str):
             """Fill the manufacturer search field"""
-            await page.fill("#manufacturer-search", manufacturer)
+            await page.fill("#manufacturer-input", manufacturer)
             await page.wait_for_timeout(500)  # Wait for search results
         
         @staticmethod
