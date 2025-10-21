@@ -7,3 +7,10 @@ DMPro.midnam
 D4.midnam.backup*
 gitold
 *.midnam.backup*
+__pycache__/
+*.pyc
+midnam_catalog_cache.json
+.pytest_cache/
+htmlcov/
+.coverage  
+CACHEDIR.TAG
