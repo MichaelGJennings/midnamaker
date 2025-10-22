@@ -6455,6 +6455,21 @@ ${analysis.bank_details.map(bank => `  ${bank.name}: ${bank.patch_count} patches
                 }
             }
 
+            // Clear existing structure elements before populating new ones
+            // This ensures old patch banks and channel name sets are removed when switching devices
+            const channelNameSetsContainer = document.getElementById('channel-name-sets');
+            const patchBanksContainer = document.getElementById('patch-banks');
+            
+            // Clear channel name sets
+            if (channelNameSetsContainer) {
+                channelNameSetsContainer.innerHTML = '<div class="empty-state">No channel name sets defined</div>';
+            }
+            
+            // Clear patch banks
+            if (patchBanksContainer) {
+                patchBanksContainer.innerHTML = '<div class="empty-state">No patch banks defined</div>';
+            }
+
             // Parse Channel Name Sets
             const channelNameSets = midnamDoc.querySelectorAll('ChannelNameSet');
             channelNameSets.forEach(channelSet => {
