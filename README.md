@@ -16,6 +16,8 @@ If you have set your output device to your MIDI device, clicing the note number 
 
 Save your changes with the button at the bottom. A backup of the old version of the file wil be created in the directory. 
 
+The Tools tab contains a "Note Name Consistency Tool" which can be used to control what appears in the note name field dropdown.  You can delete items that you don't want to see in the dropdowns here, but it's important to note that if the item is used somewhere, it will come back the next time you edit that device bank.  To fix that, select the item in the tool and a popup will appear.  If it's unused, you can delete it, otherwise you can jump to the Note Name editor where it's used and fix it there.  This is a good way to ensure consistency if that matters to you.
+
 ## Getting Started
 
 This is a web application meant to be run locally on your machine, and you will need to install Python 3.6 or later to run it.  Here are further details:

@@ -1550,6 +1550,136 @@
             flex-wrap: wrap;
         }
 
+        /* Tools tab styles */
+        .index-entry {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.75rem;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            margin-bottom: 0.5rem;
+            background: white;
+            transition: all 0.2s;
+            position: relative;
+        }
+
+        .index-entry:hover {
+            border-color: #007bff;
+            box-shadow: 0 2px 4px rgba(0, 123, 255, 0.1);
+        }
+
+        .index-entry-content {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            flex: 1;
+            cursor: pointer;
+        }
+
+        .index-entry-name {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .usage-indicator {
+            background: #e9ecef;
+            color: #495057;
+            padding: 0.25rem 0.5rem;
+            border-radius: 3px;
+            font-size: 0.8rem;
+        }
+
+        .usage-dropdown {
+            position: fixed;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            z-index: 10000;
+            margin-top: 2px;
+            max-height: 200px;
+            overflow-y: auto;
+            min-width: 300px;
+        }
+
+        .usage-item {
+            padding: 0.75rem;
+            cursor: pointer;
+            border-bottom: 1px solid #f8f9fa;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .usage-item:last-child {
+            border-bottom: none;
+        }
+
+        .usage-item:hover {
+            background: #f8f9fa;
+        }
+
+        .usage-item.unused {
+            color: #dc3545;
+            font-style: italic;
+        }
+
+        .usage-item.unused:hover {
+            background: #f8d7da;
+        }
+
+        .usage-bank {
+            font-weight: 600;
+            color: #007bff;
+            min-width: 80px;
+        }
+
+        .usage-patch {
+            color: #333;
+            flex: 1;
+        }
+
+        .usage-note {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .usage-text {
+            color: #dc3545;
+            font-style: italic;
+        }
+
+        .bank-selector {
+            margin-bottom: 1rem;
+            padding: 0.75rem;
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+        }
+
+        .bank-selector label {
+            display: inline-block;
+            margin-right: 0.5rem;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        .bank-selector select {
+            padding: 0.375rem 0.75rem;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            background: white;
+            font-size: 0.9rem;
+            min-width: 200px;
+        }
+
+        .bank-selector select:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+        }
+
         .debug-section {
             margin-bottom: 2rem;
             padding: 1rem;
@@ -1702,7 +1832,7 @@
         <div class="tab" data-tab="device">Device</div>
         <div class="tab" data-tab="patch">Patch</div>
         <div class="tab" data-tab="catalog">Catalog</div>
-        <div class="tab" data-tab="debug">Debug</div>
+        <div class="tab" data-tab="tools">Tools</div>
     </div>
 
     <!-- Manufacturer Selection Tab -->
@@ -1811,8 +1941,8 @@
     </div>
 
     <!-- Debug Tab -->
-    <div class="tab-content" id="debug-tab">
-        <h2>Debug Console</h2>
+    <div class="tab-content" id="tools-tab">
+        <h2>Tools</h2>
         <div class="debug-controls">
             <button class="btn btn-primary" onclick="refreshNoteNameIndex()">Refresh Index</button>
             <button class="btn btn-secondary" onclick="clearNoteNameIndex()">Clear Index</button>
@@ -1821,7 +1951,22 @@
         </div>
         
         <div class="debug-section">
-            <h3>Note Name Index Browser</h3>
+            <h3>Note Name Consistency Tool</h3>
+            <p>Click on any note name to see where it's used and fix inconsistencies.</p>
+            
+            <div class="bank-selector">
+                <label for="tools-bank-select">Filter by Bank:</label>
+                <select id="tools-bank-select" onchange="updateToolsBankFilter()">
+                    <option value="all">All Banks</option>
+                </select>
+                
+                <label for="tools-sort-select">Sort by:</label>
+                <select id="tools-sort-select" onchange="updateToolsSort()">
+                    <option value="alphabetical">Alphabetical</option>
+                    <option value="usage-count">Usage Count</option>
+                </select>
+            </div>
+            
             <div class="index-stats">
                 <span id="index-count">Total entries: 0</span>
                 <span id="index-size">Memory usage: 0 KB</span>
@@ -2535,88 +2680,16 @@
         ];
 
         // Removed Builder functionality
+        
+        // Builder variables (kept to prevent errors)
+        let selectedBaseDevice = null;
+        let selectedExpansionCards = new Set();
+
+        // Tools tab bank filter
+        let selectedToolsBank = 'all';
+        let selectedToolsSort = 'alphabetical';
 
         // File Disambiguation Dialog
-        function closeDisambiguationModal() {
-            const select = document.getElementById('base-device-select');
-            if (!select) return;
-            
-            select.innerHTML = '<option value="">Choose a device...</option>';
-            
-            try {
-                const catalogResponse = await fetch('/midnam_catalog');
-                if (!catalogResponse.ok) return;
-                
-                const catalog = await catalogResponse.json();
-                
-                // Group devices by manufacturer
-                const manufacturers = new Map();
-                Object.values(catalog).forEach(device => {
-                    if (!manufacturers.has(device.manufacturer)) {
-                        manufacturers.set(device.manufacturer, []);
-                    }
-                    manufacturers.get(device.manufacturer).push(device);
-                });
-                
-                // Add devices to dropdown
-                Array.from(manufacturers.keys()).sort().forEach(manufacturer => {
-                    const optgroup = document.createElement('optgroup');
-                    optgroup.label = manufacturer;
-                    
-                    manufacturers.get(manufacturer).forEach(device => {
-                        const option = document.createElement('option');
-                        option.value = `${device.manufacturer}|${device.model}`;
-                        option.textContent = `${device.model}`;
-                        optgroup.appendChild(option);
-                    });
-                    
-                    select.appendChild(optgroup);
-                });
-                
-            } catch (error) {
-                console.error('Error populating base device dropdown:', error);
-            }
-        }
-
-        async function selectBaseDevice(deviceKey) {
-            if (!deviceKey) {
-                selectedBaseDevice = null;
-                document.getElementById('base-device-info').style.display = 'none';
-                document.getElementById('expansion-cards').innerHTML = '<div class="empty-state">Select a base device to see available expansion cards</div>';
-                return;
-            }
-            
-            try {
-                const catalogResponse = await fetch('/midnam_catalog');
-                if (!catalogResponse.ok) return;
-                
-                const catalog = await catalogResponse.json();
-                const deviceInfo = catalog[deviceKey];
-                
-                if (!deviceInfo) return;
-                
-                // Check if there are multiple files for this device
-                if (deviceInfo.files.length > 1) {
-                    // Show disambiguation dialog
-                    await showFileDisambiguationDialog(deviceKey, deviceInfo.files);
-                    return;
-                }
-                
-                selectedBaseDevice = deviceInfo;
-                
-                // Update device info display
-                document.getElementById('base-device-name').textContent = `${deviceInfo.manufacturer} ${deviceInfo.model}`;
-                document.getElementById('base-device-description').textContent = 
-                    `Base device with ${deviceInfo.files.length} .midnam file(s) available.`;
-                document.getElementById('base-device-info').style.display = 'block';
-                
-                // Find expansion cards for this device
-                await loadExpansionCards(deviceInfo);
-                
-            } catch (error) {
-                console.error('Error selecting base device:', error);
-            }
-        }
 
         async function loadExpansionCards(baseDevice) {
             const expansionCardsContainer = document.getElementById('expansion-cards');
@@ -3883,7 +3956,7 @@ ${analysis.bank_details.map(bank => `  ${bank.name}: ${bank.patch_count} patches
                             <div class="patch-actions">
                                 <button class="btn btn-small btn-primary" onclick="selectPatch('${bankName}', '${patch.name}', '${patch.number}', '${patch.programChange || patch.number}')">Edit Patch</button>
                                 <button class="btn btn-small btn-secondary" onclick="editPatch('${bankName}', '${patch.name}', '${patch.number}', '${patch.programChange || patch.number}')">Settings</button>
-                                <button class="btn btn-small btn-secondary" onclick="${patch.usesNoteList ? `editNoteNameList('${patch.usesNoteList}', '${bankName}', '${patch.name}', '${patch.number}', '${patch.programChange || patch.number}')` : `addNoteListToPatch('${bankName}', '${patch.name}')`}">${patch.usesNoteList ? 'Edit Note Names' : 'Add Note Names'}</button>
+                                <button class="btn btn-small btn-secondary" onclick="${patch.usesNoteList ? `editNoteNameList('${escapeHtmlAttribute(patch.usesNoteList)}', '${escapeHtmlAttribute(bankName)}', '${escapeHtmlAttribute(patch.name)}', '${patch.number}', '${patch.programChange || patch.number}')` : `addNoteListToPatch('${escapeHtmlAttribute(bankName)}', '${escapeHtmlAttribute(patch.name)}')`}">${patch.usesNoteList ? 'Edit Note Names' : 'Add Note Names'}</button>
                                 <button class="btn btn-small btn-danger" onclick="removePatch(this)">Remove</button>
                             </div>
                         </div>
@@ -3925,7 +3998,7 @@ ${analysis.bank_details.map(bank => `  ${bank.name}: ${bank.patch_count} patches
                     <div class="patch-actions">
                         <button class="btn btn-small btn-primary" onclick="selectPatch('${bankName}', '${patchName}', ${patchNumber}, ${programChange})">Edit Patch</button>
                         <button class="btn btn-small btn-secondary" onclick="editPatch('${bankName}', '${patchName}', ${patchNumber}, ${programChange})">Settings</button>
-                        <button class="btn btn-small btn-secondary" onclick="addNoteListToPatch('${bankName}', '${patchName}')">Add Note Names</button>
+                        <button class="btn btn-small btn-secondary" onclick="addNoteListToPatch('${escapeHtmlAttribute(bankName)}', '${escapeHtmlAttribute(patchName)}')">Add Note Names</button>
                         <button class="btn btn-small btn-danger" onclick="removePatch(this)">Remove</button>
                     </div>
                 </div>
@@ -3963,18 +4036,22 @@ ${analysis.bank_details.map(bank => `  ${bank.name}: ${bank.patch_count} patches
             const editBtn = patchElement.querySelector('[onclick*="editPatch"]');
             const noteListBtn = patchElement.querySelector('[onclick*="addNoteListToPatch"]');
             
-            editBtn.setAttribute('onclick', `editPatch('${bankName}', '${newName}', ${newNumber}, ${newProgramChange})`);
-            noteListBtn.setAttribute('onclick', `addNoteListToPatch('${bankName}', '${newName}')`);
+            editBtn.setAttribute('onclick', `editPatch('${escapeHtmlAttribute(bankName)}', '${escapeHtmlAttribute(newName)}', ${newNumber}, ${newProgramChange})`);
+            noteListBtn.setAttribute('onclick', `addNoteListToPatch('${escapeHtmlAttribute(bankName)}', '${escapeHtmlAttribute(newName)}')`);
         }
 
         function addNoteListToPatch(bankName, patchName) {
-            const noteListName = prompt('Enter note name list name:', `${patchName} Notes`);
+            // Unescape the parameters since they were escaped for the onclick attribute
+            const unescapedBankName = bankName.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&#96;/g, '`').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+            const unescapedPatchName = patchName.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&#96;/g, '`').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+            
+            const noteListName = prompt('Enter note name list name:', `${unescapedPatchName} Notes`);
             if (!noteListName) return;
             
             // Find the patch element more reliably
             const patchElement = document.querySelector(`[onclick="addNoteListToPatch('${bankName}', '${patchName}')"]`)?.closest('.patch-item');
             if (!patchElement) {
-                console.error('Could not find patch element for', bankName, patchName);
+                console.error('Could not find patch element for', unescapedBankName, unescapedPatchName);
                 alert('Error: Could not find the patch element. Please try again.');
                 return;
             }
@@ -4142,7 +4219,7 @@ ${analysis.bank_details.map(bank => `  ${bank.name}: ${bank.patch_count} patches
                                 <div class="patch-actions">
                                     <button class="btn btn-small btn-primary" onclick="selectPatch('${bankName}', '${patchName}', '${patchNumber}', '${programChange || patchNumber}')">Edit Patch</button>
                                     <button class="btn btn-small btn-secondary" onclick="editPatch('${bankName}', '${patchName}', '${patchNumber}', '${programChange || patchNumber}')">Settings</button>
-                                    <button class="btn btn-small btn-secondary" onclick="${noteListName ? `editNoteNameList('${noteListName}', '${bankName}', '${patchName}', '${patchNumber}', '${programChange || patchNumber}')` : `addNoteListToPatch('${bankName}', '${patchName}')`}">${noteListName ? 'Edit Note Names' : 'Add Note Names'}</button>
+                                    <button class="btn btn-small btn-secondary" onclick="${noteListName ? `editNoteNameList('${escapeHtmlAttribute(noteListName)}', '${escapeHtmlAttribute(bankName)}', '${escapeHtmlAttribute(patchName)}', '${patchNumber}', '${programChange || patchNumber}')` : `addNoteListToPatch('${escapeHtmlAttribute(bankName)}', '${escapeHtmlAttribute(patchName)}')`}">${noteListName ? 'Edit Note Names' : 'Add Note Names'}</button>
                                     <button class="btn btn-small btn-danger" onclick="removePatch(this)">Remove</button>
                                 </div>
                             </div>
@@ -4163,16 +4240,21 @@ ${analysis.bank_details.map(bank => `  ${bank.name}: ${bank.patch_count} patches
         }
 
         function editNoteNameList(name, bankName, patchName, patchNumber, programChange) {
+            // Unescape the parameters since they were escaped for the onclick attribute
+            const unescapedName = name.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&#96;/g, '`').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+            const unescapedBankName = bankName.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&#96;/g, '`').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+            const unescapedPatchName = patchName.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&#96;/g, '`').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+            
             // Set the selected patch context
             selectedPatch = {
-                bankName: bankName,
-                name: patchName,
+                bankName: unescapedBankName,
+                name: unescapedPatchName,
                 number: patchNumber,
                 programChange: programChange
             };
             
             // Update patch tab info
-            document.getElementById('selected-patch').textContent = `${patchName} (#${patchNumber})`;
+            document.getElementById('selected-patch').textContent = `${unescapedPatchName} (#${patchNumber})`;
             
             // Switch to Patch tab for editing
             document.querySelector('[data-tab="patch"]').click();
@@ -4195,7 +4277,7 @@ ${analysis.bank_details.map(bank => `  ${bank.name}: ${bank.patch_count} patches
             }
             
             // Load the note data from the current device XML
-            loadNoteListDataFromCurrentDevice(name);
+            loadNoteListDataFromCurrentDevice(unescapedName);
             
             // Populate patch dropdown with available kits
             populatePatchDropdown();
@@ -4203,7 +4285,7 @@ ${analysis.bank_details.map(bank => `  ${bank.name}: ${bank.patch_count} patches
             // Set the correct patch in the dropdown
             const patchSelect = document.getElementById('patch-select');
             if (patchSelect) {
-                patchSelect.value = `${bankName}|${patchName}`;
+                patchSelect.value = `${unescapedBankName}|${unescapedPatchName}`;
             }
         }
 
@@ -6143,7 +6225,7 @@ ${analysis.bank_details.map(bank => `  ${bank.name}: ${bank.patch_count} patches
             noteListDiv.innerHTML = `
                 <span class="note-list-name">${noteListName}</span>
                 <div class="note-list-actions">
-                    <button class="btn btn-small btn-primary" onclick="editNoteNameList('${noteListName}', '${selectedPatch.bankName}', '${selectedPatch.name}', '${selectedPatch.number}', '${selectedPatch.programChange}')">Edit Note Names</button>
+                    <button class="btn btn-small btn-primary" onclick="editNoteNameList('${escapeHtmlAttribute(noteListName)}', '${escapeHtmlAttribute(selectedPatch.bankName)}', '${escapeHtmlAttribute(selectedPatch.name)}', '${selectedPatch.number}', '${selectedPatch.programChange}')">Edit Note Names</button>
                     <button class="btn btn-small btn-danger" onclick="removeNoteListFromCurrentPatch(this)">Remove</button>
                 </div>
             `;
@@ -6349,6 +6431,9 @@ ${analysis.bank_details.map(bank => `  ${bank.name}: ${bank.patch_count} patches
             
             // Update note names for autocomplete with device-specific names
             updateNoteNamesForDevice();
+            
+            // Populate Tools tab selectors
+            initializeToolsSelectors();
             
             // Find the root MIDINameDocument
             const midnamDoc = xmlDoc.querySelector('MIDINameDocument');
@@ -6636,6 +6721,114 @@ ${analysis.bank_details.map(bank => `  ${bank.name}: ${bank.patch_count} patches
             input.click();
         }
 
+        // Get filtered note names based on selected bank
+        function getFilteredNoteNames() {
+            if (selectedToolsBank === 'all') {
+                return Array.from(allNoteNames);
+            }
+            
+            // Filter note names to only those used in the selected bank
+            const bankNoteNames = new Set();
+            
+            if (!currentMidnam) return Array.from(bankNoteNames);
+            
+            const midnamDoc = currentMidnam.querySelector('MIDINameDocument');
+            if (!midnamDoc) return Array.from(bankNoteNames);
+            
+            // Find the selected patch bank
+            const patchBank = midnamDoc.querySelector(`PatchBank[Name="${selectedToolsBank}"]`);
+            if (!patchBank) return Array.from(bankNoteNames);
+            
+            // Get all patches in this bank
+            const patches = patchBank.querySelectorAll('Patch');
+            patches.forEach(patch => {
+                // Find UsesNoteNameList references
+                const usesNoteNameLists = patch.querySelectorAll('UsesNoteNameList');
+                usesNoteNameLists.forEach(usesNoteNameList => {
+                    const noteListName = usesNoteNameList.getAttribute('Name');
+                    if (noteListName) {
+                        // Find the actual NoteNameList element
+                        const noteNameList = midnamDoc.querySelector(`NoteNameList[Name="${noteListName}"]`);
+                        if (noteNameList) {
+                            // Extract all note names from this list
+                            const notes = noteNameList.querySelectorAll('Note');
+                            notes.forEach(note => {
+                                const name = note.getAttribute('Name');
+                                if (name && name.trim()) {
+                                    bankNoteNames.add(name.trim());
+                                }
+                            });
+                        }
+                    }
+                });
+            });
+            
+            return Array.from(bankNoteNames);
+        }
+        
+        // Initialize Tools tab selectors
+        function initializeToolsSelectors() {
+            populateToolsBankSelector();
+            
+            // Initialize sort selector
+            const sortSelect = document.getElementById('tools-sort-select');
+            if (sortSelect) {
+                sortSelect.value = selectedToolsSort;
+            }
+        }
+        
+        // Populate the bank selector dropdown
+        function populateToolsBankSelector() {
+            const bankSelect = document.getElementById('tools-bank-select');
+            if (!bankSelect) return;
+            
+            // Clear existing options except "All Banks"
+            bankSelect.innerHTML = '<option value="all">All Banks</option>';
+            
+            if (!currentMidnam) return;
+            
+            const midnamDoc = currentMidnam.querySelector('MIDINameDocument');
+            if (!midnamDoc) return;
+            
+            // Get all patch banks
+            const patchBanks = midnamDoc.querySelectorAll('PatchBank');
+            const bankNames = Array.from(patchBanks).map(bank => bank.getAttribute('Name')).filter(name => name);
+            
+            // Sort bank names and add to dropdown
+            bankNames.sort().forEach(bankName => {
+                const option = document.createElement('option');
+                option.value = bankName;
+                option.textContent = bankName;
+                bankSelect.appendChild(option);
+            });
+            
+            // Reset to "All Banks" if current selection is no longer valid
+            if (selectedToolsBank !== 'all' && !bankNames.includes(selectedToolsBank)) {
+                selectedToolsBank = 'all';
+                bankSelect.value = 'all';
+            }
+        }
+        
+        // Handle bank filter change
+        function updateToolsBankFilter() {
+            const bankSelect = document.getElementById('tools-bank-select');
+            if (!bankSelect) return;
+            
+            selectedToolsBank = bankSelect.value;
+            updateIndexDisplay();
+            logToDebugConsole(`Filtered by bank: ${selectedToolsBank}`, 'info');
+        }
+        
+        // Handle sort change
+        function updateToolsSort() {
+            const sortSelect = document.getElementById('tools-sort-select');
+            if (!sortSelect) return;
+            
+            selectedToolsSort = sortSelect.value;
+            updateIndexDisplay();
+            logToDebugConsole(`Sorted by: ${selectedToolsSort}`, 'info');
+        }
+
         function updateIndexDisplay() {
             const countElement = document.getElementById('index-count');
             const sizeElement = document.getElementById('index-size');
@@ -6644,7 +6837,9 @@ ${analysis.bank_details.map(bank => `  ${bank.name}: ${bank.patch_count} patches
             
             if (!countElement || !sizeElement || !entriesElement) return;
             
-            const count = allNoteNames.size;
+            // Get filtered note names based on selected bank
+            const filteredNoteNames = getFilteredNoteNames();
+            const count = filteredNoteNames.length;
             const sizeKB = Math.round((JSON.stringify(Array.from(allNoteNames)).length) / 1024);
             const pendingCount = pendingChanges.noteData.size;
             
@@ -6659,22 +6854,214 @@ ${analysis.bank_details.map(bank => `  ${bank.name}: ${bank.patch_count} patches
                 return;
             }
             
-            const sortedNames = Array.from(allNoteNames).sort();
+            // Sort note names based on selected sort option
+            let sortedNames;
+            if (selectedToolsSort === 'usage-count') {
+                // Sort by usage count (ascending - least used first)
+                sortedNames = filteredNoteNames.sort((a, b) => {
+                    const usageA = findNoteNameUsage(a).length;
+                    const usageB = findNoteNameUsage(b).length;
+                    return usageA - usageB;
+                });
+            } else {
+                // Default: alphabetical sorting
+                sortedNames = filteredNoteNames.sort();
+            }
             entriesElement.innerHTML = '';
             
             sortedNames.forEach(name => {
                 const entryDiv = document.createElement('div');
                 entryDiv.className = 'index-entry';
+                
+                // Find usage locations for this note name (filtered by bank if applicable)
+                const usageLocations = findNoteNameUsage(name);
+                
+                const escapedName = escapeHtmlAttribute(name);
+                const dropdownId = createUniqueId(name);
+                
                 entryDiv.innerHTML = `
-                    <span class="index-entry-name">${name}</span>
+                    <div class="index-entry-content" onclick="showUsageDropdown('${escapedName}', '${escapedName}', this)">
+                        <span class="index-entry-name">${name}</span>
+                        <span class="usage-indicator">${usageLocations.length} usage${usageLocations.length !== 1 ? 's' : ''}</span>
+                    </div>
+                    <div class="usage-dropdown" id="${dropdownId}" style="display: none;">
+                        ${generateUsageDropdownContent(name, usageLocations)}
+                    </div>
                     <div class="index-entry-actions">
-                        <button class="btn btn-small btn-danger" onclick="removeIndexEntry('${name}')">×</button>
+                        <button class="btn btn-small btn-danger" onclick="removeIndexEntry('${escapedName}')">×</button>
                     </div>
                 `;
                 entriesElement.appendChild(entryDiv);
             });
         }
 
+        function findNoteNameUsage(noteName) {
+            const usageLocations = [];
+            
+            if (!currentMidnam) return usageLocations;
+            
+            const midnamDoc = currentMidnam.querySelector('MIDINameDocument');
+            if (!midnamDoc) return usageLocations;
+            
+            // Find all Note elements with this name
+            const noteElements = midnamDoc.querySelectorAll('Note');
+            noteElements.forEach(note => {
+                const name = note.getAttribute('Name');
+                if (name === noteName) {
+                    const noteNumber = note.getAttribute('Number');
+                    
+                    // Find the parent NoteNameList
+                    const noteList = note.closest('NoteNameList');
+                    if (noteList) {
+                        const noteListName = noteList.getAttribute('Name');
+                        
+                        // Find which patches use this note list
+                        const patches = midnamDoc.querySelectorAll('Patch');
+                        patches.forEach(patch => {
+                            const usesNoteNameList = patch.querySelector('UsesNoteNameList');
+                            if (usesNoteNameList && usesNoteNameList.getAttribute('Name') === noteListName) {
+                                const patchName = patch.getAttribute('Name');
+                                const patchBank = patch.closest('PatchBank');
+                                const bankName = patchBank ? patchBank.getAttribute('Name') : 'Unknown';
+                                
+                                usageLocations.push({
+                                    bankName: bankName,
+                                    patchName: patchName,
+                                    noteListName: noteListName,
+                                    noteNumber: noteNumber,
+                                    noteName: noteName
+                                });
+                            }
+                        });
+                    }
+                }
+            });
+            
+            return usageLocations;
+        }
+        
+        // Helper function to create a unique ID from a string
+        function createUniqueId(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                const char = str.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash; // Convert to 32-bit integer
+            }
+            return 'dropdown-' + Math.abs(hash).toString(36);
+        }
+        
+        // Helper function to escape strings for HTML attributes
+        function escapeHtmlAttribute(str) {
+            return str.replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/`/g, '&#96;').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        }
+        
+        function generateUsageDropdownContent(noteName, usageLocations) {
+            const escapedNoteName = escapeHtmlAttribute(noteName);
+            
+            if (usageLocations.length === 0) {
+                return `
+                    <div class="usage-item unused" onclick="deleteUnusedNoteName('${escapedNoteName}')">
+                        <span class="usage-text">Unused – delete?</span>
+                    </div>
+                `;
+            }
+            
+            return usageLocations.map(location => {
+                const escapedBankName = escapeHtmlAttribute(location.bankName);
+                const escapedPatchName = escapeHtmlAttribute(location.patchName);
+                const escapedNoteListName = escapeHtmlAttribute(location.noteListName);
+                
+                return `
+                    <div class="usage-item" onclick="navigateToNoteEditor('${escapedBankName}', '${escapedPatchName}', '${escapedNoteListName}', ${location.noteNumber})">
+                        <span class="usage-bank">${location.bankName}</span>
+                        <span class="usage-patch">${location.patchName}</span>
+                        <span class="usage-note">Note ${location.noteNumber}</span>
+                    </div>
+                `;
+            }).join('');
+        }
+        
+        function showUsageDropdown(escapedNoteName, escapedOriginalName, element) {
+            // Hide all other dropdowns
+            document.querySelectorAll('.usage-dropdown').forEach(dropdown => {
+                dropdown.style.display = 'none';
+            });
+            
+            // Unescape the original name to generate the correct ID
+            const originalName = escapedOriginalName.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&#96;/g, '`').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+            const dropdownId = createUniqueId(originalName);
+            const dropdown = document.getElementById(dropdownId);
+            if (dropdown) {
+                // Position the dropdown relative to the clicked element
+                const rect = element.getBoundingClientRect();
+                const viewportHeight = window.innerHeight;
+                const dropdownHeight = Math.min(200, dropdown.scrollHeight); // Max height from CSS
+                
+                dropdown.style.position = 'fixed';
+                dropdown.style.left = rect.left + 'px';
+                dropdown.style.width = Math.max(300, rect.width) + 'px';
+                
+                // Check if there's enough space below
+                const spaceBelow = viewportHeight - rect.bottom;
+                if (spaceBelow >= dropdownHeight + 10) {
+                    // Position below
+                    dropdown.style.top = (rect.bottom + 2) + 'px';
+                } else {
+                    // Position above
+                    dropdown.style.top = (rect.top - dropdownHeight - 2) + 'px';
+                }
+                
+                dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+            }
+        }
+        
+        function navigateToNoteEditor(bankName, patchName, noteListName, noteNumber) {
+            // Unescape the parameters since they were escaped for the onclick attribute
+            const unescapedBankName = bankName.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&#96;/g, '`').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+            const unescapedPatchName = patchName.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&#96;/g, '`').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+            const unescapedNoteListName = noteListName.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&#96;/g, '`').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+            
+            // Switch to patch tab
+            document.querySelector('[data-tab="patch"]').click();
+            
+            // Set the selected patch context
+            selectedPatch = {
+                bankName: unescapedBankName,
+                name: unescapedPatchName,
+                noteListName: unescapedNoteListName
+            };
+            
+            // Update patch tab info
+            document.getElementById('selected-patch').textContent = `${unescapedPatchName}`;
+            
+            // Load the note list data
+            loadNoteListDataForPatch(unescapedNoteListName);
+            
+            // Scroll to the specific note after a short delay
+            setTimeout(() => {
+                const noteInput = document.querySelector(`input[data-note-number="${noteNumber}"]`);
+                if (noteInput) {
+                    noteInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    noteInput.focus();
+                    noteInput.select();
+                }
+            }, 500);
+            
+            logToDebugConsole(`Navigated to ${unescapedBankName} > ${unescapedPatchName} > Note ${noteNumber}`, 'info');
+        }
+        
+        function deleteUnusedNoteName(noteName) {
+            // Unescape the parameter since it was escaped for the onclick attribute
+            const unescapedNoteName = noteName.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&#96;/g, '`').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+            
+            if (confirm(`Delete unused note name "${unescapedNoteName}" from the index?`)) {
+                allNoteNames.delete(unescapedNoteName);
+                updateIndexDisplay();
+                logToDebugConsole(`Deleted unused note name "${unescapedNoteName}"`, 'warning');
+            }
+        }
+        
         function filterIndexEntries() {
             const searchTerm = document.getElementById('index-search').value.toLowerCase();
             const entries = document.querySelectorAll('.index-entry');
@@ -6711,10 +7098,13 @@ ${analysis.bank_details.map(bank => `  ${bank.name}: ${bank.patch_count} patches
         }
 
         function removeIndexEntry(name) {
-            if (confirm(`Remove "${name}" from index?`)) {
-                allNoteNames.delete(name);
+            // Unescape the parameter since it was escaped for the onclick attribute
+            const unescapedName = name.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&#96;/g, '`').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+            
+            if (confirm(`Remove "${unescapedName}" from index?`)) {
+                allNoteNames.delete(unescapedName);
                 updateIndexDisplay();
-                logToDebugConsole(`Removed "${name}" from index`, 'info');
+                logToDebugConsole(`Removed "${unescapedName}" from index`, 'info');
             }
         }
 
@@ -6767,9 +7157,10 @@ ${analysis.bank_details.map(bank => `  ${bank.name}: ${bank.patch_count} patches
         handleTabChange = function(tabName) {
             originalHandleTabChange(tabName);
             
-            if (tabName === 'debug') {
+            if (tabName === 'tools') {
+                initializeToolsSelectors();
                 updateIndexDisplay();
-                logToDebugConsole('Debug tab activated', 'info');
+                logToDebugConsole('Tools tab activated', 'info');
             }
         };
     </script>

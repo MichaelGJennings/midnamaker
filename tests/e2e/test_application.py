@@ -22,7 +22,7 @@ class TestApplicationWorkflow:
     async def test_tab_navigation(self, app_page: Page, helpers):
         """Test tab navigation functionality"""
         # Test clicking different tabs
-        tabs = ["manufacturer", "device", "patch", "builder", "catalog", "debug"]
+        tabs = ["manufacturer", "device", "patch", "catalog", "tools"]
         
         for tab in tabs:
             await helpers.click_tab(app_page, tab)
@@ -115,29 +115,13 @@ class TestApplicationWorkflow:
         catalog_status = app_page.locator("#catalog-status")
         await expect(catalog_status).to_be_visible()
     
-    async def test_builder_functionality(self, app_page: Page, helpers):
-        """Test builder tab functionality"""
-        await helpers.click_tab(app_page, "builder")
+    async def test_tools_console(self, app_page: Page, helpers):
+        """Test tools tab functionality"""
+        await helpers.click_tab(app_page, "tools")
         
-        # Check builder content
-        builder_content = app_page.locator("#builder-content")
-        await expect(builder_content).to_be_visible()
-        
-        # Check for create button
-        create_btn = app_page.locator("#create-midnam-btn")
-        await expect(create_btn).to_be_visible()
-        
-        # Check for load template button
-        template_btn = app_page.locator("#load-template-btn")
-        await expect(template_btn).to_be_visible()
-    
-    async def test_debug_console(self, app_page: Page, helpers):
-        """Test debug tab functionality"""
-        await helpers.click_tab(app_page, "debug")
-        
-        # Check debug content
-        debug_content = app_page.locator("#debug-content")
-        await expect(debug_content).to_be_visible()
+        # Check tools content
+        tools_content = app_page.locator("#tools-content")
+        await expect(tools_content).to_be_visible()
         
         # Check for console
         debug_console = app_page.locator("#debug-console")
