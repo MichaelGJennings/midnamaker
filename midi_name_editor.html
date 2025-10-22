@@ -1206,7 +1206,7 @@
             font-family: monospace;
         }
 
-        /* Builder tab styles */
+        /* Catalog tab styles */
         .builder-section {
             margin-bottom: 2rem;
             border: 1px solid #e9ecef;
@@ -1701,7 +1701,6 @@
         <div class="tab active" data-tab="manufacturer">Manufacturer</div>
         <div class="tab" data-tab="device">Device</div>
         <div class="tab" data-tab="patch">Patch</div>
-        <div class="tab" data-tab="builder">Builder</div>
         <div class="tab" data-tab="catalog">Catalog</div>
         <div class="tab" data-tab="debug">Debug</div>
     </div>
@@ -1857,51 +1856,6 @@
         </div>
     </div>
 
-    <!-- Custom .midnam Builder Tab -->
-    <div class="tab-content" id="builder-tab">
-        <h2>Custom .midnam Builder</h2>
-        <p>Build custom .midnam files by combining base devices with expansion cards.</p>
-        
-        <!-- Device Selection -->
-        <div class="builder-section">
-            <h3>Base Device</h3>
-            <div class="device-selection">
-                <label for="base-device-select">Select Base Device:</label>
-                <select id="base-device-select" onchange="selectBaseDevice(this.value)">
-                    <option value="">Choose a device...</option>
-                </select>
-            </div>
-            <div id="base-device-info" class="device-info" style="display: none;">
-                <h4 id="base-device-name"></h4>
-                <p id="base-device-description"></p>
-            </div>
-        </div>
-        
-        <!-- Expansion Cards -->
-        <div class="builder-section">
-            <h3>Expansion Cards</h3>
-            <div id="expansion-cards" class="expansion-cards">
-                <div class="empty-state">Select a base device to see available expansion cards</div>
-            </div>
-        </div>
-        
-        <!-- Preview -->
-        <div class="builder-section">
-            <h3>Preview</h3>
-            <div id="custom-midnam-preview" class="preview-section">
-                <div class="empty-state">Select a base device and expansion cards to preview</div>
-            </div>
-        </div>
-        
-        <!-- Build Actions -->
-        <div class="builder-section">
-            <h3>Build Custom .midnam</h3>
-            <div class="build-actions">
-                <input type="text" id="custom-midnam-name" placeholder="Enter name for custom .midnam..." style="width: 300px; margin-right: 1rem;">
-                <button class="btn btn-primary" onclick="buildCustomMidnam()" disabled>Build Custom .midnam</button>
-                <button class="btn btn-secondary" onclick="previewCustomMidnam()" disabled>Preview XML</button>
-            </div>
-        </div>
     </div>
 
     <!-- File Disambiguation Dialog -->
@@ -2580,11 +2534,10 @@
             {"name": "Reason", "id": "00 20 0D"}
         ];
 
-        // Custom .midnam Builder functionality
-        let selectedBaseDevice = null;
-        let selectedExpansionCards = new Set();
+        // Removed Builder functionality
 
-        async function populateBaseDeviceDropdown() {
+        // File Disambiguation Dialog
+        function closeDisambiguationModal() {
             const select = document.getElementById('base-device-select');
             if (!select) return;
             
@@ -2847,7 +2800,6 @@
                     <td class="file-modified">${modifiedDate}</td>
                     <td>
                         <div class="action-buttons">
-                            <button class="btn btn-primary btn-tiny" onclick="selectFileForBuilder('${analysis.file_path}')">Use This File</button>
                             <button class="btn btn-secondary btn-tiny" onclick="showFileDetails('${analysis.file_path}')">Details</button>
                             ${fileAnalyses.length > 1 ? `<button class="btn btn-warning btn-tiny" onclick="mergeFiles(${JSON.stringify(fileAnalyses).replace(/"/g, '&quot;')}, '${analysis.file_path}')">Merge All</button>` : ''}
                             <button class="btn btn-danger btn-tiny" onclick="deleteFile('${analysis.file_path}')">Delete</button>
@@ -2870,35 +2822,6 @@
             document.getElementById('disambiguation-modal').style.display = 'none';
         }
 
-        function selectFileForBuilder(filePath) {
-            closeDisambiguationModal();
-            
-            // Find the device info for this file
-            const deviceKey = Object.keys(window.catalog).find(key => {
-                const deviceInfo = window.catalog[key];
-                return deviceInfo.files.some(file => file.path === filePath);
-            });
-            
-            if (deviceKey) {
-                const deviceInfo = window.catalog[deviceKey];
-                // Create a modified device info with only the selected file
-                const singleFileDeviceInfo = {
-                    ...deviceInfo,
-                    files: [deviceInfo.files.find(file => file.path === filePath)]
-                };
-                
-                selectedBaseDevice = singleFileDeviceInfo;
-                
-                // Update device info display
-                document.getElementById('base-device-name').textContent = `${deviceInfo.manufacturer} ${deviceInfo.model}`;
-                document.getElementById('base-device-description').textContent = 
-                    `Base device using ${filePath.split('/').pop()}`;
-                document.getElementById('base-device-info').style.display = 'block';
-                
-                // Find expansion cards for this device
-                loadExpansionCards(singleFileDeviceInfo);
-            }
-        }
 
         function showFileDetails(filePath) {
             // Show detailed analysis of the file
@@ -2995,7 +2918,6 @@ ${analysis.bank_details.map(bank => `  ${bank.name}: ${bank.patch_count} patches
         document.addEventListener('DOMContentLoaded', function() {
             initializeTabs();
             loadCatalogAndManufacturers(); // Load catalog first, then build manufacturer list
-            populateBaseDeviceDropdown(); // Populate builder dropdown
             
             // Initialize MIDI
             initializeMIDI();

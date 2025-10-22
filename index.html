@@ -15,7 +15,6 @@
     <link rel="stylesheet" href="css/device.css">
     <link rel="stylesheet" href="css/patch.css">
     <link rel="stylesheet" href="css/catalog.css">
-    <link rel="stylesheet" href="css/builder.css">
     <link rel="stylesheet" href="css/midi.css">
 </head>
 <body>
@@ -28,7 +27,6 @@
                 <div class="tab" data-tab="manufacturer">Manufacturer</div>
                 <div class="tab" data-tab="device">Device</div>
                 <div class="tab" data-tab="patch">Patch</div>
-                <div class="tab" data-tab="builder">Builder</div>
                 <div class="tab" data-tab="catalog">Catalog</div>
                 <div class="tab" data-tab="debug">Debug</div>
             </nav>
@@ -85,20 +83,6 @@
                 </div>
                 <div class="patch-content" id="patch-content">
                     <div class="empty-state">Select a patch from the Device tab to edit</div>
-                </div>
-            </div>
-
-            <!-- Builder Tab -->
-            <div class="tab-content" id="builder-tab">
-                <div class="builder-header">
-                    <h2>MIDI Name Builder</h2>
-                    <div class="builder-actions">
-                        <button class="btn btn-primary" id="create-midnam-btn">Create New</button>
-                        <button class="btn btn-secondary" id="load-template-btn">Load Template</button>
-                    </div>
-                </div>
-                <div class="builder-content" id="builder-content">
-                    <div class="empty-state">Create a new MIDI name document or load a template</div>
                 </div>
             </div>
 
@@ -185,7 +169,6 @@
     <script type="module" src="js/modules/device.js"></script>
     <script type="module" src="js/modules/patch.js"></script>
     <script type="module" src="js/modules/catalog.js"></script>
-    <script type="module" src="js/modules/builder.js"></script>
     
     <!-- Application Bootstrap -->
     <script type="module" src="js/main.js"></script>
