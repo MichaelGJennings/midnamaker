@@ -1954,6 +1954,7 @@
         // Change tracking system
         let pendingChanges = {
             noteData: new Map(), // Map of patchId -> noteData array
+            structuralChanges: new Map(), // Map of changeId -> change object
             hasUnsavedChanges: false,
             lastModified: null
         };
@@ -3676,19 +3677,19 @@ ${analysis.bank_details.map(bank => `  ${bank.name}: ${bank.patch_count} patches
                     <h3>MIDI Name Document Structure</h3>
                     <div id="midnam-structure">
                         <div class="structure-section">
-                            <h4>Channel Name Sets</h4>
-                            <div id="channel-name-sets">
-                                <div class="empty-state">No channel name sets defined</div>
-                            </div>
-                            <button class="btn btn-primary btn-small" onclick="addChannelNameSet()">Add Channel Name Set</button>
-                        </div>
-                        
-                        <div class="structure-section">
                             <h4>Patch Banks</h4>
                             <div id="patch-banks">
                                 <div class="empty-state">No patch banks defined</div>
                             </div>
                             <button class="btn btn-primary btn-small" onclick="addPatchBank()">Add Patch Bank</button>
+                        </div>
+                        
+                        <div class="structure-section">
+                            <h4>Channel Name Sets</h4>
+                            <div id="channel-name-sets">
+                                <div class="empty-state">No channel name sets defined</div>
+                            </div>
+                            <button class="btn btn-primary btn-small" onclick="addChannelNameSet()">Add Channel Name Set</button>
                         </div>
                     </div>
                 </div>
@@ -4114,7 +4115,38 @@ ${analysis.bank_details.map(bank => `  ${bank.name}: ${bank.patch_count} patches
         function editNoteListInPatch(bankName, patchName, noteListName) {
             // Switch to Patch tab and edit the note list
             document.querySelector('[data-tab="patch"]').click();
-            alert(`Edit Note List "${noteListName}" for patch "${patchName}" - Switch to Patch tab`);
+            
+            // Find patch number and program change from the XML
+            let patchNumber = null;
+            let programChange = null;
+            
+            if (currentMidnam) {
+                const midnamDoc = currentMidnam.querySelector('MIDINameDocument');
+                if (midnamDoc) {
+                    const patchBank = midnamDoc.querySelector(`PatchBank[Name="${bankName}"]`);
+                    if (patchBank) {
+                        const patchElement = patchBank.querySelector(`Patch[Name="${patchName}"]`);
+                        if (patchElement) {
+                            patchNumber = patchElement.getAttribute('Number');
+                            programChange = patchElement.getAttribute('ProgramChange') || patchNumber;
+                        }
+                    }
+                }
+            }
+            
+            // Set the selected patch context
+            selectedPatch = {
+                bankName: bankName,
+                name: patchName,
+                number: patchNumber,
+                programChange: programChange
+            };
+            
+            // Update patch tab info
+            document.getElementById('selected-patch').textContent = `${patchName}`;
+            
+            // Load and edit the note list
+            loadNoteListDataForPatch(noteListName);
         }
 
         function removePatch(button) {
@@ -4812,6 +4844,11 @@ ${analysis.bank_details.map(bank => `  ${bank.name}: ${bank.patch_count} patches
             // Add event listeners for dropdown functionality
             noteNameInput.addEventListener('input', (e) => {
                 handleNoteNameInput(e);
+                // Add the current value to the index immediately for autocomplete
+                const currentValue = e.target.value.trim();
+                if (currentValue && currentValue.length > 0) {
+                    updateNoteNameIndex(currentValue);
+                }
                 // Mark patch as modified when user types
                 if (selectedPatch) {
                     markPatchAsModified(selectedPatch);
@@ -4846,32 +4883,15 @@ ${analysis.bank_details.map(bank => `  ${bank.name}: ${bank.patch_count} patches
             addBtn.textContent = '+';
             addBtn.title = 'Add note after this one';
             addBtn.onclick = () => {
-                // Check if this is the last row - if so, append instead of insert
-                const tableBody = document.getElementById('note-table-body');
-                const allRows = Array.from(tableBody.querySelectorAll('tr'));
-                const currentRow = addBtn.closest('tr');
-                const isLastRow = allRows.indexOf(currentRow) === allRows.length - 1;
-                
-                if (isLastRow) {
-                    addNote(); // Append at the end
-                } else {
-                    addNoteAfter(number); // Insert after this note
-                }
+                console.log(`+ button clicked for note number: ${number}`);
+                // Always insert after this note and renumber
+                addNoteAfter(number);
             };
             addBtn.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
-                    // Check if this is the last row - if so, append instead of insert
-                    const tableBody = document.getElementById('note-table-body');
-                    const allRows = Array.from(tableBody.querySelectorAll('tr'));
-                    const currentRow = addBtn.closest('tr');
-                    const isLastRow = allRows.indexOf(currentRow) === allRows.length - 1;
-                    
-                    if (isLastRow) {
-                        addNote(); // Append at the end
-                    } else {
-                        addNoteAfter(number); // Insert after this note
-                    }
+                    // Always insert after this note and renumber
+                    addNoteAfter(number);
                 }
             });
             
@@ -4932,14 +4952,10 @@ ${analysis.bank_details.map(bank => `  ${bank.name}: ${bank.patch_count} patches
             
             const nextNumber = existingNumbers.length > 0 ? existingNumbers[0] + 1 : 36;
             
-            addNoteRow(nextNumber, midiNoteToName(nextNumber), true);
-        }
-
-        function addNoteAfter(afterNumber) {
-            // Add the new note row without focus first (we'll focus after renumbering)
-            addNoteRow(afterNumber + 1, midiNoteToName(afterNumber + 1), false);
+            // Add the new note row
+            addNoteRow(nextNumber, midiNoteToName(nextNumber), false);
             
-            // Now renumber all notes sequentially
+            // Renumber all notes sequentially to maintain proper order
             renumberAllNotes();
             
             // Focus the last note input after renumbering is complete
@@ -4951,6 +4967,157 @@ ${analysis.bank_details.map(bank => `  ${bank.name}: ${bank.patch_count} patches
                     lastInput.select();
                 }
             }, 150);
+        }
+
+        function addNoteAfter(afterNumber) {
+            console.log(`addNoteAfter called with afterNumber: ${afterNumber}`);
+            
+            // Find the row with the specified note number
+            const tableBody = document.getElementById('note-table-body');
+            const existingRows = Array.from(tableBody.querySelectorAll('tr'));
+            let targetRow = null;
+            let targetIndex = -1;
+            
+            for (let i = 0; i < existingRows.length; i++) {
+                const noteNumberInput = existingRows[i].querySelector('input[data-note-number]');
+                if (noteNumberInput) {
+                    const existingNumber = parseInt(noteNumberInput.getAttribute('data-note-number'));
+                    if (existingNumber === afterNumber) {
+                        targetRow = existingRows[i];
+                        targetIndex = i;
+                        break;
+                    }
+                }
+            }
+            
+            if (targetRow && targetIndex >= 0) {
+                console.log(`Found target row at index: ${targetIndex}`);
+                
+                // Create the new row manually
+                const newRow = document.createElement('tr');
+                const newNumber = afterNumber + 1;
+                
+                // Add piano key styling classes
+                if (isBlackKey(newNumber)) {
+                    newRow.classList.add('black-key');
+                }
+                if (newNumber === 60) {
+                    newRow.classList.add('middle-c');
+                }
+                
+                // Create note number cell
+                const noteNumberCell = document.createElement('td');
+                const noteNumberDiv = document.createElement('div');
+                noteNumberDiv.className = 'note-number-cell';
+                noteNumberDiv.textContent = `${newNumber} (${midiNoteToName(newNumber)})`;
+                noteNumberDiv.title = 'Click to play this note';
+                noteNumberDiv.onclick = () => playMIDINote(newNumber);
+                
+                // Add tooltip event listeners
+                noteNumberDiv.addEventListener('mouseenter', (e) => showKeyboardTooltip(e, newNumber));
+                noteNumberDiv.addEventListener('mouseleave', hideKeyboardTooltip);
+                noteNumberDiv.addEventListener('mousemove', (e) => updateTooltipPosition(e));
+                
+                noteNumberCell.appendChild(noteNumberDiv);
+                
+                // Create note name input cell with dropdown
+                const noteNameCell = document.createElement('td');
+                noteNameCell.className = 'note-name-cell';
+                
+                const noteNameInput = document.createElement('input');
+                noteNameInput.type = 'text';
+                noteNameInput.value = midiNoteToName(newNumber);
+                noteNameInput.className = 'note-name-input';
+                noteNameInput.placeholder = 'Note name';
+                noteNameInput.setAttribute('data-note-number', newNumber);
+                
+                // Add event listeners for dropdown functionality
+                noteNameInput.addEventListener('input', (e) => {
+                    handleNoteNameInput(e);
+                    // Add the current value to the index immediately for autocomplete
+                    const currentValue = e.target.value.trim();
+                    if (currentValue && currentValue.length > 0) {
+                        updateNoteNameIndex(currentValue);
+                    }
+                    // Mark patch as modified when user types
+                    if (selectedPatch) {
+                        markPatchAsModified(selectedPatch);
+                    }
+                });
+                noteNameInput.addEventListener('focus', showNoteDropdown);
+                noteNameInput.addEventListener('blur', () => {
+                    setTimeout(hideNoteDropdown, 200);
+                    // Update index when user finishes editing
+                    updateNoteNameIndex(noteNameInput.value.trim());
+                    // Store changes when user finishes editing
+                    if (selectedPatch) {
+                        markPatchAsModified(selectedPatch);
+                    }
+                });
+                noteNameInput.addEventListener('keydown', handleNoteKeyDown);
+                
+                // Create dropdown
+                const dropdown = document.createElement('div');
+                dropdown.className = 'note-dropdown';
+                
+                noteNameCell.appendChild(noteNameInput);
+                noteNameCell.appendChild(dropdown);
+                
+                // Create actions cell with both add and remove buttons
+                const actionsCell = document.createElement('td');
+                actionsCell.className = 'note-actions';
+                
+                // Add/Insert button
+                const addBtn = document.createElement('button');
+                addBtn.className = 'btn btn-small btn-success add-note-btn';
+                addBtn.textContent = '+';
+                addBtn.title = 'Add note after this one';
+                addBtn.onclick = () => {
+                    console.log(`+ button clicked for note number: ${newNumber}`);
+                    // Always insert after this note and renumber
+                    addNoteAfter(newNumber);
+                };
+                addBtn.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        // Always insert after this note and renumber
+                        addNoteAfter(newNumber);
+                    }
+                });
+                
+                // Remove button
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'btn btn-small btn-danger remove-note-btn';
+                removeBtn.textContent = '×';
+                removeBtn.title = 'Remove this note';
+                removeBtn.tabIndex = -1; // Exclude from tab focus for safety
+                removeBtn.onclick = () => removeNote(removeBtn);
+                
+                // Add both buttons to actions cell
+                actionsCell.appendChild(addBtn);
+                actionsCell.appendChild(removeBtn);
+                
+                // Append all cells to row
+                newRow.appendChild(noteNumberCell);
+                newRow.appendChild(noteNameCell);
+                newRow.appendChild(actionsCell);
+                
+                // Insert the new row immediately after the target row
+                tableBody.insertBefore(newRow, existingRows[targetIndex + 1]);
+                
+                console.log(`Inserted new row with number: ${newNumber} at position ${targetIndex + 1}`);
+                
+                // Now renumber all notes sequentially
+                renumberAllNotes();
+                
+                // Focus the new note input after renumbering is complete
+                setTimeout(() => {
+                    noteNameInput.focus();
+                    noteNameInput.select();
+                }, 150);
+            } else {
+                console.error(`Could not find row with note number: ${afterNumber}`);
+            }
         }
 
         function removeNote(button) {
@@ -5010,25 +5177,14 @@ ${analysis.bank_details.map(bank => `  ${bank.name}: ${bank.patch_count} patches
                 // Update add button onclick handler
                 const addBtn = row.querySelector('.add-note-btn');
                 if (addBtn) {
-                    // Check if this is the last row - if so, append instead of insert
-                    const allRows = Array.from(tableBody.querySelectorAll('tr'));
-                    const isLastRow = allRows.indexOf(row) === allRows.length - 1;
-                    
-                    if (isLastRow) {
-                        addBtn.onclick = () => addNote(); // Append at the end
-                    } else {
-                        addBtn.onclick = () => addNoteAfter(noteNumber); // Insert after this note
-                    }
+                    // Always insert after this note and renumber
+                    addBtn.onclick = () => addNoteAfter(noteNumber);
                     
                     addBtn.removeEventListener('keydown', addBtn._keyHandler);
                     addBtn._keyHandler = (e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                             e.preventDefault();
-                            if (isLastRow) {
-                                addNote(); // Append at the end
-                            } else {
-                                addNoteAfter(noteNumber); // Insert after this note
-                            }
+                            addNoteAfter(noteNumber); // Insert after this note
                         }
                     };
                     addBtn.addEventListener('keydown', addBtn._keyHandler);
@@ -5063,9 +5219,7 @@ ${analysis.bank_details.map(bank => `  ${bank.name}: ${bank.patch_count} patches
                     context: { ...patchContext },
                     timestamp: new Date().toISOString()
                 });
-                pendingChanges.hasUnsavedChanges = true;
-                pendingChanges.lastModified = new Date().toISOString();
-                updateChangeIndicator();
+                markAsChanged();
                 console.log(`Marked patch as modified: ${patchId} with ${noteData.length} notes`);
             } else {
                 // Update existing entry with new data
@@ -5074,6 +5228,27 @@ ${analysis.bank_details.map(bank => `  ${bank.name}: ${bank.patch_count} patches
                 existing.timestamp = new Date().toISOString();
                 console.log(`Updated patch data: ${patchId} with ${noteData.length} notes`);
             }
+        }
+
+        // Track structural changes (patch modifications, note list additions/removals, etc.)
+        function markStructuralChange(changeType, changeData) {
+            const changeId = `${changeType}_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+            
+            pendingChanges.structuralChanges.set(changeId, {
+                type: changeType,
+                data: changeData,
+                timestamp: new Date().toISOString()
+            });
+            
+            markAsChanged();
+            console.log(`Marked structural change: ${changeType}`, changeData);
+        }
+
+        // Mark that changes have been made
+        function markAsChanged() {
+            pendingChanges.hasUnsavedChanges = true;
+            pendingChanges.lastModified = new Date().toISOString();
+            updateChangeIndicator();
         }
 
         function getPendingChanges(patchContext) {
@@ -5086,13 +5261,23 @@ ${analysis.bank_details.map(bank => `  ${bank.name}: ${bank.patch_count} patches
             pendingChanges.noteData.delete(patchId);
             
             // Check if we still have any pending changes
-            pendingChanges.hasUnsavedChanges = pendingChanges.noteData.size > 0;
+            pendingChanges.hasUnsavedChanges = pendingChanges.noteData.size > 0 || pendingChanges.structuralChanges.size > 0;
             if (!pendingChanges.hasUnsavedChanges) {
                 pendingChanges.lastModified = null;
             }
             
             console.log(`Cleared pending changes for patch: ${patchId}`);
             updateChangeIndicator();
+        }
+
+        // Clear all pending changes
+        function clearAllPendingChanges() {
+            pendingChanges.noteData.clear();
+            pendingChanges.structuralChanges.clear();
+            pendingChanges.hasUnsavedChanges = false;
+            pendingChanges.lastModified = null;
+            updateChangeIndicator();
+            console.log('Cleared all pending changes');
         }
 
         function updateChangeIndicator() {
@@ -5111,7 +5296,9 @@ ${analysis.bank_details.map(bank => `  ${bank.name}: ${bank.patch_count} patches
 
         function warnAboutUnsavedChanges() {
             if (pendingChanges.hasUnsavedChanges) {
-                return confirm(`You have unsaved changes that will be lost if you load a new MIDNAM file.\n\nUnsaved patches: ${pendingChanges.noteData.size}\n\nAre you sure you want to continue?`);
+                const noteChanges = pendingChanges.noteData.size;
+                const structuralChanges = pendingChanges.structuralChanges.size;
+                return confirm(`You have unsaved changes that will be lost if you load a new MIDNAM file.\n\nUnsaved note changes: ${noteChanges}\nUnsaved structural changes: ${structuralChanges}\n\nAre you sure you want to continue?`);
             }
             return true;
         }
@@ -5119,6 +5306,160 @@ ${analysis.bank_details.map(bank => `  ${bank.name}: ${bank.patch_count} patches
         // Check for unsaved changes when loading a new device/file
         function warnBeforeLoadingNewFile() {
             return warnAboutUnsavedChanges();
+        }
+
+        // Save structural changes to the XML file
+        async function saveStructuralChanges() {
+            if (!currentMidnam || pendingChanges.structuralChanges.size === 0) {
+                return;
+            }
+            
+            try {
+                // Apply structural changes to the XML
+                for (const [changeId, change] of pendingChanges.structuralChanges) {
+                    await applyStructuralChange(change);
+                }
+                
+                // Save the modified XML to the server
+                await saveCurrentMidnamToServer();
+                
+                // Refresh the note name index after saving structural changes
+                updateNoteNamesForDevice();
+                
+                console.log(`Saved ${pendingChanges.structuralChanges.size} structural changes`);
+                
+            } catch (error) {
+                console.error('Error saving structural changes:', error);
+                alert(`Error saving structural changes: ${error.message}`);
+            }
+        }
+
+        // Apply a single structural change to the XML
+        async function applyStructuralChange(change) {
+            const midnamDoc = currentMidnam.querySelector('MIDINameDocument');
+            if (!midnamDoc) return;
+            
+            switch (change.type) {
+                case 'remove_note_list_reference':
+                    await removeNoteListReferenceFromXML(change.data);
+                    break;
+                case 'add_note_list_reference':
+                    await addNoteListReferenceToXML(change.data);
+                    break;
+                default:
+                    console.warn(`Unknown structural change type: ${change.type}`);
+            }
+        }
+
+        // Remove a note list reference from the XML
+        async function removeNoteListReferenceFromXML(changeData) {
+            const midnamDoc = currentMidnam.querySelector('MIDINameDocument');
+            if (!midnamDoc) return;
+            
+            // Find the patch bank
+            const patchBank = midnamDoc.querySelector(`PatchBank[Name="${changeData.patch.bankName}"]`);
+            if (!patchBank) return;
+            
+            // Find the specific patch
+            const patchElement = patchBank.querySelector(`Patch[Name="${changeData.patch.name}"][Number="${changeData.patch.number}"]`);
+            if (!patchElement) return;
+            
+            // Find and remove the UsesNoteNameList element
+            const usesNoteNameList = patchElement.querySelector(`UsesNoteNameList[Name="${changeData.noteListName}"]`);
+            if (usesNoteNameList) {
+                usesNoteNameList.remove();
+                console.log(`Removed note list reference: ${changeData.noteListName} from patch ${changeData.patch.name}`);
+            }
+        }
+
+        // Add a note list reference to the XML
+        async function addNoteListReferenceToXML(changeData) {
+            const midnamDoc = currentMidnam.querySelector('MIDINameDocument');
+            if (!midnamDoc) return;
+            
+            // Find the patch bank
+            const patchBank = midnamDoc.querySelector(`PatchBank[Name="${changeData.patch.bankName}"]`);
+            if (!patchBank) return;
+            
+            // Find the specific patch
+            const patchElement = patchBank.querySelector(`Patch[Name="${changeData.patch.name}"][Number="${changeData.patch.number}"]`);
+            if (!patchElement) return;
+            
+            // Create and add the UsesNoteNameList element
+            const usesNoteNameList = document.createElement('UsesNoteNameList');
+            usesNoteNameList.setAttribute('Name', changeData.noteListName);
+            patchElement.appendChild(usesNoteNameList);
+            
+            console.log(`Added note list reference: ${changeData.noteListName} to patch ${changeData.patch.name}`);
+        }
+
+        // Save the current midnam XML to the server
+        async function saveCurrentMidnamToServer() {
+            if (!currentMidnam || !selectedDevice) {
+                throw new Error('No device or XML loaded');
+            }
+            
+            let filePath = null;
+            
+            // First, try to use the file path from selectedDevice if it exists
+            if (selectedDevice.files && selectedDevice.files.length > 0) {
+                filePath = selectedDevice.files[0].path;
+                console.log(`Using file path from selectedDevice: ${filePath}`);
+            } else {
+                // Fallback: look up in catalog
+                const deviceKey = `${selectedDevice.manufacturer}|${selectedDevice.name}`;
+                let deviceInfo = catalog[deviceKey];
+                
+                if (!deviceInfo || !deviceInfo.files || deviceInfo.files.length === 0) {
+                    // Try to find by manufacturer and model
+                    const fallbackDevice = Object.values(catalog).find(device => 
+                        device.manufacturer === selectedDevice.manufacturer && 
+                        device.model === selectedDevice.name
+                    );
+                    
+                    if (!fallbackDevice || !fallbackDevice.files || fallbackDevice.files.length === 0) {
+                        console.error('Device lookup failed:', {
+                            selectedDevice,
+                            deviceKey,
+                            catalogKeys: Object.keys(catalog),
+                            availableDevices: Object.values(catalog).map(d => `${d.manufacturer}|${d.model}`)
+                        });
+                        throw new Error(`Device file not found in catalog. Looking for: ${deviceKey}`);
+                    }
+                    
+                    deviceInfo = fallbackDevice;
+                }
+                
+                filePath = deviceInfo.files[0].path;
+                console.log(`Using file path from catalog lookup: ${filePath}`);
+            }
+            
+            // Convert XML to string
+            const xmlString = new XMLSerializer().serializeToString(currentMidnam);
+            
+            // Save to server
+            const response = await fetch('/save_file', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    file_path: filePath,
+                    xml_content: xmlString
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Server error: ${response.status} ${response.statusText}`);
+            }
+            
+            const result = await response.json();
+            if (!result.success) {
+                throw new Error('Save failed');
+            }
+            
+            console.log(`Saved file: ${filePath}`);
+            return result;
         }
 
         // Store current editor changes in memory
@@ -5195,7 +5536,48 @@ ${analysis.bank_details.map(bank => `  ${bank.name}: ${bank.patch_count} patches
             return Array.from(noteNames);
         }
 
-        // Update note names when device changes
+        // Extract note names from the current patch bank
+        function extractNoteNamesFromCurrentBank() {
+            const noteNames = new Set();
+            
+            if (!currentMidnam || !selectedPatch) return Array.from(noteNames);
+            
+            const midnamDoc = currentMidnam.querySelector('MIDINameDocument');
+            if (!midnamDoc) return Array.from(noteNames);
+            
+            // Find the current patch bank
+            const patchBank = midnamDoc.querySelector(`PatchBank[Name="${selectedPatch.bankName}"]`);
+            if (!patchBank) return Array.from(noteNames);
+            
+            // Get all patches in this bank
+            const patches = patchBank.querySelectorAll('Patch');
+            patches.forEach(patch => {
+                // Find UsesNoteNameList references
+                const usesNoteNameLists = patch.querySelectorAll('UsesNoteNameList');
+                usesNoteNameLists.forEach(usesNoteNameList => {
+                    const noteListName = usesNoteNameList.getAttribute('Name');
+                    if (noteListName) {
+                        // Find the actual NoteNameList element
+                        const noteNameList = midnamDoc.querySelector(`NoteNameList[Name="${noteListName}"]`);
+                        if (noteNameList) {
+                            // Extract all note names from this list
+                            const notes = noteNameList.querySelectorAll('Note');
+                            notes.forEach(note => {
+                                const name = note.getAttribute('Name');
+                                if (name && name.trim()) {
+                                    noteNames.add(name.trim());
+                                }
+                            });
+                        }
+                    }
+                });
+            });
+            
+            console.log(`Extracted ${noteNames.size} note names from bank "${selectedPatch.bankName}"`);
+            return Array.from(noteNames);
+        }
+
+        // Update note names for autocomplete (prioritizes current patch bank)
         function updateNoteNamesForDevice() {
             // Clear existing device-specific names (keep common ones)
             const commonNoteNames = [
@@ -5219,8 +5601,13 @@ ${analysis.bank_details.map(bank => `  ${bank.name}: ${bank.patch_count} patches
             allNoteNames.clear();
             commonNoteNames.forEach(name => allNoteNames.add(name));
             
-            // Add device-specific names
-            if (currentMidnam) {
+            // Add note names from current patch bank if available
+            if (currentMidnam && selectedPatch) {
+                const bankNoteNames = extractNoteNamesFromCurrentBank();
+                bankNoteNames.forEach(name => allNoteNames.add(name));
+                console.log(`Updated note names: ${allNoteNames.size} total (${bankNoteNames.length} from current bank)`);
+            } else if (currentMidnam) {
+                // Fallback: add all device names if no patch selected
                 const deviceNoteNames = extractAllNoteNamesFromDevice();
                 deviceNoteNames.forEach(name => allNoteNames.add(name));
                 console.log(`Updated note names: ${allNoteNames.size} total (${deviceNoteNames.length} from device)`);
@@ -5233,21 +5620,59 @@ ${analysis.bank_details.map(bank => `  ${bank.name}: ${bank.patch_count} patches
             const value = input.value.toLowerCase();
             const dropdown = input.parentNode.querySelector('.note-dropdown');
             
+            // Check for exact match first
+            const exactMatch = Array.from(allNoteNames).find(name => 
+                name.toLowerCase() === value.toLowerCase()
+            );
+            
             // Filter note names with improved logic
             const matches = Array.from(allNoteNames).filter(name => {
                 const lowerName = name.toLowerCase();
                 const lowerValue = value.toLowerCase();
-                // Show if the name contains the typed value and it's not an exact match
-                return lowerName.includes(lowerValue) && lowerName !== lowerValue;
+                // Show if the name contains the typed value
+                return lowerName.includes(lowerValue);
             }).slice(0, 10);
             
             if (matches.length > 0 && value.length > 0) {
                 dropdown.innerHTML = '';
-                matches.forEach((match, index) => {
+                
+                // If there's an exact match, show it first with special styling
+                if (exactMatch) {
+                    const exactItem = document.createElement('div');
+                    exactItem.className = 'note-dropdown-item exact-match';
+                    exactItem.textContent = exactMatch;
+                    exactItem.dataset.index = 0;
+                    exactItem.style.backgroundColor = '#e8f5e8'; // Light green background
+                    exactItem.style.fontWeight = 'bold';
+                    exactItem.onclick = () => {
+                        input.value = exactMatch;
+                        hideNoteDropdown();
+                    };
+                    dropdown.appendChild(exactItem);
+                    
+                    // Add separator if there are other matches
+                    if (matches.length > 1) {
+                        const separator = document.createElement('div');
+                        separator.className = 'note-dropdown-separator';
+                        separator.textContent = 'Other matches:';
+                        separator.style.fontSize = '0.8em';
+                        separator.style.color = '#666';
+                        separator.style.padding = '2px 8px';
+                        separator.style.backgroundColor = '#f5f5f5';
+                        dropdown.appendChild(separator);
+                    }
+                }
+                
+                // Add other matches (excluding exact match)
+                const otherMatches = matches.filter(name => 
+                    name.toLowerCase() !== value.toLowerCase()
+                );
+                
+                otherMatches.forEach((match, index) => {
                     const item = document.createElement('div');
                     item.className = 'note-dropdown-item';
                     item.textContent = match;
-                    item.dataset.index = index;
+                    item.dataset.index = exactMatch ? index + 1 : index;
                     item.onclick = () => {
                         input.value = match;
                         hideNoteDropdown();
@@ -5280,7 +5705,7 @@ ${analysis.bank_details.map(bank => `  ${bank.name}: ${bank.patch_count} patches
             }
         }
 
-        // Calculate optimal dropdown position (above or below input)
+        // Calculate optimal dropdown position (prefer below, scroll if needed)
         function calculateDropdownPosition(input, dropdown) {
             const inputRect = input.getBoundingClientRect();
             const viewportHeight = window.innerHeight;
@@ -5290,14 +5715,29 @@ ${analysis.bank_details.map(bank => `  ${bank.name}: ${bank.patch_count} patches
             const spaceBelow = viewportHeight - inputRect.bottom;
             const spaceAbove = inputRect.top;
             
-            // If there's not enough space below but enough space above, position above
-            if (spaceBelow < dropdownHeight && spaceAbove > dropdownHeight) {
-                dropdown.classList.add('dropdown-above');
-                return 'above';
-            } else {
-                dropdown.classList.remove('dropdown-above');
-                return 'below';
+            // Always prefer below, but scroll the page if needed
+            if (spaceBelow < dropdownHeight) {
+                // Not enough space below - scroll the page to make room
+                const scrollAmount = dropdownHeight - spaceBelow + 20; // 20px buffer
+                window.scrollBy(0, scrollAmount);
+                
+                // Recalculate after scrolling
+                const newInputRect = input.getBoundingClientRect();
+                const newSpaceBelow = window.innerHeight - newInputRect.bottom;
+                
+                if (newSpaceBelow >= dropdownHeight) {
+                    dropdown.classList.remove('dropdown-above');
+                    return 'below';
+                } else if (spaceAbove > dropdownHeight) {
+                    // Still not enough space below, but enough above
+                    dropdown.classList.add('dropdown-above');
+                    return 'above';
+                }
             }
+            
+            // Default to below
+            dropdown.classList.remove('dropdown-above');
+            return 'below';
         }
 
         function showNoteDropdown(event) {
@@ -5572,6 +6012,9 @@ ${analysis.bank_details.map(bank => `  ${bank.name}: ${bank.patch_count} patches
                 // Clear pending changes after successful save
                 clearPendingChanges(patchContext);
                 
+                // Refresh the note name index to include any new names
+                updateNoteNamesForDevice();
+                
                 alert(`Successfully saved ${noteData.length} notes for patch "${patchContext.name}"`);
                 console.log('Saved note data:', noteData);
                 
@@ -5790,6 +6233,13 @@ ${analysis.bank_details.map(bank => `  ${bank.name}: ${bank.patch_count} patches
             const noteListName = prompt('Enter note name list name:', `${selectedPatch.name} Notes`);
             if (!noteListName) return;
             
+            // Track this structural change
+            markStructuralChange('add_note_list_reference', {
+                patch: selectedPatch,
+                noteListName: noteListName,
+                action: 'added'
+            });
+            
             const container = document.getElementById('patch-note-lists');
             const emptyState = container.querySelector('.empty-state');
             if (emptyState) emptyState.remove();
@@ -5805,6 +6255,9 @@ ${analysis.bank_details.map(bank => `  ${bank.name}: ${bank.patch_count} patches
             `;
             
             container.appendChild(noteListDiv);
+            
+            // Automatically open the note editor for the new note list
+            forceOpenNoteEditor(noteListName);
         }
 
         function editNoteListInCurrentPatch(noteListName) {
@@ -5829,9 +6282,37 @@ ${analysis.bank_details.map(bank => `  ${bank.name}: ${bank.patch_count} patches
             loadNoteListDataForPatch(noteListName);
         }
 
+        // Force open note editor for new note lists (bypasses unsaved changes check)
+        function forceOpenNoteEditor(noteListName) {
+            // Ensure note names are populated for autocomplete
+            updateNoteNamesForDevice();
+            
+            // Load the note list data and show the note editor
+            loadNoteListDataForPatch(noteListName);
+        }
+
         function removeNoteListFromCurrentPatch(button) {
             if (confirm('Remove this note list from the patch?')) {
-                button.closest('.note-list-item').remove();
+                const noteListItem = button.closest('.note-list-item');
+                const noteListName = noteListItem.querySelector('.note-list-name').textContent;
+                
+                // Track this structural change
+                markStructuralChange('remove_note_list_reference', {
+                    patch: selectedPatch,
+                    noteListName: noteListName,
+                    action: 'removed'
+                });
+                
+                // Remove the DOM element
+                noteListItem.remove();
+                
+                // Check if there are any note lists left
+                const container = document.getElementById('patch-note-lists');
+                const remainingLists = container.querySelectorAll('.note-list-item');
+                if (remainingLists.length === 0) {
+                    // Show empty state
+                    container.innerHTML = '<div class="empty-state">No note lists assigned to this patch</div>';
+                }
             }
         }
 
@@ -5868,6 +6349,9 @@ ${analysis.bank_details.map(bank => `  ${bank.name}: ${bank.patch_count} patches
 
         function initializeNewNoteEditor(noteListName) {
             const container = document.getElementById('patch-editor-container');
+            
+            // Ensure note names are populated for autocomplete
+            updateNoteNamesForDevice();
             
             // Create a new note editor for this patch
             container.innerHTML = `
@@ -6120,16 +6604,30 @@ ${analysis.bank_details.map(bank => `  ${bank.name}: ${bank.patch_count} patches
                 return;
             }
             
-            // Collect note data from the editor
-            const noteData = collectNoteDataFromEditor();
+            // Check if there are any changes to save
+            const hasNoteChanges = pendingChanges.noteData.has(getPatchId(selectedPatch));
+            const hasStructuralChanges = pendingChanges.structuralChanges.size > 0;
             
-            if (noteData.length === 0) {
-                alert('No notes to save');
+            if (!hasNoteChanges && !hasStructuralChanges) {
+                alert('No changes to save');
                 return;
             }
             
-            // Save the note data
-            saveNoteDataToPatch(selectedPatch, noteData);
+            // Collect note data from the editor
+            const noteData = collectNoteDataFromEditor();
+            
+            // Save the note data if there are note changes
+            if (hasNoteChanges && noteData.length > 0) {
+                saveNoteDataToPatch(selectedPatch, noteData);
+            }
+            
+            // Save structural changes
+            if (hasStructuralChanges) {
+                saveStructuralChanges();
+            }
+            
+            // Clear all pending changes after successful save
+            clearAllPendingChanges();
         });
 
         document.getElementById('validate-patch').addEventListener('click', () => {

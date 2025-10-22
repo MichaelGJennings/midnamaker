@@ -1461,4 +1461,67 @@
 								</NoteNameList>
 							</ChannelNameSet>
 						</MasterDeviceNames>
+						<NoteNameList Name="Techno-Logic Notes">
+							<Note Number="36" Name="Brt Stab"/>
+							<Note Number="37" Name="Schizoid"/>
+							<Note Number="38" Name="Pop Shot"/>
+							<Note Number="39" Name="GtdClaps"/>
+							<Note Number="40" Name="PlayRoom"/>
+							<Note Number="41" Name="Lo Phase"/>
+							<Note Number="42" Name="Sputt.."/>
+							<Note Number="43" Name="Lo Phase"/>
+							<Note Number="44" Name="HardFoot"/>
+							<Note Number="45" Name="Md Phase"/>
+							<Note Number="46" Name="Hi Phase"/>
+							<Note Number="47" Name="FlngCrsh"/>
+							<Note Number="48" Name="Hi Phase"/>
+							<Note Number="49" Name="FlngCrsh"/>
+							<Note Number="50" Name="Hi Phase"/>
+							<Note Number="51" Name="DarkRide"/>
+							<Note Number="52" Name="Lo Pang"/>
+							<Note Number="53" Name="Edg→Bell"/>
+							<Note Number="54" Name="DarkTamb"/>
+							<Note Number="55" Name="Tiny"/>
+							<Note Number="56" Name="SourMilk"/>
+							<Note Number="57" Name="SloCrash"/>
+							<Note Number="58" Name="Fat Frog"/>
+							<Note Number="59" Name="FlatRide"/>
+							<Note Number="60" Name="BentBngo"/>
+							<Note Number="61" Name="Re-Bent"/>
+							<Note Number="62" Name="Wet Hex1"/>
+							<Note Number="63" Name="Wet Hex2"/>
+							<Note Number="64" Name="Wet Hex3"/>
+							<Note Number="65" Name="HiFlange"/>
+							<Note Number="66" Name="LoFlange"/>
+							<Note Number="67" Name="Bottle"/>
+							<Note Number="68" Name="LoBottle"/>
+							<Note Number="69" Name="Cabasa"/>
+							<Note Number="70" Name="Marabasa"/>
+							<Note Number="71" Name="Hi Thang"/>
+							<Note Number="72" Name="Lo Thang"/>
+							<Note Number="73" Name="Torpedo"/>
+							<Note Number="74" Name="LoTorpdo"/>
+							<Note Number="75" Name="Anvil"/>
+							<Note Number="76" Name="FlgSynth"/>
+							<Note Number="77" Name="FlgSynth"/>
+							<Note Number="78" Name="FireCrkr"/>
+							<Note Number="79" Name="FireCrkr"/>
+							<Note Number="80" Name="DinrBell"/>
+							<Note Number="81" Name="DinrBell"/>
+							<Note Number="82" Name="PwrWrnch"/>
+							<Note Number="83" Name="WindowBrk"/>
+							<Note Number="84" Name="Re-Synth"/>
+							<Note Number="85" Name="Blip"/>
+							<Note Number="86" Name="Re-Synth"/>
+							<Note Number="87" Name="Big Blip"/>
+							<Note Number="88" Name="DoorSlam"/>
+							<Note Number="89" Name="Lo Gated"/>
+							<Note Number="90" Name="Broken"/>
+							<Note Number="91" Name="Brutal"/>
+							<Note Number="92" Name="Chopstix"/>
+							<Note Number="93" Name="LoBrutal"/>
+							<Note Number="94" Name="Broken"/>
+							<Note Number="95" Name="Whippit"/>
+							<Note Number="96" Name="Saucers?"/>
+						</NoteNameList>
 					</MIDINameDocument>
