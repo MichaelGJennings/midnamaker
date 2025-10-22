@@ -165,15 +165,15 @@ class TestAppendSaveFunctionality:
         await self._teardown_test_note(app_page, "Inserted Note")
     
     async def _navigate_to_test_device(self, app_page: Page, helpers):
-        """Helper method to navigate to TestDevice/TestModel"""
-        # Navigate to manufacturer tab and select TestDevice
+        """Helper method to navigate to TestManufacturer/TestModel"""
+        # Navigate to manufacturer tab and select TestManufacturer
         await helpers.click_tab(app_page, "manufacturer")
         search_input = app_page.locator("#manufacturer-search")
-        await search_input.fill("TestDevice")
+        await search_input.fill("TestManufacturer")
         await app_page.wait_for_timeout(500)
         
-        testdevice_option = app_page.locator("#manufacturer-dropdown-list .manufacturer-item").filter(has_text="TestDevice")
-        await testdevice_option.click()
+        testmanufacturer_option = app_page.locator("#manufacturer-dropdown-list .manufacturer-item").filter(has_text="TestManufacturer")
+        await testmanufacturer_option.click()
         
         # Navigate to device tab and select TestModel
         await helpers.click_tab(app_page, "device")

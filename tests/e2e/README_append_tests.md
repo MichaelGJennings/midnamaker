@@ -8,7 +8,7 @@ This directory contains Playwright tests to ensure the append/save functionality
 - **Purpose**: Tests the exact reproduction steps for the append/save bug using test device
 - **Test**: `test_rock_kit_append_save_regression`
 - **Steps**: 
-  1. Select manufacturer TestDevice
+  1. Select manufacturer TestManufacturer
   2. Select TestModel
   3. Expand Rhythm bank
   4. Under "Rock Kit" select Edit Note Names
@@ -84,8 +84,8 @@ pytest tests/e2e/test_aggressive_regression.py::TestAppendSaveRegression::test_r
 
 ## Test Device
 
-The tests use a special test MIDNAM file (`TestDevice_TestModel.midnam`) with:
-- **Manufacturer**: TestDevice
+The tests use a special test MIDNAM file (`TestManufacturer_TestModel.midnam`) with:
+- **Manufacturer**: TestManufacturer
 - **Model**: TestModel
 - **Two banks**: "Tones" and "Rhythm"
 - **Three rhythm patches**: Standard Kit, Rock Kit, Jazz Kit

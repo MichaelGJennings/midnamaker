@@ -13,8 +13,8 @@ class TestAppendSaveRegression:
     
     async def test_testdevice_append_save_regression(self, app_page: Page, helpers):
         """
-        Test the exact reproduction steps using TestDevice TestModel:
-        1. Navigate to TestDevice TestModel
+        Test the exact reproduction steps using TestManufacturer TestModel:
+        1. Navigate to TestManufacturer TestModel
         2. Select "Rock Kit" patch
         3. Scroll to bottom and click the last + button
         4. Enter a new note name and press Enter to commit
@@ -24,9 +24,9 @@ class TestAppendSaveRegression:
         8. Teardown: Delete the appended rows and verify cleanup
         """
         
-        # Step 1: Navigate to TestDevice TestModel
+        # Step 1: Navigate to TestManufacturer TestModel
         await helpers.click_tab(app_page, "manufacturer")
-        await helpers.select_manufacturer(app_page, "TestDevice")
+        await helpers.select_manufacturer(app_page, "TestManufacturer")
         
         # Select TestModel from device table
         device_row = app_page.locator('[data-device="TestModel"]')

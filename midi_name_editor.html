@@ -22,6 +22,9 @@
             color: white;
             padding: 1rem;
             box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
         }
 
         .header h1 {
@@ -67,22 +70,17 @@
             display: block;
         }
 
-        /* Global MIDI Controls - Upper Right */
+        /* Global MIDI Controls - Embedded in Header */
         .global-midi-controls {
-            position: fixed;
-            top: 1rem;
-            right: 1rem;
-            z-index: 1000;
             display: flex;
             align-items: center;
             gap: 0.75rem;
-            background: rgba(255, 255, 255, 0.95);
+            background: rgba(255, 255, 255, 0.1);
             backdrop-filter: blur(10px);
-            padding: 0.75rem 1rem;
-            border-radius: 25px;
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            padding: 0.5rem 0.75rem;
+            border-radius: 15px;
             border: 1px solid rgba(255, 255, 255, 0.2);
-            min-width: 280px;
+            min-width: 240px;
         }
 
         .midi-toggle {
@@ -97,7 +95,7 @@
         }
 
         .midi-toggle:hover {
-            background: rgba(0, 0, 0, 0.05);
+            background: rgba(255, 255, 255, 0.1);
         }
 
         .midi-dot {
@@ -129,7 +127,7 @@
         .midi-label {
             font-size: 0.875rem;
             font-weight: 500;
-            color: #495057;
+            color: rgba(255, 255, 255, 0.9);
         }
 
         .midi-device-section {
@@ -155,17 +153,12 @@
 
         .midi-device-info {
             font-size: 0.7rem;
-            color: #6c757d;
+            color: rgba(255, 255, 255, 0.7);
             font-weight: 500;
         }
 
         .midi-device-info.connected {
             color: #28a745;
-        }
-
-        /* Hide MIDI controls on debug tabs */
-        .tab[data-tab="debug"] ~ .global-midi-controls {
-            display: none;
         }
 
         .btn-compact {
@@ -1688,6 +1681,20 @@
 <body>
     <div class="header">
         <h1>MIDI Name Editor</h1>
+        
+        <!-- Global MIDI Controls - Embedded in Header -->
+        <div class="global-midi-controls" id="global-midi-controls">
+            <div class="midi-toggle" id="midi-toggle" onclick="toggleMIDI()">
+                <div class="midi-dot" id="midi-dot"></div>
+                <span class="midi-label" id="midi-label">MIDI</span>
+            </div>
+            <div class="midi-device-section">
+                <select id="midi-device-select" class="midi-device-select" disabled onchange="selectMIDIDevice()">
+                    <option value="">Select a MIDI Device</option>
+                </select>
+                <div class="midi-device-info" id="midi-device-info">Not connected</div>
+            </div>
+        </div>
     </div>
 
     <div class="tabs">
@@ -1697,20 +1704,6 @@
         <div class="tab" data-tab="builder">Builder</div>
         <div class="tab" data-tab="catalog">Catalog</div>
         <div class="tab" data-tab="debug">Debug</div>
-    </div>
-
-    <!-- Global MIDI Controls - Fixed Upper Right -->
-    <div class="global-midi-controls" id="global-midi-controls">
-        <div class="midi-toggle" id="midi-toggle" onclick="toggleMIDI()">
-            <div class="midi-dot" id="midi-dot"></div>
-            <span class="midi-label" id="midi-label">MIDI</span>
-        </div>
-        <div class="midi-device-section">
-            <select id="midi-device-select" class="midi-device-select" disabled onchange="selectMIDIDevice()">
-                <option value="">Select a MIDI Device</option>
-            </select>
-            <div class="midi-device-info" id="midi-device-info">Not connected</div>
-        </div>
     </div>
 
     <!-- Manufacturer Selection Tab -->
@@ -5125,6 +5118,10 @@ ${analysis.bank_details.map(bank => `  ${bank.name}: ${bank.patch_count} patches
                 button.closest('tr').remove();
                 // Renumber all notes after removal
                 renumberAllNotes();
+                // Mark patch as modified to enable save button
+                if (selectedPatch) {
+                    markPatchAsModified(selectedPatch);
+                }
             }
         }
 
@@ -5964,6 +5961,9 @@ ${analysis.bank_details.map(bank => `  ${bank.name}: ${bank.patch_count} patches
                 // Get the XML document for creating new elements
                 const xmlDoc = midnamDoc.ownerDocument || currentMidnam;
                 
+                // Create a set of note numbers that are currently in the editor
+                const editorNoteNumbers = new Set(noteData.map(note => note.number));
+                
                 // Update or add notes from the editor
                 noteData.forEach(note => {
                     if (existingNoteMap.has(note.number)) {
@@ -5983,9 +5983,14 @@ ${analysis.bank_details.map(bank => `  ${bank.name}: ${bank.patch_count} patches
                     }
                 });
                 
-                // SAFETY: We do NOT remove notes that aren't in the editor
-                // This prevents accidentally deleting notes that weren't loaded into the editor
-                // Only update existing notes and add new ones - preserve everything else
+                // Remove notes that are no longer in the editor
+                // This ensures that deleted notes are actually removed from the XML
+                existingNoteMap.forEach((noteElement, noteNumber) => {
+                    if (!editorNoteNumbers.has(noteNumber)) {
+                        console.log(`Removing note ${noteNumber} from XML as it was deleted from editor`);
+                        noteElement.remove();
+                    }
+                });
                 
                 // Ensure proper formatting at the end of the note list
                 const lastChild = noteList.lastChild;
