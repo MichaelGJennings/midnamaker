@@ -135,7 +135,7 @@
             </PatchMIDICommands>
             <UsesNoteNameList Name="Techno-Logic Notes" />
           </Patch>
-          <Patch Number="15" Name="Hard &amp; Rockin'" UserID="15">
+          <Patch Number="15" Name="Hard &amp; Rocking" UserID="15">
             <PatchMIDICommands>
               <ProgramChange Number="15" />
             </PatchMIDICommands>
@@ -1183,40 +1183,55 @@
         <Note Number="45" Name="MdStudio" />
         <Note Number="46" Name="RockHalf" />
         <Note Number="47" Name="Ol'Hex 2" />
-        <Note Number="48" Name="FlatRide" />
-        <Note Number="49" Name="20&quot; China" />
-        <Note Number="50" Name="BellRide" />
-        <Note Number="51" Name="DarkTamb" />
-        <Note Number="52" Name="Tiny" />
-        <Note Number="53" Name="Holstein" />
-        <Note Number="54" Name="Tambourine" />
-        <Note Number="55" Name="Splash Cymbal" />
-        <Note Number="56" Name="Cowbell" />
-        <Note Number="57" Name="Crash Cymbal 2" />
-        <Note Number="58" Name="Vibraslap" />
-        <Note Number="59" Name="Ride Cymbal 2" />
-        <Note Number="60" Name="Hi Bongo" />
-        <Note Number="61" Name="Low Bongo" />
-        <Note Number="62" Name="Mute Hi Conga" />
-        <Note Number="63" Name="Open Hi Conga" />
-        <Note Number="64" Name="Low Conga" />
-        <Note Number="65" Name="High Timbale" />
-        <Note Number="66" Name="Low Timbale" />
-        <Note Number="67" Name="High Agogo" />
-        <Note Number="68" Name="Low Agogo" />
-        <Note Number="69" Name="Cabasa" />
-        <Note Number="70" Name="Maracas" />
-        <Note Number="71" Name="Short Whistle" />
-        <Note Number="72" Name="Long Whistle" />
-        <Note Number="73" Name="Short Guiro" />
-        <Note Number="74" Name="Long Guiro" />
-        <Note Number="75" Name="Claves" />
-        <Note Number="76" Name="Hi Wood Block" />
-        <Note Number="77" Name="Low Wood Block" />
-        <Note Number="78" Name="Mute Cuica" />
-        <Note Number="79" Name="Open Cuica" />
-        <Note Number="80" Name="Mute Triangle" />
-        <Note Number="81" Name="Open Triangle" />
+        <Note Number="48" Name="HiStudio" />
+        <Note Number="49" Name="HiCrash" />
+        <Note Number="50" Name="Ol'Hex 1" />
+        <Note Number="51" Name="FlatRide" />
+        <Note Number="52" Name="20&quot;China" />
+        <Note Number="53" Name="BellRide" />
+        <Note Number="54" Name="DarkTamb" />
+        <Note Number="55" Name="Tiny" />
+        <Note Number="56" Name="Holstein" />
+        <Note Number="57" Name="18&quot;Crash" />
+        <Note Number="58" Name="Hi Vibra" />
+        <Note Number="59" Name="TheSwing" />
+        <Note Number="60" Name="Lo Muted" />
+        <Note Number="61" Name="LowBongo" />
+        <Note Number="62" Name="CngaSlap" />
+        <Note Number="63" Name="Hi Open" />
+        <Note Number="64" Name="LowConga" />
+        <Note Number="65" Name="Md W/Vrb" />
+        <Note Number="66" Name="Lo W/Vrb" />
+        <Note Number="67" Name="Md Muted" />
+        <Note Number="68" Name="Lo Muted" />
+        <Note Number="69" Name="FstCabas" />
+        <Note Number="70" Name="LoMracas" />
+        <Note Number="71" Name="AirWrench" />
+        <Note Number="72" Name="PwrWrench" />
+        <Note Number="73" Name="Released" />
+        <Note Number="74" Name="Released" />
+        <Note Number="75" Name="TalkDown" />
+        <Note Number="76" Name="TalkDown" />
+        <Note Number="77" Name="Guernsey" />
+        <Note Number="78" Name="Scratch" />
+        <Note Number="79" Name="Scratch" />
+        <Note Number="80" Name="Triangle" />
+        <Note Number="81" Name="DinrBell" />
+        <Note Number="82" Name="RatlBoom" />
+        <Note Number="83" Name="FireCrkr" />
+        <Note Number="84" Name="FireCrkr" />
+        <Note Number="85" Name="GutWrnch" />
+        <Note Number="86" Name="GutWrnch" />
+        <Note Number="87" Name="GutWrnch" />
+        <Note Number="88" Name="GutWrnch" />
+        <Note Number="89" Name="DoorSlam" />
+        <Note Number="90" Name="TombSlam" />
+        <Note Number="91" Name="SourMilk" />
+        <Note Number="92" Name="SourMilk" />
+        <Note Number="93" Name="Saucers?" />
+        <Note Number="94" Name="Saucers?" />
+        <Note Number="95" Name="Saucers?" />
+        <Note Number="96" Name="Fringe" />
       </NoteNameList>
       <NoteNameList Name="Industrial Notes">
         <Note Number="36" Name="Custom Kick 1" />
