@@ -76,7 +76,7 @@ if PLAYWRIGHT_AVAILABLE:
             window.DISABLE_MIDI_FOR_TESTING = true;
         """)
         
-        await page.goto(f"{BASE_URL}/midi_name_editor.html")
+        await page.goto(f"{BASE_URL}/midnamaker.html")
         await page.wait_for_load_state("networkidle")
         return page
 
@@ -131,7 +131,7 @@ if PLAYWRIGHT_AVAILABLE:
         @staticmethod
         async def fill_manufacturer_search(page: Page, manufacturer: str):
             """Fill the manufacturer search field"""
-            await page.fill("#manufacturer-input", manufacturer)
+            await page.fill("#manufacturer-search", manufacturer)
             await page.wait_for_timeout(500)  # Wait for search results
         
         @staticmethod

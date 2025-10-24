@@ -16,7 +16,7 @@
 </head>
 <body>
     <div class="header">
-        <h1>Midnamaker: A MIDNAM file editor</h1>
+        <h1>MIDI Name Editor</h1>
         
         <!-- Global MIDI Controls - Embedded in Header -->
         <div class="global-midi-controls" id="global-midi-controls">
@@ -43,42 +43,40 @@
 
     <!-- Manufacturer Selection Tab -->
     <div class="tab-content active" id="manufacturer-tab">
-        <div class="manufacturer-tab-container">
-            <!-- Collapsible Manufacturer Section -->
-            <div class="manufacturer-section-collapsible" id="manufacturer-section-collapsible">
-                <div class="manufacturer-section-header" id="manufacturer-section-header">
-                    <h3>Select Manufacturer</h3>
-                    <button class="btn-toggle-manufacturer-list" id="toggle-manufacturer-list" style="display: none;">
-                        <span class="toggle-icon">▼</span>
-                    </button>
+        <h2>Select Manufacturer</h2>
+        <p>Choose a manufacturer to get started with creating or editing a MIDI name document.</p>
+        
+        <div class="form-group">
+            <label for="manufacturer-search">Manufacturer:</label>
+            <div class="manufacturer-dropdown">
+                <input type="text" id="manufacturer-search" placeholder="Type to search manufacturers..." autocomplete="off">
+                <div class="manufacturer-dropdown-list" id="manufacturer-dropdown-list"></div>
+            </div>
+        </div>
+
+        <div class="manufacturer-details" id="manufacturer-details">
+            <div class="manufacturer-info">
+                <div class="info-item">
+                    <div class="info-label">Manufacturer ID</div>
+                    <div class="info-value" id="manufacturer-id">-</div>
                 </div>
-                
-                <div class="manufacturer-section-content" id="manufacturer-section-content">
-                    <!-- Search/Filter Section -->
-                    <div class="manufacturer-filter-section">
-                        <input type="text" id="manufacturer-filter" class="manufacturer-filter-input" placeholder="Filter manufacturers..." autocomplete="off">
-                    </div>
-                    
-                    <!-- Manufacturer List -->
-                    <div class="manufacturer-list-container">
-                        <div id="manufacturer-list" class="manufacturer-list">
-                            <div class="loading">Loading manufacturers...</div>
-                        </div>
-                    </div>
+                <div class="info-item">
+                    <div class="info-label">Device Count</div>
+                    <div class="info-value" id="device-count">-</div>
                 </div>
             </div>
             
-            <!-- Device List (shown when manufacturer is selected) -->
-            <div class="device-list-container" id="device-list-container" style="display: none;">
-                <div class="device-list-header">
-                    <h3 id="selected-manufacturer-name">Devices</h3>
-                    <button class="btn btn-small btn-secondary" id="clear-manufacturer-selection">Change Manufacturer</button>
-                </div>
-                <div id="device-list" class="device-list">
-                    <!-- Device list will be populated here -->
-                </div>
+            <h3>Available Devices</h3>
+            <div id="manufacturer-devices">
+                <div class="empty-state">No manufacturers loaded</div>
+            </div>
+            
+            <div class="structure-actions" style="margin-top: 1rem;">
+                <button class="btn btn-primary" id="create-new-device">Create New Device</button>
             </div>
         </div>
+
+        <div class="loading" id="manufacturer-loading">Loading manufacturers...</div>
     </div>
 
     <!-- Device Editor Tab -->

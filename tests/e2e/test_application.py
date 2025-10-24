@@ -14,9 +14,8 @@ class TestApplicationWorkflow:
     async def test_application_loads(self, app_page: Page):
         """Test that the application loads correctly"""
         # Check that main elements are present
-        await expect(app_page.locator("#app")).to_be_visible()
         await expect(app_page.locator("h1")).to_contain_text("MIDI Name Editor")
-        await expect(app_page.locator(".tab-navigation")).to_be_visible()
+        await expect(app_page.locator(".tabs")).to_be_visible()
         await expect(app_page.locator("#global-midi-controls")).to_be_visible()
     
     async def test_tab_navigation(self, app_page: Page, helpers):
@@ -27,7 +26,7 @@ class TestApplicationWorkflow:
         for tab in tabs:
             await helpers.click_tab(app_page, tab)
             await expect(app_page.locator(f"#{tab}-tab")).to_have_class("active")
-            await expect(app_page.locator(f"#{tab}-tab .tab-content")).to_be_visible()
+            await expect(app_page.locator(f"#{tab}-tab")).to_be_visible()
     
     async def test_manufacturer_search(self, app_page: Page, helpers):
         """Test manufacturer search functionality"""

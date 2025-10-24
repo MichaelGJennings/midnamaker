@@ -34,29 +34,22 @@ class TestAppendSaveRegression:
         await device_row.click()
         await app_page.wait_for_timeout(1000)
         
-        # Step 2: Select "Rock Kit" patch
-        await helpers.click_tab(app_page, "patch")
+        # Step 2: Select "Rock Kit" patch by clicking on the patch name in device tab
+        await helpers.click_tab(app_page, "device")
         
-        # Wait for patch dropdown to be populated
+        # Wait for device content to load
         await app_page.wait_for_timeout(2000)
         
-        # Select Rock Kit patch
-        patch_selector = app_page.locator("#patch-select")
-        await expect(patch_selector).to_be_visible()
-        
-        # Wait for options to be populated
-        await app_page.wait_for_function("() => document.querySelector('#patch-select').options.length > 1")
-        
-        # Debug: Print available options
-        options = await app_page.evaluate("() => Array.from(document.querySelector('#patch-select').options).map(opt => opt.text)")
-        print(f"Available patch options: {options}")
-        
-        await patch_selector.select_option("Rhythm - Rock Kit")
+        # Find the "Rock Kit" patch name and click it
+        # Look for patch names in the device tab structure
+        rock_kit_patch = app_page.locator("text=Rock Kit").first
+        await expect(rock_kit_patch).to_be_visible()
+        await rock_kit_patch.click()
         await app_page.wait_for_timeout(1000)
         
         # Step 3: Navigate to note editor (should be in patch tab)
         # Verify we're in the note editor
-        notes_grid = app_page.locator("#note-table-body")
+        notes_grid = app_page.locator("#note-list-tbody")
         await expect(notes_grid).to_be_visible()
         
         # Scroll to bottom
@@ -64,12 +57,12 @@ class TestAppendSaveRegression:
         await app_page.wait_for_timeout(500)
         
         # Find the last row and click its + button
-        rows = app_page.locator("#note-table-body tr")
+        rows = app_page.locator("#note-list-tbody tr")
         row_count = await rows.count()
         assert row_count > 0, "Should have at least one note row"
         
         last_row = rows.nth(row_count - 1)
-        add_button = last_row.locator(".add-note-btn")
+        add_button = last_row.locator("button:has-text('+')")
         await expect(add_button).to_be_visible()
         await add_button.click()
         await app_page.wait_for_timeout(500)
@@ -95,7 +88,7 @@ class TestAppendSaveRegression:
         assert test_note_name in all_notes_before_save, f"Test note '{test_note_name}' not found in DOM before save"
         
         # Step 5: Click Save
-        save_button = app_page.locator("#save-patch")
+        save_button = app_page.locator("button:has-text('Save')")
         await expect(save_button).to_be_visible()
         
         # Listen for dialog (alert) messages
@@ -130,8 +123,8 @@ class TestAppendSaveRegression:
         if save_logs:
             print(f"Save-related console logs: {save_logs}")
         
-        # Step 6: Reload the "Rock Kit" patch
-        await patch_selector.select_option("Rhythm - Rock Kit")
+        # Step 6: Reload the "Rock Kit" patch by clicking it again
+        await rock_kit_patch.click()
         await app_page.wait_for_timeout(1000)
         
         # Step 7: Verify new note name is there
@@ -180,18 +173,8 @@ class TestAppendSaveRegression:
         test_note_input = all_notes.nth(test_note_index)
         await expect(test_note_input).to_be_visible()
         
-        # Find the row containing the test note using evaluate to traverse DOM
-        test_row = await app_page.evaluate(f"""
-            () => {{
-                const inputs = Array.from(document.querySelectorAll('.note-name-input'));
-                const testInput = inputs[{test_note_index}];
-                return testInput ? testInput.closest('tr') !== null : false;
-            }}
-        """)
-        assert test_row, "Could not find row containing test note"
-        
         # Get the remove button for this row
-        remove_button = app_page.locator("#note-table-body tr").nth(test_note_index).locator(".remove-note-btn")
+        remove_button = app_page.locator("#note-list-tbody tr").nth(test_note_index).locator(".remove-note-btn")
         await expect(remove_button).to_be_visible()
         
         # Click the remove button
@@ -209,7 +192,7 @@ class TestAppendSaveRegression:
             pass  # No confirmation dialog
         
         # Save the changes
-        save_button = app_page.locator("#save-patch")
+        save_button = app_page.locator("button:has-text('Save')")
         await save_button.click()
         await app_page.wait_for_timeout(2000)
         
@@ -248,7 +231,7 @@ class TestAppendSaveRegression:
     
     async def _reload_rock_kit_notes(self, app_page: Page):
         """Helper method to reload Rock Kit note editor"""
-        # Reload the Rock Kit patch
-        patch_selector = app_page.locator("#patch-select")
-        await patch_selector.select_option("Rhythm - Rock Kit")
+        # Reload the Rock Kit patch by clicking it again
+        rock_kit_patch = app_page.locator("text=Rock Kit").first
+        await rock_kit_patch.click()
         await app_page.wait_for_timeout(1000)

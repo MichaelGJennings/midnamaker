@@ -1,0 +1,750 @@
+/* Device Tab Styles */
+.structure-editor {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 1.5rem;
+}
+
+/* Device Selection Styles */
+.device-selection {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 1.5rem;
+}
+
+.device-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.device-item {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 1rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.device-item:hover {
+    background: #e9ecef;
+    border-color: #007bff;
+}
+
+.device-item.selected {
+    background: #e3f2fd;
+    border-color: #1976d2;
+    box-shadow: 0 2px 4px rgba(25, 118, 210, 0.2);
+}
+
+.device-item .device-name {
+    font-weight: 600;
+    font-size: 1rem;
+    color: #495057;
+}
+
+.device-item .device-type {
+    font-size: 0.85rem;
+    color: #6c757d;
+    font-style: italic;
+    background: #e9ecef;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+}
+
+/* Device Details Styles */
+.device-details {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 1.5rem;
+}
+
+.device-info h3 {
+    margin: 0 0 0.5rem 0;
+    color: #495057;
+    font-size: 1.5rem;
+}
+
+.device-meta {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+
+.device-type-badge {
+    background: #007bff;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 500;
+}
+
+.device-file {
+    color: #6c757d;
+    font-size: 0.9rem;
+    font-family: monospace;
+}
+
+.device-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.stat-item {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 1rem;
+    text-align: center;
+}
+
+.stat-label {
+    font-size: 0.9rem;
+    color: #6c757d;
+    margin-bottom: 0.5rem;
+}
+
+.stat-value {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #495057;
+}
+
+.patch-banks h4 {
+    margin: 0 0 1rem 0;
+    color: #495057;
+}
+
+.bank-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.bank-item {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    padding: 0.75rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.bank-item:hover {
+    background: #e9ecef;
+    border-color: #007bff;
+}
+
+.bank-item.selected {
+    background: #e3f2fd;
+    border-color: #1976d2;
+    box-shadow: 0 2px 4px rgba(25, 118, 210, 0.2);
+}
+
+.bank-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.bank-expand-icon {
+    font-size: 0.8rem;
+    color: #6c757d;
+    transition: transform 0.2s ease;
+}
+
+.bank-name {
+    font-weight: 500;
+    color: #495057;
+}
+
+.bank-count {
+    font-size: 0.9rem;
+    color: #6c757d;
+    background: #e9ecef;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+}
+
+/* Patch Expansion Styles */
+.patch-expansion {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    margin-top: 0.5rem;
+    padding: 1rem;
+}
+
+.patch-list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.patch-list-header h5 {
+    margin: 0;
+    color: #495057;
+    font-size: 1rem;
+}
+
+.patch-controls {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.patch-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.patch-item {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    padding: 0.75rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: all 0.2s ease;
+}
+
+.patch-item:hover {
+    background: #f8f9fa;
+    border-color: #007bff;
+}
+
+.patch-number {
+    background: #007bff;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    min-width: 3rem;
+    text-align: center;
+}
+
+.patch-name {
+    flex: 1;
+    font-weight: 500;
+    color: #495057;
+}
+
+.patch-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* Note Lists Styles */
+.note-lists {
+    margin-top: 2rem;
+}
+
+.note-lists h4 {
+    margin: 0 0 1rem 0;
+    color: #495057;
+}
+
+.note-list {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.note-list-item {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    padding: 0.75rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.note-list-name {
+    font-weight: 500;
+    color: #495057;
+}
+
+.note-list-id {
+    font-size: 0.9rem;
+    color: #6c757d;
+    background: #e9ecef;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+}
+
+/* Channel Name Set Assignments */
+.channel-assignments {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.channel-assignment {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+.channel-number {
+    background: #007bff;
+    color: white;
+    padding: 0.2rem 0.5rem;
+    border-radius: 3px;
+    font-weight: 600;
+    font-size: 0.8rem;
+    min-width: 4rem;
+    text-align: center;
+}
+
+.name-set {
+    color: #495057;
+    font-weight: 500;
+}
+
+/* Collapsible Section Styles */
+.collapsible-section {
+    margin-top: 1rem;
+}
+
+.collapsible-header {
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0;
+    padding: 0.5rem 0;
+    color: #495057;
+    font-size: 1rem;
+    font-weight: 600;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.collapsible-header:hover {
+    color: #007bff;
+}
+
+.collapsible-icon {
+    font-size: 0.8rem;
+    transition: transform 0.2s ease;
+}
+
+.collapsible-content {
+    padding: 1rem 0;
+}
+
+.structure-item {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.structure-item h3 {
+    margin-bottom: 0.5rem;
+    color: #495057;
+}
+
+.device-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin-top: 1rem;
+}
+
+.structure-section {
+    margin-bottom: 2rem;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 1.5rem;
+    background: #fafbfc;
+}
+
+.structure-section h4 {
+    margin: 0 0 1rem 0;
+    color: #495057;
+    font-size: 1.1rem;
+    border-bottom: 2px solid #007bff;
+    padding-bottom: 0.5rem;
+}
+
+.structure-element {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+    overflow: hidden;
+    margin-left: 1rem;
+    border-left: 3px solid #dee2e6;
+    padding-left: 1rem;
+    margin-bottom: 1rem;
+}
+
+.element-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: #f8f9fa;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.element-name {
+    font-weight: 600;
+    color: #495057;
+}
+
+.element-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.element-content {
+    padding: 1rem;
+    color: #666;
+}
+
+.structure-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+/* Expandable elements */
+.expandable {
+    cursor: pointer;
+    user-select: none;
+}
+
+.expandable:hover {
+    background-color: #f8f9fa;
+    border-radius: 4px;
+    padding: 2px 4px;
+}
+
+.expand-icon {
+    display: inline-block;
+    width: 12px;
+    margin-right: 8px;
+    font-size: 10px;
+    color: #666;
+}
+
+/* Modal styles for device selection */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 10000;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 8px;
+    padding: 0;
+    max-width: 600px;
+    max-height: 80vh;
+    overflow: hidden;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-header {
+    padding: 1.5rem;
+    border-bottom: 1px solid #e9ecef;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    margin: 0;
+    color: #333;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    color: #666;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    transition: background-color 0.2s;
+}
+
+.modal-close:hover {
+    background-color: #f0f0f0;
+}
+
+.modal-body {
+    padding: 1.5rem;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.modal-footer {
+    padding: 1rem 1.5rem;
+    border-top: 1px solid #e9ecef;
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.5rem;
+}
+
+.modal-content h3 {
+    margin: 0 0 1rem 0;
+    color: #333;
+}
+
+.device-selection-list {
+    margin: 1rem 0;
+}
+
+.device-selection-item {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 1rem;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.device-selection-item:hover {
+    background: #f8f9fa;
+    border-color: #007bff;
+}
+
+.file-selection-list {
+    max-height: 400px;
+    overflow-y: auto;
+    margin-bottom: 1rem;
+}
+
+.file-selection-item {
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 1rem;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.file-selection-item:hover {
+    background: #f8f9fa;
+    border-color: #007bff;
+}
+
+.file-node-counts {
+    display: flex;
+    gap: 1rem;
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.file-node-counts span {
+    background: #f8f9fa;
+    padding: 0.25rem 0.5rem;
+    border-radius: 3px;
+    border: 1px solid #e9ecef;
+}
+
+.file-node-counts .count-label {
+    font-weight: 600;
+    color: #495057;
+}
+
+.file-author {
+    font-size: 0.9rem;
+    color: #666;
+    margin-top: 0.25rem;
+    font-style: italic;
+}
+
+.file-selection-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.file-path {
+    font-size: 0.9rem;
+    color: #666;
+    font-family: monospace;
+}
+
+/* Inline patch items in device tab */
+.patch-list-patches {
+    margin-top: 1rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+}
+
+.patch-list-patches h5 {
+    margin: 0 0 0.75rem 0;
+    font-size: 0.9rem;
+    color: #495057;
+    font-weight: 600;
+}
+
+.patch-item-inline {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.5rem;
+    margin-bottom: 0.5rem;
+    background: white;
+    border-radius: 4px;
+    border: 1px solid #e9ecef;
+    transition: background-color 0.2s ease;
+}
+
+.patch-item-inline:hover {
+    background: #f8f9fa;
+}
+
+.patch-item-inline .patch-number {
+    font-family: monospace;
+    font-size: 0.8rem;
+    font-weight: 600;
+    min-width: 2rem;
+    text-align: center;
+    color: #666;
+}
+
+.patch-item-inline .patch-name.clickable {
+    flex: 1;
+    cursor: pointer;
+    color: #007bff;
+    text-decoration: underline;
+    transition: color 0.2s ease;
+    font-weight: 500;
+}
+
+.patch-item-inline .patch-name.clickable:hover {
+    color: #0056b3;
+    text-decoration: none;
+}
+
+.patch-item-inline .patch-program-change {
+    font-size: 0.8rem;
+    color: #666;
+    font-family: monospace;
+}
+
+.modal-actions {
+    margin-top: 1.5rem;
+    text-align: right;
+}
+
+/* Collapsible patch banks */
+.structure-element.collapsible {
+    cursor: pointer;
+}
+
+.structure-element.collapsible .collapsible-header {
+    cursor: pointer;
+    user-select: none;
+}
+
+.structure-element.collapsible .collapsible-header:hover {
+    background: #f0f0f0;
+}
+
+.structure-element.collapsible .toggle-icon {
+    display: inline-block;
+    width: 12px;
+    margin-right: 8px;
+    font-size: 10px;
+    color: #666;
+    transition: transform 0.2s ease;
+}
+
+.structure-element.collapsible.collapsed .toggle-icon {
+    transform: rotate(-90deg);
+}
+
+.structure-element.collapsible .collapsible-content {
+    display: block;
+    transition: opacity 0.2s ease;
+}
+
+.structure-element.collapsible.collapsed .collapsible-content {
+    display: none;
+}
+
+/* MIDI Commands Display */
+.midi-commands-info {
+    font-size: 0.85rem;
+    color: #666;
+    font-weight: normal;
+    margin-left: 0.5rem;
+}
+
+.bank-midi-commands {
+    background: #f8f9fa;
+    border-left: 3px solid #007bff;
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+    border-radius: 4px;
+}
+
+.bank-midi-commands strong {
+    display: block;
+    margin-bottom: 0.5rem;
+    color: #495057;
+}
+
+.midi-command-item {
+    display: inline-block;
+    background: #007bff;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 3px;
+    font-size: 0.85rem;
+    font-family: 'Courier New', monospace;
+    margin-right: 0.5rem;
+}
