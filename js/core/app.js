@@ -108,6 +108,13 @@ export class App {
     }
     
     async loadManufacturerData() {
+        // Use ManufacturerManager to load manufacturers
+        if (window.manufacturerManager && window.manufacturerManager.loadManufacturers) {
+            await window.manufacturerManager.loadManufacturers();
+            return;
+        }
+        
+        // Fallback to old implementation
         try {
             // Check if we're running in a development environment without a backend
             if (window.location.protocol === 'file:' || !window.fetch) {

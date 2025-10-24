@@ -54,6 +54,18 @@ export class Utils {
         return text.replace(/[&<>"']/g, function(m) { return map[m]; });
     }
     
+    static escapeAttribute(text) {
+        if (!text) return '';
+        const map = {
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#039;'
+        };
+        return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+    }
+    
     static generateId() {
         return Math.random().toString(36).substr(2, 9);
     }

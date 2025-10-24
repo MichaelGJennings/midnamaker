@@ -156,3 +156,188 @@
     background: #d4edda;
     color: #155724;
 }
+
+/* New Manufacturer Tab Layout */
+.manufacturer-tab-container {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+    padding: 1.5rem;
+}
+
+.manufacturer-section-collapsible {
+    background: white;
+    border: 2px solid #e9ecef;
+    border-radius: 8px;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.manufacturer-section-collapsible.collapsed {
+    border-color: #007bff;
+}
+
+.manufacturer-section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem 1.5rem;
+    background: #f8f9fa;
+    border-bottom: 2px solid #e9ecef;
+    cursor: pointer;
+    user-select: none;
+}
+
+.manufacturer-section-header h3 {
+    margin: 0;
+    color: #212529;
+}
+
+.btn-toggle-manufacturer-list {
+    background: transparent;
+    border: none;
+    font-size: 1.2rem;
+    color: #007bff;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    transition: transform 0.3s ease;
+}
+
+.btn-toggle-manufacturer-list:hover {
+    color: #0056b3;
+}
+
+.btn-toggle-manufacturer-list.expanded {
+    transform: rotate(180deg);
+}
+
+.manufacturer-section-content {
+    max-height: 600px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    transition: max-height 0.3s ease;
+}
+
+.manufacturer-section-collapsible.collapsed .manufacturer-section-content {
+    max-height: 0;
+    overflow: hidden;
+}
+
+.manufacturer-filter-section {
+    position: sticky;
+    top: 0;
+    background: white;
+    padding: 1rem 0;
+    z-index: 10;
+}
+
+.manufacturer-filter-input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: border-color 0.2s;
+}
+
+.manufacturer-filter-input:focus {
+    outline: none;
+    border-color: #007bff;
+}
+
+.manufacturer-list-container {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.manufacturer-list {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.manufacturer-list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.manufacturer-list-item:hover {
+    background: #f8f9fa;
+    border-color: #007bff;
+    transform: translateX(4px);
+}
+
+.manufacturer-item-name {
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: #212529;
+}
+
+.manufacturer-item-count {
+    font-size: 0.9rem;
+    color: #6c757d;
+    font-style: italic;
+}
+
+.device-list-container {
+    background: white;
+    border: 2px solid #007bff;
+    border-radius: 8px;
+    padding: 1.5rem;
+}
+
+.device-list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #e9ecef;
+}
+
+.device-list-header h3 {
+    margin: 0;
+    color: #007bff;
+}
+
+.device-list {
+    display: grid;
+    gap: 0.75rem;
+}
+
+.device-list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.device-list-item:hover {
+    background: #e3f2fd;
+    border-color: #007bff;
+    transform: translateX(4px);
+}
+
+.device-item-name {
+    font-weight: 600;
+    color: #212529;
+}
+
+.device-item-type {
+    font-size: 0.9rem;
+    color: #6c757d;
+    background: white;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+}

@@ -1,346 +1,349 @@
 // Manufacturer module
 import { appState } from '../core/state.js';
 import { Utils } from '../core/utils.js';
-import { modal } from '../components/modal.js';
 
 export class ManufacturerManager {
     constructor() {
-        this.searchTimeout = null;
+        this.currentFilter = '';
+        this.selectedManufacturerData = null;
         this.init();
     }
     
     init() {
         this.setupEventListeners();
-        // Don't load manufacturers here - let the main app handle it
     }
     
     setupEventListeners() {
-        // Manufacturer search
-        const searchInput = document.getElementById('manufacturer-search');
-        if (searchInput) {
-            searchInput.addEventListener('input', (e) => {
-                this.handleSearch(e.target.value);
-            });
-            
-            searchInput.addEventListener('focus', () => {
-                this.showDropdown();
-            });
-            
-            searchInput.addEventListener('blur', () => {
-                // Delay hiding to allow for clicks on dropdown items
-                setTimeout(() => {
-                    this.hideDropdown();
-                }, 200);
+        // Filter input
+        const filterInput = document.getElementById('manufacturer-filter');
+        if (filterInput) {
+            filterInput.addEventListener('input', (e) => {
+                this.handleFilterChange(e.target.value);
             });
         }
         
-        // Click outside to close dropdown
-        document.addEventListener('click', (e) => {
-            if (!e.target.closest('.manufacturer-search')) {
-                this.hideDropdown();
-            }
-        });
+        // Clear manufacturer selection button
+        const clearBtn = document.getElementById('clear-manufacturer-selection');
+        if (clearBtn) {
+            clearBtn.addEventListener('click', () => {
+                this.clearManufacturerSelection();
+            });
+        }
+        
+        // Toggle manufacturer list button
+        const toggleBtn = document.getElementById('toggle-manufacturer-list');
+        if (toggleBtn) {
+            toggleBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.toggleManufacturerList();
+            });
+        }
+        
+        // Header click to toggle
+        const header = document.getElementById('manufacturer-section-header');
+        if (header) {
+            header.addEventListener('click', () => {
+                this.toggleManufacturerList();
+            });
+        }
     }
     
     async loadManufacturers() {
-        try {
-            // Check if we're running in a development environment without a backend
-            if (window.location.protocol === 'file:' || !window.fetch) {
-                this.showNoBackendMessage();
-                return;
-            }
-            
-            // Make the request directly
-            const response = await fetch('/api/manufacturers');
-            if (!response.ok) {
-                throw new Error('Failed to fetch manufacturers');
-            }
-            
-            const data = await response.json();
-            appState.midiManufacturers = data.manufacturers;
-            appState.deviceTypes = data.deviceTypes;
-            
-            this.renderManufacturerList();
-            Utils.showNotification('Manufacturers loaded successfully', 'success');
-        } catch (error) {
-            // Suppress expected errors when no backend is running
-            if (error.name === 'AbortError' || error.message.includes('Failed to fetch')) {
-                this.showNoBackendMessage();
-                return;
-            }
-            console.error('Error loading manufacturers:', error);
-            this.showNoBackendMessage();
-        }
+        await this.renderManufacturerList();
     }
     
-    showNoBackendMessage() {
-        const container = document.getElementById('manufacturer-devices');
-        if (container) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <h3>No Backend Server</h3>
-                    <p>This application requires a backend server to load manufacturer data.</p>
-                    <p>Please run the Python server: <code>python server.py</code></p>
-                    <p>Then access the application at: <code>http://localhost:8000/midnamaker.html</code></p>
-                </div>
-            `;
-        }
-        
-        // Hide loading indicator
-        const loading = document.getElementById('manufacturer-loading');
-        if (loading) {
-            loading.style.display = 'none';
-        }
-        
-        // Disable the search input
-        const searchInput = document.getElementById('manufacturer-search');
-        if (searchInput) {
-            searchInput.disabled = true;
-            searchInput.placeholder = 'Backend server required';
-        }
-    }
-    
-    renderManufacturerList() {
-        const container = document.getElementById('manufacturer-devices');
+    async renderManufacturerList() {
+        const container = document.getElementById('manufacturer-list');
         if (!container) return;
         
-        if (Object.keys(appState.midiManufacturers).length === 0) {
-            container.innerHTML = '<div class="empty-state">No manufacturers found</div>';
-            return;
-        }
-        
-        const manufacturers = Object.keys(appState.midiManufacturers).sort();
-        container.innerHTML = manufacturers.map(manufacturer => {
-            const deviceCount = appState.midiManufacturers[manufacturer].length;
-            return `
-                <div class="manufacturer-option" data-manufacturer="${manufacturer}">
-                    <div class="manufacturer-name">${Utils.escapeHtml(manufacturer)}</div>
-                    <div class="manufacturer-stats">${deviceCount} device${deviceCount !== 1 ? 's' : ''}</div>
-                </div>
-            `;
-        }).join('');
-        
-        // Add click handlers
-        container.querySelectorAll('.manufacturer-option').forEach(option => {
-            option.addEventListener('click', (e) => {
-                const manufacturer = e.currentTarget.getAttribute('data-manufacturer');
-                this.selectManufacturer(manufacturer);
-            });
-        });
-    }
-    
-    handleSearch(query) {
-        if (this.searchTimeout) {
-            clearTimeout(this.searchTimeout);
-        }
-        
-        this.searchTimeout = setTimeout(() => {
-            this.filterManufacturers(query);
-        }, 300);
-    }
-    
-    filterManufacturers(query) {
-        const dropdown = document.getElementById('manufacturer-dropdown-list');
-        if (!dropdown) return;
-        
-        if (!query.trim()) {
-            this.hideDropdown();
-            return;
-        }
-        
-        const manufacturers = Object.keys(appState.midiManufacturers);
-        const filtered = manufacturers.filter(manufacturer => 
-            manufacturer.toLowerCase().includes(query.toLowerCase())
-        );
-        
-        if (filtered.length === 0) {
-            dropdown.innerHTML = '<div class="manufacturer-option">No manufacturers found</div>';
-        } else {
-            dropdown.innerHTML = filtered.map(manufacturer => {
-                const deviceCount = appState.midiManufacturers[manufacturer].length;
-                return `
-                    <div class="manufacturer-option" data-manufacturer="${manufacturer}">
-                        <div class="manufacturer-name">${Utils.escapeHtml(manufacturer)}</div>
-                        <div class="manufacturer-stats">${deviceCount} device${deviceCount !== 1 ? 's' : ''}</div>
-                    </div>
-                `;
-            }).join('');
+        try {
+            // Load catalog to get manufacturer data
+            const response = await fetch('/midnam_catalog');
+            if (!response.ok) throw new Error('Failed to load catalog');
             
-            // Add click handlers to dropdown items
-            dropdown.querySelectorAll('.manufacturer-option').forEach(option => {
-                option.addEventListener('click', (e) => {
-                    const manufacturer = e.currentTarget.getAttribute('data-manufacturer');
-                    this.selectManufacturer(manufacturer);
-                    this.hideDropdown();
+            const catalog = await response.json();
+            appState.catalog = catalog;
+            
+            // Build manufacturer list from catalog
+            const manufacturers = this.buildManufacturerList(catalog);
+            
+            if (manufacturers.length === 0) {
+                container.innerHTML = '<div class="empty-state">No manufacturers found</div>';
+                return;
+            }
+            
+            // Render manufacturer list
+            container.innerHTML = manufacturers.map(mfg => `
+                <div class="manufacturer-list-item" data-manufacturer="${Utils.escapeAttribute(mfg.name)}">
+                    <div class="manufacturer-item-name">${Utils.escapeHtml(mfg.name)}</div>
+                    <div class="manufacturer-item-count">${mfg.deviceCount} device${mfg.deviceCount !== 1 ? 's' : ''}</div>
+                </div>
+            `).join('');
+            
+            // Add click handlers
+            container.querySelectorAll('.manufacturer-list-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const manufacturerName = item.getAttribute('data-manufacturer');
+                    this.selectManufacturer(manufacturerName, manufacturers);
                 });
             });
-        }
-        
-        this.showDropdown();
-    }
-    
-    showDropdown() {
-        const dropdown = document.getElementById('manufacturer-dropdown-list');
-        if (dropdown) {
-            dropdown.classList.add('show');
+            
+        } catch (error) {
+            console.error('Error loading manufacturers:', error);
+            container.innerHTML = '<div class="empty-state">Error loading manufacturers</div>';
         }
     }
     
-    hideDropdown() {
-        const dropdown = document.getElementById('manufacturer-dropdown-list');
-        if (dropdown) {
-            dropdown.classList.remove('show');
-        }
-    }
-    
-    selectManufacturer(manufacturerName) {
-        appState.selectedManufacturer = manufacturerName;
+    buildManufacturerList(catalog) {
+        const manufacturerMap = new Map();
         
-        // Update search input
-        const searchInput = document.getElementById('manufacturer-search');
-        if (searchInput) {
-            searchInput.value = manufacturerName;
-        }
-        
-        // Update UI
-        document.querySelectorAll('.manufacturer-option').forEach(option => {
-            option.classList.remove('selected');
+        // Process catalog to group devices by manufacturer
+        Object.values(catalog).forEach(device => {
+            const manufacturer = device.manufacturer;
+            if (!manufacturer) return;
+            
+            if (!manufacturerMap.has(manufacturer)) {
+                manufacturerMap.set(manufacturer, {
+                    name: manufacturer,
+                    deviceCount: 0,
+                    devices: []
+                });
+            }
+            
+            const mfg = manufacturerMap.get(manufacturer);
+            mfg.deviceCount++;
+            mfg.devices.push({
+                id: `${device.manufacturer}|${device.model}`,
+                name: device.model,
+                type: device.type || 'Unknown',
+                manufacturer: device.manufacturer
+            });
         });
         
-        const selectedOption = document.querySelector(`[data-manufacturer="${manufacturerName}"]`);
-        if (selectedOption) {
-            selectedOption.classList.add('selected');
-        }
-        
-        // Show manufacturer details
-        this.showManufacturerDetails(manufacturerName);
-        
-        // Switch to device tab
-        this.switchToDeviceTab();
+        // Convert to array and sort
+        return Array.from(manufacturerMap.values()).sort((a, b) => a.name.localeCompare(b.name));
     }
     
-    showManufacturerDetails(manufacturerName) {
-        const detailsContainer = document.querySelector('.manufacturer-details');
-        if (!detailsContainer) return;
+    handleFilterChange(filterValue) {
+        this.currentFilter = filterValue.toLowerCase();
+        this.filterManufacturerList();
+    }
+    
+    filterManufacturerList() {
+        const items = document.querySelectorAll('.manufacturer-list-item');
+        items.forEach(item => {
+            const manufacturerName = item.getAttribute('data-manufacturer').toLowerCase();
+            if (manufacturerName.includes(this.currentFilter)) {
+                item.style.display = '';
+            } else {
+                item.style.display = 'none';
+            }
+        });
+    }
+    
+    async selectManufacturer(manufacturerName, manufacturersList) {
+        // Find manufacturer data
+        const manufacturerData = manufacturersList.find(m => m.name === manufacturerName);
+        if (!manufacturerData) return;
         
-        const devices = appState.midiManufacturers[manufacturerName] || [];
+        this.selectedManufacturerData = manufacturerData;
+        appState.selectedManufacturer = manufacturerName;
         
-        detailsContainer.innerHTML = `
-            <div class="manufacturer-info">
-                <div class="info-item">
-                    <div class="info-label">Manufacturer</div>
-                    <div class="info-value">${Utils.escapeHtml(manufacturerName)}</div>
-                </div>
-                <div class="info-item">
-                    <div class="info-label">Device Count</div>
-                    <div class="info-value">${devices.length}</div>
-                </div>
+        // Render device list
+        await this.renderDeviceList(manufacturerData.devices);
+        
+        // Show device list container
+        const deviceContainer = document.getElementById('device-list-container');
+        if (deviceContainer) {
+            deviceContainer.style.display = 'block';
+        }
+        
+        // Update selected manufacturer name
+        const nameElement = document.getElementById('selected-manufacturer-name');
+        if (nameElement) {
+            nameElement.textContent = `${manufacturerName} Devices`;
+        }
+        
+        // Collapse manufacturer list
+        this.collapseManufacturerList();
+    }
+    
+    async renderDeviceList(devices) {
+        const container = document.getElementById('device-list');
+        if (!container) return;
+        
+        if (devices.length === 0) {
+            container.innerHTML = '<div class="empty-state">No devices found for this manufacturer</div>';
+            return;
+        }
+        
+        container.innerHTML = devices.map(device => `
+            <div class="device-list-item" data-device-id="${Utils.escapeAttribute(device.id)}">
+                <div class="device-item-name">${Utils.escapeHtml(device.name)}</div>
+                <div class="device-item-type">${Utils.escapeHtml(device.type)}</div>
             </div>
-            <table class="device-table">
-                <thead>
-                    <tr>
-                        <th>Device Name</th>
-                        <th>Type</th>
-                        <th>Capabilities</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    ${devices.map(device => `
-                        <tr data-device-id="${device.id}">
-                            <td class="device-name">${Utils.escapeHtml(device.name)}</td>
-                            <td class="device-type">${Utils.escapeHtml(device.type || 'Unknown')}</td>
-                            <td class="device-capabilities">
-                                ${device.capabilities ? device.capabilities.map(cap => 
-                                    `<span class="capability-tag">${Utils.escapeHtml(cap)}</span>`
-                                ).join('') : 'None'}
-                            </td>
-                        </tr>
-                    `).join('')}
-                </tbody>
-            </table>
-        `;
+        `).join('');
         
-        detailsContainer.classList.add('show');
-        
-        // Add device selection handlers
-        detailsContainer.querySelectorAll('tr[data-device-id]').forEach(row => {
-            row.addEventListener('click', (e) => {
-                const deviceId = e.currentTarget.getAttribute('data-device-id');
-                this.selectDevice(deviceId);
+        // Add click handlers
+        container.querySelectorAll('.device-list-item').forEach(item => {
+            item.addEventListener('click', async () => {
+                const deviceId = item.getAttribute('data-device-id');
+                await this.selectDevice(deviceId);
             });
         });
     }
     
-    selectDevice(deviceId) {
-        const device = appState.midiManufacturers[appState.selectedManufacturer]
-            .find(d => d.id === deviceId);
-        
-        if (!device) return;
-        
-        appState.selectedDevice = device;
-        
-        // Update UI
-        document.querySelectorAll('.device-table tr').forEach(row => {
-            row.classList.remove('selected');
-        });
-        
-        const selectedRow = document.querySelector(`tr[data-device-id="${deviceId}"]`);
-        if (selectedRow) {
-            selectedRow.classList.add('selected');
-        }
-        
-        // Load device details
-        this.loadDeviceDetails(device);
-    }
-    
-    async loadDeviceDetails(device) {
+    async selectDevice(deviceId) {
         try {
-            const response = await fetch(`/api/device/${device.id}`);
-            if (!response.ok) throw new Error('Failed to fetch device details');
+            // Parse device ID
+            const [manufacturer, model] = deviceId.split('|');
+            
+            // Try to load device details
+            const response = await fetch(`/api/device/${encodeURIComponent(deviceId)}`);
+            
+            if (!response.ok) {
+                // Device not found - show error but don't crash
+                Utils.showNotification(`Device "${model}" not found`, 'warning');
+                console.warn(`Device not found: ${deviceId}`);
+                return;
+            }
             
             const deviceData = await response.json();
+            
+            // Store device data
+            appState.selectedDevice = { id: deviceId, name: model, manufacturer };
             appState.currentMidnam = deviceData;
             
-            // Switch to device tab to show device configuration
-            this.switchToDeviceTab();
+            // Transform device data for frontend
+            await this.transformDeviceData(deviceData);
             
-            Utils.showNotification(`Loaded device: ${device.name}`, 'success');
+            // Switch to device tab
+            if (window.tabManager) {
+                window.tabManager.switchTab('device');
+            }
+            
+            // Render device configuration
+            if (window.deviceManager && window.deviceManager.renderDeviceConfiguration) {
+                window.deviceManager.renderDeviceConfiguration();
+            }
+            
+            Utils.showNotification(`Loaded device: ${model}`, 'success');
+            
         } catch (error) {
-            console.error('Error loading device details:', error);
-            Utils.showNotification('Failed to load device details', 'error');
+            console.error('Error loading device:', error);
+            Utils.showNotification('Failed to load device', 'error');
         }
     }
     
-    switchToDeviceTab() {
-        // Import TabManager to switch tabs
-        import('../components/tabs.js').then(({ TabManager }) => {
-            const tabManager = new TabManager();
-            tabManager.switchTab('device');
-        });
-    }
-    
-    // Method to refresh manufacturer data
-    async refreshManufacturers() {
-        await this.loadManufacturers();
-    }
-    
-    // Method to get manufacturer statistics
-    getManufacturerStats() {
-        const manufacturers = Object.keys(appState.midiManufacturers);
-        const totalDevices = manufacturers.reduce((sum, manufacturer) => {
-            return sum + appState.midiManufacturers[manufacturer].length;
-        }, 0);
+    async transformDeviceData(deviceData) {
+        // Transform API response to match frontend structure
+        if (deviceData.patch_banks) {
+            deviceData.patchList = deviceData.patch_banks.map(bank => ({
+                name: bank.name,
+                patch: bank.patches ? bank.patches.map(p => ({
+                    name: p.name,
+                    programChange: parseInt(p.number.replace(/\D/g, '')) || 0,
+                    usesNoteList: p.note_list_name,
+                    note_list_name: p.note_list_name,
+                    number: p.number
+                })) : []
+            }));
+        }
         
-        return {
-            totalManufacturers: manufacturers.length,
-            totalDevices: totalDevices,
-            averageDevicesPerManufacturer: manufacturers.length > 0 ? 
-                Math.round(totalDevices / manufacturers.length) : 0
-        };
+        // Extract note lists from XML
+        if (deviceData.raw_xml) {
+            try {
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(deviceData.raw_xml, 'text/xml');
+                const noteLists = xmlDoc.querySelectorAll('NoteNameList');
+                
+                deviceData.note_lists = Array.from(noteLists).map(noteList => {
+                    const name = noteList.getAttribute('Name');
+                    const notes = Array.from(noteList.querySelectorAll('Note')).map(note => ({
+                        number: parseInt(note.getAttribute('Number')),
+                        name: note.getAttribute('Name')
+                    }));
+                    
+                    return { name, notes };
+                });
+            } catch (xmlError) {
+                console.warn('Failed to parse XML for note lists:', xmlError);
+                deviceData.note_lists = [];
+            }
+        }
+        
+        // Set basic device info
+        deviceData.deviceName = deviceData.name;
+        deviceData.manufacturer = deviceData.manufacturer || 'Unknown';
+        deviceData.model = deviceData.model || 'Unknown';
+    }
+    
+    clearManufacturerSelection() {
+        this.selectedManufacturerData = null;
+        appState.selectedManufacturer = null;
+        
+        // Hide device list container
+        const deviceContainer = document.getElementById('device-list-container');
+        if (deviceContainer) {
+            deviceContainer.style.display = 'none';
+        }
+        
+        // Clear device list
+        const deviceList = document.getElementById('device-list');
+        if (deviceList) {
+            deviceList.innerHTML = '';
+        }
+        
+        // Expand manufacturer list
+        this.expandManufacturerList();
+    }
+    
+    collapseManufacturerList() {
+        const collapsible = document.getElementById('manufacturer-section-collapsible');
+        const toggleBtn = document.getElementById('toggle-manufacturer-list');
+        
+        if (collapsible) {
+            collapsible.classList.add('collapsed');
+        }
+        
+        if (toggleBtn) {
+            toggleBtn.style.display = 'block';
+            toggleBtn.classList.remove('expanded');
+        }
+    }
+    
+    expandManufacturerList() {
+        const collapsible = document.getElementById('manufacturer-section-collapsible');
+        const toggleBtn = document.getElementById('toggle-manufacturer-list');
+        
+        if (collapsible) {
+            collapsible.classList.remove('collapsed');
+        }
+        
+        if (toggleBtn) {
+            toggleBtn.classList.add('expanded');
+        }
+    }
+    
+    toggleManufacturerList() {
+        const collapsible = document.getElementById('manufacturer-section-collapsible');
+        const toggleBtn = document.getElementById('toggle-manufacturer-list');
+        
+        if (collapsible && toggleBtn) {
+            if (collapsible.classList.contains('collapsed')) {
+                this.expandManufacturerList();
+            } else {
+                this.collapseManufacturerList();
+            }
+        }
+    }
+    
+    // Public method for external access
+    async refreshManufacturerList() {
+        await this.renderManufacturerList();
     }
 }
 
-// Create global instance
 export const manufacturerManager = new ManufacturerManager();
 
 // Make it globally available
