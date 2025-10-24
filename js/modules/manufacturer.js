@@ -177,7 +177,12 @@ export class ManufacturerManager {
             return;
         }
         
-        container.innerHTML = devices.map(device => `
+        // Sort devices alphabetically by name
+        const sortedDevices = [...devices].sort((a, b) => {
+            return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' });
+        });
+        
+        container.innerHTML = sortedDevices.map(device => `
             <div class="device-list-item" data-device-id="${Utils.escapeAttribute(device.id)}">
                 <div class="device-item-name">${Utils.escapeHtml(device.name)}</div>
                 <div class="device-item-type">${Utils.escapeHtml(device.type)}</div>
@@ -366,10 +371,22 @@ export class ManufacturerManager {
             }
         }
         
-        // Set basic device info
-        deviceData.deviceName = deviceData.name;
-        deviceData.manufacturer = deviceData.manufacturer || 'Unknown';
-        deviceData.model = deviceData.model || 'Unknown';
+        // Set basic device info from the API response
+        // The server sends 'name' which is the model name
+        deviceData.deviceName = deviceData.name || 'Unknown';
+        
+        // Extract manufacturer and model from the device ID if not already present
+        if (appState.selectedDevice) {
+            const [manufacturer, model] = appState.selectedDevice.id.split('|');
+            deviceData.manufacturer = manufacturer || 'Unknown';
+            deviceData.model = model || deviceData.name || 'Unknown';
+        } else {
+            deviceData.manufacturer = deviceData.manufacturer || 'Unknown';
+            deviceData.model = deviceData.model || deviceData.name || 'Unknown';
+        }
+        
+        // Version might come from the XML, set default if not present
+        deviceData.version = deviceData.version || 'N/A';
     }
     
     clearManufacturerSelection() {

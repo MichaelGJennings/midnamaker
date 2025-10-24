@@ -197,16 +197,14 @@
 }
 
 .note-dropdown {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
+    /* Position will be set dynamically via JavaScript */
+    position: fixed;
     background: white;
     border: 1px solid #ddd;
     border-top: none;
     max-height: 200px;
     overflow-y: auto;
-    z-index: 1000;
+    z-index: 10000;
     display: none;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
@@ -691,23 +689,19 @@
 }
 
 .note-dropdown {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 0;
+    /* Position will be set dynamically via JavaScript */
+    position: fixed;
     background: white;
     border: 1px solid #ddd;
     border-top: none;
     max-height: 200px;
     overflow-y: auto;
-    z-index: 1000;
+    z-index: 10000;
     display: none;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .note-dropdown.dropdown-above {
-    top: auto;
-    bottom: 100%;
     border-top: 1px solid #ddd;
     border-bottom: none;
     box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);

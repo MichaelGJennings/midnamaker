@@ -271,6 +271,11 @@ export class PatchManager {
         
         // Setup note editing event listeners
         this.setupNoteEditingListeners();
+        
+        // Populate the global note name index from the current bank
+        if (window.toolsManager && window.toolsManager.collectNoteNamesFromPatches) {
+            window.toolsManager.collectNoteNamesFromPatches();
+        }
     }
     
     setupNoteEditingListeners() {
@@ -315,10 +320,7 @@ export class PatchManager {
                 });
                 
                 // Set tooltip immediately (no delay)
-                console.log('Setting up tooltip for note display:', noteDisplay);
                 this.updateNoteDisplayTooltip(noteDisplay);
-            } else {
-                console.log('No note display found for row', index);
             }
         });
         
@@ -357,8 +359,6 @@ export class PatchManager {
         const input = document.getElementById(`note-input-${index}`);
         if (!input) return;
         
-        input.setAttribute('readonly', 'true');
-        
         // Add to index immediately
         const newNoteName = input.value.trim();
         if (newNoteName) {
@@ -373,8 +373,11 @@ export class PatchManager {
         // Mark patch as changed
         this.updateNoteName(index, newNoteName);
         
-        // Hide dropdown after a short delay
-        setTimeout(() => this.hideNoteDropdown(index), 150);
+        // Hide dropdown after a delay (gives time for dropdown clicks to register)
+        setTimeout(() => {
+            input.setAttribute('readonly', 'true');
+            this.hideNoteDropdown(index);
+        }, 200);
     }
     
     handleNoteInputKeydown(e, index) {
@@ -409,10 +412,29 @@ export class PatchManager {
             this.hideNoteDropdown(index);
         } else if (e.key === 'Tab') {
             e.preventDefault();
-            // Move focus to insert button
-            const insertBtn = document.getElementById(`insert-btn-${index}`);
-            if (insertBtn) {
-                insertBtn.focus();
+            
+            if (e.shiftKey) {
+                // Shift+Tab: Move to previous row's insert button
+                const tbody = document.getElementById('note-list-tbody');
+                if (!tbody) return;
+                
+                const rows = tbody.querySelectorAll('tr[data-note-index]');
+                const prevIndex = index - 1;
+                
+                if (prevIndex >= 0) {
+                    const prevRow = rows[prevIndex];
+                    const prevInsertBtn = prevRow.querySelector('button[data-index]');
+                    if (prevInsertBtn) {
+                        prevInsertBtn.focus();
+                    }
+                }
+                // If it's the first row, Shift+Tab does nothing
+            } else {
+                // Tab: Move focus to insert button in current row
+                const insertBtn = document.getElementById(`insert-btn-${index}`);
+                if (insertBtn) {
+                    insertBtn.focus();
+                }
             }
         } else if (e.key === 'ArrowDown') {
             e.preventDefault();
@@ -431,23 +453,33 @@ export class PatchManager {
         if (e.key === 'Tab') {
             e.preventDefault();
             
-            // Find the next row's note input
             const tbody = document.getElementById('note-list-tbody');
             if (!tbody) return;
             
             const rows = tbody.querySelectorAll('tr[data-note-index]');
-            const nextIndex = index + 1;
             
-            if (nextIndex < rows.length) {
-                // Focus next row's note input
-                const nextRow = rows[nextIndex];
-                const nextInput = nextRow.querySelector('.note-name-input');
-                if (nextInput) {
-                    nextInput.focus();
-                    nextInput.select();
+            if (e.shiftKey) {
+                // Shift+Tab: Move back to current row's note input
+                const currentRow = rows[index];
+                const currentInput = currentRow.querySelector('.note-name-input');
+                if (currentInput) {
+                    currentInput.focus();
+                    currentInput.select();
                 }
+            } else {
+                // Tab: Move to next row's note input
+                const nextIndex = index + 1;
+                
+                if (nextIndex < rows.length) {
+                    const nextRow = rows[nextIndex];
+                    const nextInput = nextRow.querySelector('.note-name-input');
+                    if (nextInput) {
+                        nextInput.focus();
+                        nextInput.select();
+                    }
+                }
+                // If it's the last row, Tab does nothing (prevented by e.preventDefault())
             }
-            // If it's the last row, Tab does nothing (prevented by e.preventDefault())
         }
     }
     
@@ -462,18 +494,63 @@ export class PatchManager {
         
         // Add click listeners to dropdown items
         dropdown.querySelectorAll('.note-dropdown-item').forEach(item => {
-            item.addEventListener('click', () => {
+            // Use mousedown to prevent blur on the input
+            item.addEventListener('mousedown', (e) => {
+                e.preventDefault(); // Prevent input from losing focus
                 const input = document.getElementById(`note-input-${index}`);
                 if (input) {
                     input.value = item.textContent.trim();
                     this.markPatchChanged();
                 }
                 this.hideNoteDropdown(index);
+                // Re-focus the input after selection
+                if (input) {
+                    input.focus();
+                    // Move cursor to end
+                    setTimeout(() => {
+                        input.setSelectionRange(input.value.length, input.value.length);
+                    }, 0);
+                }
             });
         });
         
+        // Position the dropdown using fixed positioning
+        this.positionDropdown(index, dropdown);
+        
         dropdown.style.display = 'block';
         this.filterDropdown(index, '');
+    }
+    
+    positionDropdown(index, dropdown) {
+        const input = document.getElementById(`note-input-${index}`);
+        if (!input) return;
+        
+        const inputRect = input.getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+        const dropdownMaxHeight = 200; // Match CSS max-height
+        
+        // Calculate if there's space below
+        const spaceBelow = viewportHeight - inputRect.bottom;
+        const spaceAbove = inputRect.top;
+        
+        // Position dropdown
+        dropdown.style.position = 'fixed';
+        dropdown.style.left = `${inputRect.left}px`;
+        dropdown.style.width = `${inputRect.width}px`;
+        dropdown.style.minWidth = '200px';
+        
+        // Decide whether to show above or below
+        if (spaceBelow >= dropdownMaxHeight || spaceBelow >= spaceAbove) {
+            // Show below
+            dropdown.style.top = `${inputRect.bottom}px`;
+            dropdown.style.bottom = 'auto';
+            dropdown.classList.remove('dropdown-above');
+        } else {
+            // Show above
+            dropdown.style.bottom = `${viewportHeight - inputRect.top}px`;
+            dropdown.style.top = 'auto';
+            dropdown.classList.add('dropdown-above');
+        }
     }
     
     hideNoteDropdown(index) {
@@ -503,6 +580,11 @@ export class PatchManager {
             const matches = text.includes(filter.toLowerCase());
             item.style.display = matches ? 'block' : 'none';
             
+            // Remove selection from hidden items
+            if (!matches && item.classList.contains('selected')) {
+                item.classList.remove('selected');
+            }
+            
             if (matches) {
                 visibleCount++;
                 if (text === filter.toLowerCase()) {
@@ -515,8 +597,13 @@ export class PatchManager {
         if (exactMatch && visibleCount === 1) {
             items.forEach(item => item.classList.remove('selected'));
             exactMatch.classList.add('selected');
-        } else {
-            items.forEach(item => item.classList.remove('selected'));
+        }
+        
+        // Keep dropdown visible if there are matches
+        if (visibleCount > 0) {
+            dropdown.style.display = 'block';
+            // Reposition in case content changed or scroll occurred
+            this.positionDropdown(index, dropdown);
         }
     }
     
@@ -530,9 +617,13 @@ export class PatchManager {
         const currentSelected = dropdown.querySelector('.note-dropdown-item.selected');
         let currentIndex = currentSelected ? items.indexOf(currentSelected) : -1;
         
+        // direction > 0 means ArrowDown: move forward (next item, higher index)
+        // direction < 0 means ArrowUp: move backward (previous item, lower index)
         if (direction > 0) {
+            // ArrowDown: move to next item (higher index)
             currentIndex = (currentIndex + 1) % items.length;
         } else {
+            // ArrowUp: move to previous item (lower index)
             currentIndex = currentIndex <= 0 ? items.length - 1 : currentIndex - 1;
         }
         
@@ -552,13 +643,20 @@ export class PatchManager {
     
     getNoteNameSuggestions(index) {
         // Get suggestions from the tools manager's full index if available
-        let suggestions = [...this.noteNameIndex, ...this.drumNames];
+        let suggestions = [];
         
-        if (window.toolsManager && window.toolsManager.allNoteNames) {
-            // Use the full index from tools manager
-            suggestions = [...window.toolsManager.allNoteNames, ...this.drumNames];
+        // First priority: use the full index from tools manager
+        if (window.toolsManager && window.toolsManager.allNoteNames && window.toolsManager.allNoteNames.size > 0) {
+            suggestions = [...window.toolsManager.allNoteNames];
+        } else {
+            // Fallback: use local index
+            suggestions = [...this.noteNameIndex];
         }
         
+        // Add drum names
+        suggestions = [...suggestions, ...this.drumNames];
+        
+        // Remove duplicates and sort
         return [...new Set(suggestions)].sort();
     }
     
@@ -576,7 +674,6 @@ export class PatchManager {
         // Create new tooltip handlers using the original approach
         noteDisplay._tooltipHandler = (e) => {
             const tooltip = document.getElementById('keyboard-tooltip');
-            console.log('Tooltip handler triggered, tooltip element:', tooltip);
             if (tooltip) {
                 const tooltipText = this.getMIDIStatus() ? 
                     `Send note ${noteNum} (${pianoKey})` : 
@@ -585,9 +682,6 @@ export class PatchManager {
                 tooltip.innerHTML = tooltipText;
                 tooltip.style.display = 'flex';
                 this.updateTooltipPosition(e);
-                console.log('Tooltip shown:', tooltipText);
-            } else {
-                console.log('Tooltip element not found!');
             }
         };
         
@@ -606,39 +700,29 @@ export class PatchManager {
         noteDisplay.addEventListener('mouseenter', noteDisplay._tooltipHandler);
         noteDisplay.addEventListener('mouseleave', noteDisplay._tooltipLeaveHandler);
         noteDisplay.addEventListener('mousemove', noteDisplay._tooltipMoveHandler);
-        
-        console.log('Tooltip handlers updated for note', noteNum);
     }
     
     refreshAllNoteDisplayTooltips() {
-        console.log('=== REFRESHING ALL TOOLTIPS ===');
         const tbody = document.getElementById('note-list-tbody');
         if (!tbody) {
-            console.log('No note list tbody found for tooltip refresh');
             return;
         }
         
         const noteDisplays = tbody.querySelectorAll('.note-number-display');
-        console.log('Found', noteDisplays.length, 'note displays to refresh');
-        // MIDI status check - silent
         
-        noteDisplays.forEach((display, index) => {
-            console.log(`Updating tooltip for display ${index}:`, display);
+        noteDisplays.forEach((display) => {
             this.updateNoteDisplayTooltip(display);
         });
-        console.log('=== TOOLTIP REFRESH COMPLETE ===');
     }
     
     // Test method to verify tooltip functionality
     testTooltip() {
         const tooltip = document.getElementById('keyboard-tooltip');
-        console.log('Test tooltip element:', tooltip);
         if (tooltip) {
             tooltip.innerHTML = 'Test tooltip';
             tooltip.style.display = 'flex';
             tooltip.style.left = '100px';
             tooltip.style.top = '100px';
-            console.log('Test tooltip shown');
         }
     }
     
@@ -1102,6 +1186,31 @@ export class PatchManager {
                 appState.selectedPatch.originalName = updatedName;
                 appState.selectedPatch.name = updatedName;
                 appState.selectedPatch.number = updatedNumber;
+            }
+            
+            // Update the note list in appState.currentMidnam to reflect saved changes
+            const noteListName = appState.selectedPatch.usesNoteList || appState.selectedPatch.note_list_name;
+            if (noteListName && appState.currentMidnam && appState.currentMidnam.note_lists) {
+                const noteList = appState.currentMidnam.note_lists.find(nl => nl.name === noteListName);
+                if (noteList) {
+                    // Update the notes in the cached note list
+                    noteList.notes = noteData.map(note => ({
+                        number: note.number,
+                        name: note.name
+                    }));
+                }
+            }
+            
+            // Update the patch in the cached patch_banks data
+            if (appState.currentMidnam && appState.currentMidnam.patch_banks && appState.selectedPatchBank) {
+                const bank = appState.currentMidnam.patch_banks.find(b => b.name === appState.selectedPatchBank.name);
+                if (bank) {
+                    const patchIndex = bank.patches.findIndex(p => p.name === originalName);
+                    if (patchIndex !== -1) {
+                        bank.patches[patchIndex].name = updatedName;
+                        bank.patches[patchIndex].number = updatedNumber;
+                    }
+                }
             }
             
             // Mark as saved

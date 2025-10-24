@@ -254,7 +254,7 @@
         <Note Number="50" Name="10&quot; Stark" />
         <Note Number="51" Name="Edg→Bell" />
         <Note Number="52" Name="20&quot; China" />
-        <Note Number="53" Name="DarRide" />
+        <Note Number="53" Name="DarkRide" />
         <Note Number="54" Name="HardTamb" />
         <Note Number="55" Name="10&quot; Splash" />
         <Note Number="56" Name="Guernsey" />
@@ -649,8 +649,8 @@
         <Note Number="68" Name="Hi Agogo" />
         <Note Number="69" Name="LngCabsa" />
         <Note Number="70" Name="LoMracas" />
-        <Note Number="71" Name="AirWrench" />
-        <Note Number="72" Name="PwrWrench" />
+        <Note Number="71" Name="AirWrnch" />
+        <Note Number="72" Name="PwrWrnch" />
         <Note Number="73" Name="Torpedo" />
         <Note Number="74" Name="LoTorpdo" />
         <Note Number="75" Name="Lo Clave" />
@@ -1076,7 +1076,7 @@
         <Note Number="49" Name="20&quot;Brnze" />
         <Note Number="50" Name="HiDbl RM" />
         <Note Number="51" Name="PingRide" />
-        <Note Number="52" Name="20&quot;China" />
+        <Note Number="52" Name="20&quot; China" />
         <Note Number="53" Name="Bell→Edg" />
         <Note Number="54" Name="HardTamb" />
         <Note Number="55" Name="Tiny" />
@@ -1123,52 +1123,67 @@
         <Note Number="96" Name="Triangle" />
       </NoteNameList>
       <NoteNameList Name="Industrial Notes">
-        <Note Number="36" Name="Custom Kick 1" />
-        <Note Number="37" Name="Side Stick" />
-        <Note Number="38" Name="Custom Snare 1" />
-        <Note Number="39" Name="Hand Clap" />
-        <Note Number="40" Name="Snare Drum 2" />
-        <Note Number="41" Name="Low Tom" />
-        <Note Number="42" Name="Closed Hi-Hat" />
-        <Note Number="43" Name="High Tom" />
-        <Note Number="44" Name="Pedal Hi-Hat" />
-        <Note Number="45" Name="Mid Tom" />
-        <Note Number="46" Name="Open Hi-Hat" />
-        <Note Number="47" Name="Low-Mid Tom" />
-        <Note Number="48" Name="Hi-Mid Tom" />
-        <Note Number="49" Name="Crash Cymbal" />
-        <Note Number="50" Name="High Tom" />
-        <Note Number="51" Name="Ride Cymbal" />
-        <Note Number="52" Name="Chinese Cymbal" />
-        <Note Number="53" Name="Ride Bell" />
-        <Note Number="54" Name="Tambourine" />
-        <Note Number="55" Name="Splash Cymbal" />
-        <Note Number="56" Name="Cowbell" />
-        <Note Number="57" Name="Crash Cymbal 2" />
-        <Note Number="58" Name="Vibraslap" />
-        <Note Number="59" Name="Ride Cymbal 2" />
-        <Note Number="60" Name="Hi Bongo" />
-        <Note Number="61" Name="Low Bongo" />
-        <Note Number="62" Name="Mute Hi Conga" />
-        <Note Number="63" Name="Open Hi Conga" />
-        <Note Number="64" Name="Low Conga" />
-        <Note Number="65" Name="High Timbale" />
-        <Note Number="66" Name="Low Timbale" />
-        <Note Number="67" Name="High Agogo" />
-        <Note Number="68" Name="Low Agogo" />
-        <Note Number="69" Name="Cabasa" />
-        <Note Number="70" Name="Maracas" />
-        <Note Number="71" Name="Short Whistle" />
-        <Note Number="72" Name="Long Whistle" />
-        <Note Number="73" Name="Short Guiro" />
-        <Note Number="74" Name="Long Guiro" />
-        <Note Number="75" Name="Claves" />
-        <Note Number="76" Name="Hi Wood Block" />
-        <Note Number="77" Name="Low Wood Block" />
-        <Note Number="78" Name="Mute Cuica" />
-        <Note Number="79" Name="Open Cuica" />
-        <Note Number="80" Name="Mute Triangle" />
-        <Note Number="81" Name="Open Triangle" />
+        <Note Number="36" Name="Industry" />
+        <Note Number="37" Name="Gated" />
+        <Note Number="38" Name="MIT Gate" />
+        <Note Number="39" Name="GtdClaps" />
+        <Note Number="40" Name="Grrrated" />
+        <Note Number="41" Name="Lo Agrsv" />
+        <Note Number="42" Name="Sputt.." />
+        <Note Number="43" Name="Lo Agrsv" />
+        <Note Number="44" Name="HardFoot" />
+        <Note Number="45" Name="Md Agrsv" />
+        <Note Number="46" Name="Trashy" />
+        <Note Number="47" Name="Md Agrsv" />
+        <Note Number="48" Name="Hi Agrsv" />
+        <Note Number="49" Name="FlngCrsh" />
+        <Note Number="50" Name="Hi Agrsv" />
+        <Note Number="51" Name="FlngRock" />
+        <Note Number="52" Name="FlngPang" />
+        <Note Number="53" Name="Anvil" />
+        <Note Number="54" Name="HardTamb" />
+        <Note Number="55" Name="Digital" />
+        <Note Number="56" Name="Digital" />
+        <Note Number="57" Name="Digital" />
+        <Note Number="58" Name="Digital" />
+        <Note Number="59" Name="Digital" />
+        <Note Number="60" Name="Digital" />
+        <Note Number="61" Name="Digital" />
+        <Note Number="62" Name="Digital" />
+        <Note Number="63" Name="Bead Bag" />
+        <Note Number="64" Name="Bead Bag" />
+        <Note Number="65" Name="Bead Bag" />
+        <Note Number="66" Name="Broken" />
+        <Note Number="67" Name="Broken" />
+        <Note Number="68" Name="Broken" />
+        <Note Number="69" Name="Broken" />
+        <Note Number="70" Name="Broken" />
+        <Note Number="71" Name="Broken" />
+        <Note Number="72" Name="Broken" />
+        <Note Number="73" Name="PwrWrench" />
+        <Note Number="74" Name="PwrWrnch" />
+        <Note Number="75" Name="PwrWrnch" />
+        <Note Number="76" Name="PwrWrnch" />
+        <Note Number="77" Name="PwrWrnch" />
+        <Note Number="78" Name="PwrWrnch" />
+        <Note Number="79" Name="TrqWrnch" />
+        <Note Number="80" Name="TrqWrnch" />
+        <Note Number="81" Name="TrqWrnch" />
+        <Note Number="82" Name="TrqWrnch" />
+        <Note Number="83" Name="TrqWrnch" />
+        <Note Number="84" Name="TrqWrnch" />
+        <Note Number="85" Name="AirWrnch" />
+        <Note Number="86" Name="AirWrnch" />
+        <Note Number="87" Name="AirWrnch" />
+        <Note Number="88" Name="AirWrnch" />
+        <Note Number="89" Name="AirWrnch" />
+        <Note Number="90" Name="AirWrnch" />
+        <Note Number="91" Name="Silence" />
+        <Note Number="92" Name="FaceSlap" />
+        <Note Number="93" Name="FaceSlap" />
+        <Note Number="94" Name="FaceSlap" />
+        <Note Number="95" Name="FaceSlap" />
+        <Note Number="96" Name="FaceSlap" />
       </NoteNameList>
       <NoteNameList Name="Hard &amp; Rockin' Notes">
         <Note Number="36" Name="Stab HL" />
@@ -1206,7 +1221,7 @@
         <Note Number="68" Name="Lo Muted" />
         <Note Number="69" Name="FstCabas" />
         <Note Number="70" Name="LoMracas" />
-        <Note Number="71" Name="AirWrench" />
+        <Note Number="71" Name="AirWrnch" />
         <Note Number="72" Name="PwrWrench" />
         <Note Number="73" Name="Released" />
         <Note Number="74" Name="Released" />
@@ -1327,7 +1342,16 @@
         <Note Number="78" Name="Mute Cuica" />
         <Note Number="79" Name="Open Cuica" />
         <Note Number="80" Name="Mute Triangle" />
-        <Note Number="81" Name="Open Triangle" />
+        <Note Number="81" Name="Anvil" />
+        <Note Number="82" Name="Tamboo" />
+        <Note Number="83" Name="Anvil" />
+        <Note Number="84" Name="Lo Ethnc" />
+        <Note Number="85" Name="DinrBell" />
+        <Note Number="86" Name="Md Ethnc" />
+        <Note Number="87" Name="Triangle" />
+        <Note Number="88" Name="Md Ethnc" />
+        <Note Number="89" Name="Hi Ethnc" />
+        <Note Number="90" Name="LoTimble" />
       </NoteNameList>
       <NoteNameList Name="Chromatic #1 Notes">
         <Note Number="36" Name="Custom Kick 3" />
