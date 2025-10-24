@@ -16,22 +16,6 @@ export class ToolsManager {
     }
     
     setupEventListeners() {
-        // Clear console button
-        const clearConsoleBtn = document.getElementById('clear-console-btn');
-        if (clearConsoleBtn) {
-            clearConsoleBtn.addEventListener('click', () => {
-                this.clearDebugConsole();
-            });
-        }
-        
-        // Test MIDI button
-        const testMIDIBtn = document.getElementById('test-midi-btn');
-        if (testMIDIBtn) {
-            testMIDIBtn.addEventListener('click', () => {
-                this.testMIDIConnection();
-            });
-        }
-        
         // Initialize debug console
         this.debugConsole = document.getElementById('debug-console');
     }
@@ -65,6 +49,8 @@ export class ToolsManager {
                         <option value="alphabetical">Alphabetical</option>
                         <option value="usage-count">Usage Count</option>
                     </select>
+                    
+                    <button class="btn btn-small btn-secondary" onclick="toolsManager.refreshIndex()">Refresh List</button>
                 </div>
                 
                 <div class="index-stats">
@@ -93,10 +79,6 @@ export class ToolsManager {
                 <h3>Debug Console</h3>
                 <div class="debug-console-display" id="debug-console-display">
                     <div class="debug-console-output" id="debug-console-output"></div>
-                </div>
-                <div class="console-controls">
-                    <button class="btn btn-small" onclick="toolsManager.clearDebugConsole()">Clear Console</button>
-                    <button class="btn btn-small" onclick="toolsManager.testDropdownFiltering()">Test Filtering</button>
                 </div>
             </div>
         `;
@@ -280,7 +262,11 @@ export class ToolsManager {
     }
     
     escapeHtmlAttribute(str) {
-        return str.replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/`/g, '&#96;').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+        return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/`/g, '&#96;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    }
+    
+    unescapeHtmlAttribute(str) {
+        return str.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&#96;/g, '`').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&');
     }
     
     generateUsageDropdownContent(noteName, usageLocations) {
@@ -288,7 +274,7 @@ export class ToolsManager {
         
         if (usageLocations.length === 0) {
             return `
-                <div class="usage-item unused" onclick="toolsManager.deleteUnusedNoteName('${escapedNoteName}')">
+                <div class="usage-item unused" data-note-name="${escapedNoteName}">
                     <span class="usage-text">Unused – delete?</span>
                 </div>
             `;
@@ -300,7 +286,11 @@ export class ToolsManager {
             const escapedNoteListName = this.escapeHtmlAttribute(location.noteListName);
             
             return `
-                <div class="usage-item" onclick="toolsManager.navigateToNoteEditor('${escapedBankName}', '${escapedPatchName}', '${escapedNoteListName}', ${location.noteNumber})">
+                <div class="usage-item" 
+                     data-bank-name="${escapedBankName}" 
+                     data-patch-name="${escapedPatchName}" 
+                     data-note-list-name="${escapedNoteListName}" 
+                     data-note-number="${location.noteNumber}">
                     <span class="usage-bank">${location.bankName}</span>
                     <span class="usage-patch">${location.patchName}</span>
                     <span class="usage-note">Note ${location.noteNumber}</span>
@@ -314,17 +304,53 @@ export class ToolsManager {
         if (!dropdown) return;
         
         // Close all other dropdowns
-        document.querySelectorAll('.usage-dropdown').forEach(dropdown => {
-            if (dropdown !== dropdown) {
-                dropdown.style.display = 'none';
+        document.querySelectorAll('.usage-dropdown').forEach(dd => {
+            if (dd !== dropdown) {
+                dd.style.display = 'none';
             }
         });
         
         // Toggle this dropdown
-        dropdown.style.display = dropdown.style.display === 'none' ? 'block' : 'none';
+        const isVisible = dropdown.style.display === 'block';
+        dropdown.style.display = isVisible ? 'none' : 'block';
+        
+        // Add click handlers to usage items if just opened
+        if (!isVisible) {
+            dropdown.querySelectorAll('.usage-item').forEach(item => {
+                // Remove old listeners by cloning
+                const newItem = item.cloneNode(true);
+                item.parentNode.replaceChild(newItem, item);
+                
+                // Add new listener
+                newItem.addEventListener('click', () => {
+                    if (newItem.classList.contains('unused')) {
+                        // Handle delete unused note name
+                        const noteName = newItem.getAttribute('data-note-name');
+                        if (noteName) {
+                            this.deleteUnusedNoteName(noteName);
+                        }
+                    } else {
+                        // Navigate to note editor
+                        const bankName = newItem.getAttribute('data-bank-name');
+                        const patchName = newItem.getAttribute('data-patch-name');
+                        const noteListName = newItem.getAttribute('data-note-list-name');
+                        const noteNumber = parseInt(newItem.getAttribute('data-note-number'));
+                        
+                        if (bankName && patchName && noteListName && !isNaN(noteNumber)) {
+                            this.navigateToNoteEditor(bankName, patchName, noteListName, noteNumber);
+                        }
+                    }
+                });
+            });
+        }
     }
     
     navigateToNoteEditor(bankName, patchName, noteListName, noteNumber) {
+        // Unescape HTML entities from the parameters
+        bankName = this.unescapeHtmlAttribute(bankName);
+        patchName = this.unescapeHtmlAttribute(patchName);
+        noteListName = this.unescapeHtmlAttribute(noteListName);
+        
         this.logToDebugConsole(`Navigate to ${bankName} / ${patchName} / Note ${noteNumber}`, 'info');
         
         // Find the patch in the current device data
@@ -347,6 +373,21 @@ export class ToolsManager {
             return;
         }
         
+        // Check if we're navigating to a different patch and have unsaved changes
+        const isDifferentPatch = !appState.selectedPatch || 
+                                 appState.selectedPatch.name !== patchName || 
+                                 (appState.selectedPatchBank && appState.selectedPatchBank.name !== bankName);
+        
+        if (isDifferentPatch && appState.pendingChanges && appState.pendingChanges.hasUnsavedChanges) {
+            const currentPatchName = appState.selectedPatch ? appState.selectedPatch.name : 'current patch';
+            if (!confirm(`You have unsaved changes in "${currentPatchName}".\n\nDiscard changes and navigate to "${patchName}"?`)) {
+                this.logToDebugConsole('Navigation cancelled - user chose to keep unsaved changes', 'info');
+                return;
+            }
+            // User confirmed, clear the unsaved changes flag
+            appState.pendingChanges.hasUnsavedChanges = false;
+        }
+        
         // Set the selected patch and bank in app state
         appState.selectedPatch = patch;
         appState.selectedPatchBank = bank;
@@ -354,6 +395,11 @@ export class ToolsManager {
         // Switch to the patch tab
         if (window.tabManager) {
             window.tabManager.switchTab('patch');
+        }
+        
+        // Ensure the patch manager renders the selected patch
+        if (window.patchManager) {
+            window.patchManager.renderPatchEditor();
         }
         
         // Wait for the patch editor to load, then highlight the specific note
@@ -402,7 +448,7 @@ export class ToolsManager {
     }
     
     deleteUnusedNoteName(name) {
-        const unescapedName = name.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&#96;/g, '`').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+        const unescapedName = this.unescapeHtmlAttribute(name);
         
         if (confirm(`Remove "${unescapedName}" from index?`)) {
             this.allNoteNames.delete(unescapedName);
@@ -412,7 +458,7 @@ export class ToolsManager {
     }
     
     removeIndexEntry(name) {
-        const unescapedName = name.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&#96;/g, '`').replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+        const unescapedName = this.unescapeHtmlAttribute(name);
         
         if (confirm(`Remove "${unescapedName}" from index?`)) {
             this.allNoteNames.delete(unescapedName);
@@ -448,11 +494,22 @@ export class ToolsManager {
             this.allNoteNames.add(name);
             this.updateIndexDisplay();
             input.value = '';
-            this.logToDebugConsole(`Added "${name}" to index`, 'success');
+            
+            // Check if this name exists in patches and report
+            const usageLocations = this.findNoteNameUsage(name);
+            if (usageLocations.length > 0) {
+                this.logToDebugConsole(`Added "${name}" to index (found ${usageLocations.length} usage${usageLocations.length !== 1 ? 's' : ''})`, 'success');
+                Utils.showNotification(`Added "${name}" - found ${usageLocations.length} usage${usageLocations.length !== 1 ? 's' : ''}`, 'success');
+            } else {
+                this.logToDebugConsole(`Added "${name}" to index (not currently used in any patches)`, 'info');
+                Utils.showNotification(`Added "${name}" to index`, 'success');
+            }
         } else if (this.allNoteNames.has(name)) {
             this.logToDebugConsole(`"${name}" already exists in index`, 'warn');
+            Utils.showNotification(`"${name}" already exists in index`, 'warning');
         } else {
             this.logToDebugConsole('Please enter a valid note name', 'error');
+            Utils.showNotification('Please enter a valid note name', 'error');
         }
     }
     
@@ -466,6 +523,14 @@ export class ToolsManager {
     
     updateToolsBankFilter() {
         this.updateIndexDisplay();
+    }
+    
+    refreshIndex() {
+        // Rebuild the index from scratch
+        this.collectNoteNamesFromPatches();
+        this.updateIndexDisplay();
+        this.logToDebugConsole('Index refreshed from patches', 'success');
+        Utils.showNotification('Note name index refreshed', 'success');
     }
     
     populateToolsBankSelector() {
@@ -499,38 +564,52 @@ export class ToolsManager {
     collectNoteNamesFromPatches() {
         this.allNoteNames.clear();
         
-        // Collect from current patch editor if it exists
-        const tbody = document.getElementById('note-list-tbody');
-        if (tbody) {
-            const inputs = tbody.querySelectorAll('.note-name-input');
-            inputs.forEach(input => {
-                if (input.value.trim()) {
-                    this.allNoteNames.add(input.value.trim());
-                }
-            });
-        }
-        
-        // Collect from all patches in the current bank
-        if (appState.currentMidnam && appState.currentMidnam.note_lists) {
+        // If we have a selected patch bank, collect note names from all patches in that bank
+        if (appState.selectedPatchBank && appState.currentMidnam && appState.currentMidnam.note_lists) {
+            const bank = appState.selectedPatchBank;
+            
+            // Get all unique note list names used by patches in this bank
+            const noteListNames = new Set();
+            const patchArray = bank.patches || bank.patch; // Try both 'patches' and 'patch'
+            if (patchArray) {
+                patchArray.forEach(patch => {
+                    const noteListName = patch.note_list_name || patch.usesNoteList;
+                    if (noteListName) {
+                        noteListNames.add(noteListName);
+                    }
+                });
+            }
+            
+            // Collect note names from all note lists used by this bank
             appState.currentMidnam.note_lists.forEach(noteList => {
-                if (noteList.notes) {
-                    noteList.notes.forEach(note => {
-                        if (note.name && note.name.trim()) {
-                            this.allNoteNames.add(note.name.trim());
-                        }
-                    });
+                if (noteListNames.has(noteList.name)) {
+                    if (noteList.notes) {
+                        noteList.notes.forEach(note => {
+                            if (note.name && note.name.trim()) {
+                                this.allNoteNames.add(note.name.trim());
+                            }
+                        });
+                    }
                 }
             });
+            
+            this.logToDebugConsole(`Collected ${this.allNoteNames.size} note names from bank "${bank.name}"`, 'info');
+        } else {
+            // Fallback: collect from all note lists if no bank is selected
+            if (appState.currentMidnam && appState.currentMidnam.note_lists) {
+                appState.currentMidnam.note_lists.forEach(noteList => {
+                    if (noteList.notes) {
+                        noteList.notes.forEach(note => {
+                            if (note.name && note.name.trim()) {
+                                this.allNoteNames.add(note.name.trim());
+                            }
+                        });
+                    }
+                });
+            }
+            
+            this.logToDebugConsole(`Collected ${this.allNoteNames.size} note names from all patches`, 'info');
         }
-        
-        // Also collect from patch manager's index if available
-        if (window.patchManager && window.patchManager.noteNameIndex) {
-            window.patchManager.noteNameIndex.forEach(name => {
-                this.allNoteNames.add(name);
-            });
-        }
-        
-        this.logToDebugConsole(`Collected ${this.allNoteNames.size} note names from patches`, 'info');
     }
     
     testDropdownFiltering() {

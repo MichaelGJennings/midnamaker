@@ -371,10 +371,22 @@ export class ManufacturerManager {
             }
         }
         
-        // Set basic device info
-        deviceData.deviceName = deviceData.name;
-        deviceData.manufacturer = deviceData.manufacturer || 'Unknown';
-        deviceData.model = deviceData.model || 'Unknown';
+        // Set basic device info from the API response
+        // The server sends 'name' which is the model name
+        deviceData.deviceName = deviceData.name || 'Unknown';
+        
+        // Extract manufacturer and model from the device ID if not already present
+        if (appState.selectedDevice) {
+            const [manufacturer, model] = appState.selectedDevice.id.split('|');
+            deviceData.manufacturer = manufacturer || 'Unknown';
+            deviceData.model = model || deviceData.name || 'Unknown';
+        } else {
+            deviceData.manufacturer = deviceData.manufacturer || 'Unknown';
+            deviceData.model = deviceData.model || deviceData.name || 'Unknown';
+        }
+        
+        // Version might come from the XML, set default if not present
+        deviceData.version = deviceData.version || 'N/A';
     }
     
     clearManufacturerSelection() {
