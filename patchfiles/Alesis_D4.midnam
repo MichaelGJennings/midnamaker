@@ -1123,17 +1123,17 @@
         <Note Number="96" Name="Triangle" />
       </NoteNameList>
       <NoteNameList Name="Industrial Notes">
-        <Note Number="36" Name="Custom Kick 1" />
-        <Note Number="37" Name="Side Stick" />
-        <Note Number="38" Name="Custom Snare 1" />
-        <Note Number="39" Name="Hand Clap" />
-        <Note Number="40" Name="Snare Drum 2" />
-        <Note Number="41" Name="Low Tom" />
-        <Note Number="42" Name="Closed Hi-Hat" />
-        <Note Number="43" Name="High Tom" />
-        <Note Number="44" Name="Pedal Hi-Hat" />
-        <Note Number="45" Name="Mid Tom" />
-        <Note Number="46" Name="Open Hi-Hat" />
+        <Note Number="36" Name="Industry" />
+        <Note Number="37" Name="Gated" />
+        <Note Number="38" Name="MIT Gate" />
+        <Note Number="39" Name="GtdClaps" />
+        <Note Number="40" Name="Grrrated" />
+        <Note Number="41" Name="Lo Agrsv" />
+        <Note Number="42" Name="Sputt.." />
+        <Note Number="43" Name="Lo Agrsv" />
+        <Note Number="44" Name="HardFoot" />
+        <Note Number="45" Name="Md Agrsv" />
+        <Note Number="46" Name="Hi Agrsv" />
         <Note Number="47" Name="Low-Mid Tom" />
         <Note Number="48" Name="Hi-Mid Tom" />
         <Note Number="49" Name="Crash Cymbal" />

@@ -357,8 +357,6 @@ export class PatchManager {
         const input = document.getElementById(`note-input-${index}`);
         if (!input) return;
         
-        input.setAttribute('readonly', 'true');
-        
         // Add to index immediately
         const newNoteName = input.value.trim();
         if (newNoteName) {
@@ -373,8 +371,11 @@ export class PatchManager {
         // Mark patch as changed
         this.updateNoteName(index, newNoteName);
         
-        // Hide dropdown after a short delay
-        setTimeout(() => this.hideNoteDropdown(index), 150);
+        // Hide dropdown after a delay (gives time for dropdown clicks to register)
+        setTimeout(() => {
+            input.setAttribute('readonly', 'true');
+            this.hideNoteDropdown(index);
+        }, 200);
     }
     
     handleNoteInputKeydown(e, index) {
@@ -462,13 +463,23 @@ export class PatchManager {
         
         // Add click listeners to dropdown items
         dropdown.querySelectorAll('.note-dropdown-item').forEach(item => {
-            item.addEventListener('click', () => {
+            // Use mousedown to prevent blur on the input
+            item.addEventListener('mousedown', (e) => {
+                e.preventDefault(); // Prevent input from losing focus
                 const input = document.getElementById(`note-input-${index}`);
                 if (input) {
                     input.value = item.textContent.trim();
                     this.markPatchChanged();
                 }
                 this.hideNoteDropdown(index);
+                // Re-focus the input after selection
+                if (input) {
+                    input.focus();
+                    // Move cursor to end
+                    setTimeout(() => {
+                        input.setSelectionRange(input.value.length, input.value.length);
+                    }, 0);
+                }
             });
         });
         

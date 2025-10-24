@@ -370,7 +370,11 @@ export class ToolsManager {
         const rows = tbody.querySelectorAll('tr[data-note-index]');
         for (let i = 0; i < rows.length; i++) {
             const row = rows[i];
-            const rowNoteNumber = parseInt(row.getAttribute('data-note-index'));
+            // Get the actual MIDI note number from the note-number-display element
+            const noteDisplay = row.querySelector('.note-number-display');
+            if (!noteDisplay) continue;
+            
+            const rowNoteNumber = parseInt(noteDisplay.getAttribute('data-note'));
             
             if (rowNoteNumber === noteNumber) {
                 // Found the matching note, focus and highlight it
