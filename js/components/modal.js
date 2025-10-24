@@ -38,52 +38,78 @@ export class Modal {
             className = ''
         } = options;
         
-        // Create modal HTML
-        const modalHTML = `
-            <div class="modal-overlay" id="modal-overlay">
-                <div class="modal-content ${className}">
-                    <div class="modal-header">
-                        <h3>${title}</h3>
-                        <button class="modal-close" id="modal-close">&times;</button>
-                    </div>
-                    <div class="modal-body">
-                        ${content}
-                    </div>
-                    <div class="modal-footer">
-                        ${showCancel ? `<button class="btn btn-secondary" id="modal-cancel">${cancelText}</button>` : ''}
-                        ${showConfirm ? `<button class="btn btn-primary" id="modal-confirm">${confirmText}</button>` : ''}
+        // Check if modal overlay already exists
+        let modal = document.getElementById('modal-overlay');
+        
+        if (!modal) {
+            // Create modal HTML if it doesn't exist
+            const modalHTML = `
+                <div class="modal-overlay" id="modal-overlay">
+                    <div class="modal-content ${className}">
+                        <div class="modal-header">
+                            <h3>${title}</h3>
+                            <button class="modal-close" id="modal-close">&times;</button>
+                        </div>
+                        <div class="modal-body">
+                            ${content}
+                        </div>
+                        <div class="modal-footer">
+                            ${showCancel ? `<button class="btn btn-secondary" id="modal-cancel">${cancelText}</button>` : ''}
+                            ${showConfirm ? `<button class="btn btn-primary" id="modal-confirm">${confirmText}</button>` : ''}
+                        </div>
                     </div>
                 </div>
-            </div>
-        `;
+            `;
+            
+            // Add modal to DOM
+            document.body.insertAdjacentHTML('beforeend', modalHTML);
+            modal = document.getElementById('modal-overlay');
+        } else {
+            // Update existing modal content
+            const modalContent = modal.querySelector('.modal-content');
+            modalContent.className = `modal-content ${className}`;
+            
+            const modalHeader = modalContent.querySelector('.modal-header h3');
+            if (modalHeader) modalHeader.textContent = title;
+            
+            const modalBody = modalContent.querySelector('.modal-body');
+            if (modalBody) modalBody.innerHTML = content;
+            
+            const modalFooter = modalContent.querySelector('.modal-footer');
+            if (modalFooter) {
+                modalFooter.innerHTML = `
+                    ${showCancel ? `<button class="btn btn-secondary" id="modal-cancel">${cancelText}</button>` : ''}
+                    ${showConfirm ? `<button class="btn btn-primary" id="modal-confirm">${confirmText}</button>` : ''}
+                `;
+            }
+        }
         
-        // Remove existing modal
-        this.close();
-        
-        // Add modal to DOM
-        document.body.insertAdjacentHTML('beforeend', modalHTML);
-        
-        const modal = document.getElementById('modal-overlay');
         this.activeModal = modal;
         
-        // Setup event listeners
+        // Remove existing event listeners by cloning and replacing
         const closeBtn = modal.querySelector('#modal-close');
         const cancelBtn = modal.querySelector('#modal-cancel');
         const confirmBtn = modal.querySelector('#modal-confirm');
         
         if (closeBtn) {
-            closeBtn.addEventListener('click', () => this.close());
+            const newCloseBtn = closeBtn.cloneNode(true);
+            closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+            newCloseBtn.addEventListener('click', () => this.close());
         }
         
         if (cancelBtn) {
-            cancelBtn.addEventListener('click', () => {
+            const newCancelBtn = cancelBtn.cloneNode(true);
+            cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+            newCancelBtn.addEventListener('click', () => {
                 if (onCancel) onCancel();
                 this.close();
             });
         }
         
         if (confirmBtn) {
-            confirmBtn.addEventListener('click', () => {
+            const newConfirmBtn = confirmBtn.cloneNode(true);
+            confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+            newConfirmBtn.addEventListener('click', () => {
                 if (onConfirm) onConfirm();
                 this.close();
             });
@@ -99,7 +125,7 @@ export class Modal {
     
     close() {
         if (this.activeModal) {
-            this.activeModal.remove();
+            this.activeModal.style.display = 'none';
             this.activeModal = null;
         }
     }
@@ -179,3 +205,6 @@ export class Modal {
 
 // Create global instance
 export const modal = new Modal();
+
+// Make modal globally available
+window.modal = modal;

@@ -358,26 +358,47 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
     def serve_device_details(self):
         """Serve detailed information about a specific device"""
         try:
-            # Extract device ID from URL (e.g., /api/device/Alesis%7CD4 -> Alesis|D4)
-            device_id = self.path.replace('/api/device/', '')
-            device_id = device_id.replace('%7C', '|')  # URL decode the pipe character
+            # Extract device ID and optional file parameter from URL
+            import urllib.parse
+            from urllib.parse import urlparse, parse_qs
             
-            print(f"Requesting device details for: {device_id}")
+            parsed_url = urlparse(self.path)
+            device_id = parsed_url.path.replace('/api/device/', '')
+            device_id = urllib.parse.unquote(device_id)  # Properly URL decode
+            
+            # Check for file parameter
+            query_params = parse_qs(parsed_url.query)
+            specific_file = query_params.get('file', [None])[0]
+            if specific_file:
+                specific_file = urllib.parse.unquote(specific_file)
+            
+            print(f"Requesting device details for: {device_id}" + (f" (file: {specific_file})" if specific_file else ""))
             
             # Find the device in our manufacturers data
             manufacturers_data = self.get_manufacturers_data()
             device_data = None
             
-            for manufacturer, devices in manufacturers_data.items():
-                for device in devices:
-                    if device['id'] == device_id:
-                        device_data = device
+            # If a specific file is requested, find device with that file
+            if specific_file:
+                for manufacturer, devices in manufacturers_data.items():
+                    for device in devices:
+                        if device['id'] == device_id and device['file_path'] == specific_file:
+                            device_data = device
+                            break
+                    if device_data:
                         break
-                if device_data:
-                    break
+            else:
+                # Find first matching device
+                for manufacturer, devices in manufacturers_data.items():
+                    for device in devices:
+                        if device['id'] == device_id:
+                            device_data = device
+                            break
+                    if device_data:
+                        break
             
             if not device_data:
-                self.send_error(404, f"Device not found: {device_id}")
+                self.send_error(404, f"Device not found: {device_id}" + (f" with file {specific_file}" if specific_file else ""))
                 return
             
             # Read the actual .midnam file
@@ -416,6 +437,19 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                 bank_name = bank.get('Name', 'Unnamed Bank')
                 bank_patches = bank.findall('.//Patch')
                 
+                # Extract MIDI commands for this bank
+                midi_commands = []
+                midi_commands_elem = bank.find('.//MIDICommands')
+                if midi_commands_elem is not None:
+                    for control_change in midi_commands_elem.findall('.//ControlChange'):
+                        control = control_change.get('Control', '')
+                        value = control_change.get('Value', '')
+                        midi_commands.append({
+                            'type': 'ControlChange',
+                            'control': control,
+                            'value': value
+                        })
+                
                 patches_data = []
                 for patch in bank_patches:
                     patch_name = patch.get('Name', 'Unnamed')
@@ -434,7 +468,8 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                 device_details['patch_banks'].append({
                     'name': bank_name,
                     'patch_count': len(bank_patches),
-                    'patches': patches_data
+                    'patches': patches_data,
+                    'midi_commands': midi_commands
                 })
             
             device_details['total_patches'] = len(patches)

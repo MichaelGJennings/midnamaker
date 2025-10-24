@@ -78,6 +78,9 @@ export class DeviceManager {
         
         // Setup event listeners for device configuration
         this.setupDeviceEventListeners();
+        
+        // Setup collapsible patch banks
+        this.setupCollapsiblePatchBanks();
     }
     
     generateDeviceStructureHTML(midnam) {
@@ -103,7 +106,6 @@ export class DeviceManager {
                 </div>
                 
                 ${this.generatePatchListHTML(midnam.patchList || [])}
-                ${this.generateNoteListHTML(midnam.noteList || [])}
                 ${this.generateControlChangeHTML(midnam.controlChange || [])}
             </div>
         `;
@@ -116,19 +118,45 @@ export class DeviceManager {
         
         return `
             <div class="structure-section">
-                <h4>Patch Lists (${patchLists.length})</h4>
-                ${patchLists.map((patchList, index) => `
-                    <div class="structure-element">
-                        <div class="element-header">
-                            <div class="element-name">${Utils.escapeHtml(patchList.name || `Patch List ${index + 1}`)}</div>
+                <h4>Patch Banks (${patchLists.length})</h4>
+                ${patchLists.map((patchList, index) => {
+                    // Check if this patch list has MIDI commands
+                    const hasMidiCommands = patchList.midi_commands && patchList.midi_commands.length > 0;
+                    
+                    return `
+                    <div class="structure-element collapsible" data-index="${index}">
+                        <div class="element-header collapsible-header" onclick="deviceManager.togglePatchBank(${index})">
+                            <div class="element-name">
+                                <span class="toggle-icon">▼</span>
+                                ${Utils.escapeHtml(patchList.name || `Patch Bank ${index + 1}`)}
+                                ${hasMidiCommands ? `
+                                    <span class="midi-commands-info" title="${this.formatMidiCommandsTooltip(patchList.midi_commands)}">
+                                        (CC ${patchList.midi_commands.map(cmd => cmd.control).join(', ')})
+                                    </span>
+                                ` : ''}
+                            </div>
                             <div class="element-actions">
-                                <button class="btn btn-small btn-primary" onclick="deviceManager.editPatchList(${index})">Edit</button>
-                                <button class="btn btn-small btn-danger" onclick="deviceManager.deletePatchList(${index})">Delete</button>
+                                ${hasMidiCommands ? `
+                                    <button class="btn btn-small btn-secondary" 
+                                            onclick="event.stopPropagation(); deviceManager.sendBankSelectMidi(${index})" 
+                                            title="Send MIDI commands to select this bank">
+                                        Select Bank
+                                    </button>
+                                ` : ''}
+                                <button class="btn btn-small btn-primary" onclick="event.stopPropagation(); deviceManager.editPatchList(${index})">Edit</button>
+                                <button class="btn btn-small btn-danger" onclick="event.stopPropagation(); deviceManager.deletePatchList(${index})">Delete</button>
                             </div>
                         </div>
-                        <div class="element-content">
+                        <div class="element-content collapsible-content">
+                            ${hasMidiCommands ? `
+                                <div class="bank-midi-commands">
+                                    <strong>MIDI Commands to Select Bank:</strong>
+                                    ${patchList.midi_commands.map(cmd => `
+                                        <span class="midi-command-item">CC${cmd.control}=${cmd.value}</span>
+                                    `).join(' ')}
+                                </div>
+                            ` : ''}
                             <p>Patches: ${patchList.patch ? patchList.patch.length : 0}</p>
-                            <p>Bank Select: ${patchList.bankSelect ? 'Yes' : 'No'}</p>
                             ${patchList.patch && patchList.patch.length > 0 ? `
                                 <div class="patch-list-patches">
                                     <h5>Individual Patches:</h5>
@@ -143,9 +171,51 @@ export class DeviceManager {
                             ` : ''}
                         </div>
                     </div>
-                `).join('')}
+                    `;
+                }).join('')}
             </div>
         `;
+    }
+    
+    formatMidiCommandsTooltip(midiCommands) {
+        if (!midiCommands || midiCommands.length === 0) return '';
+        return midiCommands.map(cmd => `Control ${cmd.control} = ${cmd.value}`).join(', ');
+    }
+    
+    sendBankSelectMidi(patchListIndex) {
+        const patchList = appState.currentMidnam?.patchList?.[patchListIndex];
+        if (!patchList || !patchList.midi_commands || patchList.midi_commands.length === 0) {
+            Utils.showNotification('No MIDI commands found for this bank', 'warning');
+            return;
+        }
+        
+        // Check if MIDI is enabled and device selected
+        if (!window.midiManager || !window.midiManager.isMIDIEnabled()) {
+            Utils.showNotification('MIDI not enabled', 'warning');
+            return;
+        }
+        
+        if (!window.midiManager.isDeviceSelected()) {
+            Utils.showNotification('No MIDI output device selected', 'warning');
+            return;
+        }
+        
+        // Send all MIDI commands for this bank
+        let success = true;
+        for (const cmd of patchList.midi_commands) {
+            if (cmd.type === 'ControlChange') {
+                const controller = parseInt(cmd.control);
+                const value = parseInt(cmd.value);
+                const sent = window.midiManager.sendControlChange(controller, value, 0);
+                if (!sent) success = false;
+            }
+        }
+        
+        if (success) {
+            Utils.showNotification(`Bank "${patchList.name}" selected via MIDI`, 'success');
+        } else {
+            Utils.showNotification('Failed to send some MIDI commands', 'error');
+        }
     }
     
     generateNoteListHTML(noteLists) {
@@ -204,6 +274,36 @@ export class DeviceManager {
     setupDeviceEventListeners() {
         // Add any specific event listeners for device configuration
         // This will be called after rendering the device structure
+    }
+    
+    setupCollapsiblePatchBanks() {
+        // Initialize all patch banks as expanded
+        const patchBanks = document.querySelectorAll('.structure-element.collapsible');
+        patchBanks.forEach(bank => {
+            bank.classList.add('expanded');
+        });
+    }
+    
+    togglePatchBank(index) {
+        const patchBank = document.querySelector(`.structure-element.collapsible[data-index="${index}"]`);
+        if (!patchBank) return;
+        
+        const icon = patchBank.querySelector('.toggle-icon');
+        const content = patchBank.querySelector('.collapsible-content');
+        
+        if (patchBank.classList.contains('expanded')) {
+            // Collapse
+            patchBank.classList.remove('expanded');
+            patchBank.classList.add('collapsed');
+            if (icon) icon.textContent = '▶';
+            if (content) content.style.display = 'none';
+        } else {
+            // Expand
+            patchBank.classList.remove('collapsed');
+            patchBank.classList.add('expanded');
+            if (icon) icon.textContent = '▼';
+            if (content) content.style.display = 'block';
+        }
     }
     
     async saveDevice() {
@@ -360,3 +460,4 @@ export const deviceManager = new DeviceManager();
 
 // Make it globally available
 window.deviceManager = deviceManager;
+

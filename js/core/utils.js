@@ -11,7 +11,13 @@ export class Utils {
     static formatDate(dateString) {
         if (!dateString) return 'Unknown';
         try {
-            const date = new Date(dateString);
+            // Handle both Unix timestamps and date strings
+            let date;
+            if (typeof dateString === 'number') {
+                date = new Date(dateString * 1000); // Convert Unix timestamp to milliseconds
+            } else {
+                date = new Date(dateString);
+            }
             return date.toLocaleDateString() + ' ' + date.toLocaleTimeString();
         } catch (error) {
             return 'Invalid date';

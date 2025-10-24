@@ -55,7 +55,7 @@ export class CatalogManager {
         try {
             this.isLoading = true;
             
-            const response = await fetch('/api/catalog');
+            const response = await fetch('/midnam_catalog');
             if (!response.ok) throw new Error('Failed to fetch catalog');
             
             const data = await response.json();
@@ -262,27 +262,71 @@ export class CatalogManager {
         const device = this.catalogData[deviceKey];
         if (!device) return;
         
+        // Parse device key to get manufacturer and model
+        const [manufacturer, model] = deviceKey.split('|');
+        
         const deviceHTML = `
-            <div class="device-details">
-                <h4>${Utils.escapeHtml(deviceKey)}</h4>
+            <div class="device-details-view">
+                <div class="device-header">
+                    <h3>${Utils.escapeHtml(model)}</h3>
+                    <p class="device-manufacturer">${Utils.escapeHtml(manufacturer)}</p>
+                </div>
                 
-                <div class="device-info">
-                    <p><strong>Type:</strong> ${device.type || 'master'}</p>
-                    <p><strong>Files:</strong> ${device.files ? device.files.length : 0}</p>
+                <div class="device-metadata">
+                    <div class="metadata-row">
+                        <div class="metadata-label">Device Key:</div>
+                        <div class="metadata-value">${Utils.escapeHtml(deviceKey)}</div>
+                    </div>
+                    
+                    <div class="metadata-row">
+                        <div class="metadata-label">Type:</div>
+                        <div class="metadata-value">
+                            <span class="device-type ${device.type || 'master'}">${device.type || 'master'}</span>
+                        </div>
+                    </div>
+                    
+                    ${device.manufacturer_id ? `
+                        <div class="metadata-row">
+                            <div class="metadata-label">Manufacturer ID:</div>
+                            <div class="metadata-value">${Utils.escapeHtml(device.manufacturer_id)}</div>
+                        </div>
+                    ` : ''}
+                    
+                    ${device.family_id ? `
+                        <div class="metadata-row">
+                            <div class="metadata-label">Family ID:</div>
+                            <div class="metadata-value">${Utils.escapeHtml(device.family_id)}</div>
+                        </div>
+                    ` : ''}
+                    
+                    ${device.device_id ? `
+                        <div class="metadata-row">
+                            <div class="metadata-label">Device ID:</div>
+                            <div class="metadata-value">${Utils.escapeHtml(device.device_id)}</div>
+                        </div>
+                    ` : ''}
+                    
+                    <div class="metadata-row">
+                        <div class="metadata-label">Number of Files:</div>
+                        <div class="metadata-value">${device.files ? device.files.length : 0}</div>
+                    </div>
                 </div>
                 
                 ${device.files && device.files.length > 0 ? `
-                    <div class="device-files">
-                        <h5>Files:</h5>
-                        <ul>
+                    <div class="device-files-section">
+                        <h4>Files</h4>
+                        <div class="file-list-container">
                             ${device.files.map(file => `
-                                <li>
-                                    <strong>${Utils.escapeHtml(file.path)}</strong>
-                                    <br>
-                                    <small>Size: ${Utils.formatFileSize(file.size)} | Modified: ${Utils.formatDate(file.modified)}</small>
-                                </li>
+                                <div class="file-item-detail">
+                                    <div class="file-path-detail">${Utils.escapeHtml(file.path)}</div>
+                                    <div class="file-meta-detail">
+                                        <span class="file-size-detail">${Utils.formatFileSize(file.size)}</span>
+                                        <span class="file-separator">•</span>
+                                        <span class="file-date-detail">${Utils.formatDate(file.modified)}</span>
+                                    </div>
+                                </div>
                             `).join('')}
-                        </ul>
+                        </div>
                     </div>
                 ` : ''}
             </div>
@@ -292,7 +336,8 @@ export class CatalogManager {
             title: 'Device Details',
             content: deviceHTML,
             showCancel: false,
-            confirmText: 'Close'
+            confirmText: 'Close',
+            className: 'device-details-modal'
         });
     }
     

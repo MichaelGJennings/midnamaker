@@ -198,13 +198,48 @@ export class ManufacturerManager {
             // Parse device ID
             const [manufacturer, model] = deviceId.split('|');
             
-            // Try to load device details
-            const response = await fetch(`/api/device/${encodeURIComponent(deviceId)}`);
+            // Check if there are multiple files for this device
+            // Get manufacturer data to find all devices with this ID
+            const manufacturerResponse = await fetch('/api/manufacturers');
+            if (!manufacturerResponse.ok) {
+                throw new Error('Failed to fetch manufacturers');
+            }
             
-            if (!response.ok) {
-                // Device not found - show error but don't crash
+            const manufacturersData = await manufacturerResponse.json();
+            const devices = manufacturersData.manufacturers[manufacturer] || [];
+            
+            // Find all devices with matching ID
+            const matchingDevices = devices.filter(d => d.id === deviceId);
+            
+            if (matchingDevices.length > 1) {
+                // Multiple files - show disambiguation dialog
+                const selectedFile = await this.showFileDisambiguationDialog(deviceId, matchingDevices);
+                if (!selectedFile) return; // User cancelled
+                
+                // Load the selected file
+                await this.loadDeviceFile(selectedFile, deviceId, manufacturer, model);
+            } else if (matchingDevices.length === 1) {
+                // Single file - load directly
+                await this.loadDeviceFile(matchingDevices[0], deviceId, manufacturer, model);
+            } else {
+                // No match found
                 Utils.showNotification(`Device "${model}" not found`, 'warning');
                 console.warn(`Device not found: ${deviceId}`);
+            }
+            
+        } catch (error) {
+            console.error('Error loading device:', error);
+            Utils.showNotification('Failed to load device', 'error');
+        }
+    }
+    
+    async loadDeviceFile(deviceInfo, deviceId, manufacturer, model) {
+        try {
+            // Fetch device details for the specific file
+            const response = await fetch(`/api/device/${encodeURIComponent(deviceId)}?file=${encodeURIComponent(deviceInfo.file_path)}`);
+            
+            if (!response.ok) {
+                Utils.showNotification(`Device "${model}" not found`, 'warning');
                 return;
             }
             
@@ -230,9 +265,67 @@ export class ManufacturerManager {
             Utils.showNotification(`Loaded device: ${model}`, 'success');
             
         } catch (error) {
-            console.error('Error loading device:', error);
+            console.error('Error loading device file:', error);
             Utils.showNotification('Failed to load device', 'error');
         }
+    }
+    
+    async showFileDisambiguationDialog(deviceId, devices) {
+        return new Promise(async (resolve) => {
+            const [manufacturer, model] = deviceId.split('|');
+            
+            // Get modal from global or import dynamically
+            let modal = window.modal;
+            if (!modal) {
+                try {
+                    const modalModule = await import('../components/modal.js');
+                    modal = modalModule.modal;
+                } catch (error) {
+                    console.error('Failed to load modal:', error);
+                    resolve(null);
+                    return;
+                }
+            }
+            
+            const content = `
+                <div class="file-disambiguation">
+                    <p>Multiple files found for this device. Please select one:</p>
+                    <div class="file-selection-list">
+                        ${devices.map((device, index) => `
+                            <div class="file-selection-item" data-index="${index}">
+                                <div class="file-selection-header">
+                                    <strong>${device.file_path.split('/').pop()}</strong>
+                                    <span class="file-type-badge ${device.type}">${device.type}</span>
+                                </div>
+                                <div class="file-meta">
+                                    <span class="file-path">${Utils.escapeHtml(device.file_path)}</span>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+            
+            modal.show({
+                title: `Select File for ${model}`,
+                content: content,
+                showCancel: true,
+                showConfirm: false,
+                cancelText: 'Cancel',
+                onCancel: () => resolve(null)
+            });
+            
+            // Add click handlers after modal is shown
+            setTimeout(() => {
+                const items = document.querySelectorAll('.file-selection-item');
+                items.forEach((item, index) => {
+                    item.addEventListener('click', () => {
+                        modal.close();
+                        resolve(devices[index]);
+                    });
+                });
+            }, 100);
+        });
     }
     
     async transformDeviceData(deviceData) {
@@ -240,6 +333,7 @@ export class ManufacturerManager {
         if (deviceData.patch_banks) {
             deviceData.patchList = deviceData.patch_banks.map(bank => ({
                 name: bank.name,
+                midi_commands: bank.midi_commands || [],
                 patch: bank.patches ? bank.patches.map(p => ({
                     name: p.name,
                     programChange: parseInt(p.number.replace(/\D/g, '')) || 0,

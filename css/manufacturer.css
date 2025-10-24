@@ -211,6 +211,75 @@
     transform: rotate(180deg);
 }
 
+/* File Disambiguation Dialog */
+.file-disambiguation {
+    padding: 0;
+}
+
+.file-disambiguation p {
+    margin: 0 0 1rem 0;
+    color: #495057;
+}
+
+.file-selection-list {
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.file-selection-item {
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 1rem;
+    margin-bottom: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.file-selection-item:hover {
+    background: #f8f9fa;
+    border-color: #007bff;
+    box-shadow: 0 2px 4px rgba(0, 123, 255, 0.1);
+}
+
+.file-selection-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.file-selection-header strong {
+    color: #212529;
+}
+
+.file-type-badge {
+    display: inline-block;
+    padding: 0.25rem 0.5rem;
+    border-radius: 3px;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    font-weight: bold;
+}
+
+.file-type-badge.master {
+    background: #d4edda;
+    color: #155724;
+}
+
+.file-type-badge.extending {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.file-meta {
+    font-size: 0.875rem;
+}
+
+.file-meta .file-path {
+    color: #6c757d;
+    font-family: monospace;
+}
+
 .manufacturer-section-content {
     max-height: 600px;
     overflow-y: auto;
