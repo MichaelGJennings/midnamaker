@@ -359,13 +359,19 @@ export class PatchManager {
         
         input.setAttribute('readonly', 'true');
         
-        // Add to index
-        if (input.value.trim()) {
-            this.noteNameIndex.add(input.value.trim());
+        // Add to index immediately
+        const newNoteName = input.value.trim();
+        if (newNoteName) {
+            this.noteNameIndex.add(newNoteName);
+            
+            // Also add to tools manager's global index if available
+            if (window.toolsManager && window.toolsManager.allNoteNames) {
+                window.toolsManager.allNoteNames.add(newNoteName);
+            }
         }
         
         // Mark patch as changed
-        this.updateNoteName(index, input.value.trim());
+        this.updateNoteName(index, newNoteName);
         
         // Hide dropdown after a short delay
         setTimeout(() => this.hideNoteDropdown(index), 150);
@@ -376,12 +382,21 @@ export class PatchManager {
             e.preventDefault();
             const dropdown = document.getElementById(`note-dropdown-${index}`);
             const selectedItem = dropdown?.querySelector('.note-dropdown-item.selected');
+            const input = document.getElementById(`note-input-${index}`);
             
-            if (selectedItem) {
-                const input = document.getElementById(`note-input-${index}`);
-                if (input) {
-                    input.value = selectedItem.textContent.trim();
-                    this.markPatchChanged();
+            if (selectedItem && input) {
+                input.value = selectedItem.textContent.trim();
+                this.markPatchChanged();
+            }
+            
+            // Add current value to index immediately
+            if (input && input.value.trim()) {
+                const newNoteName = input.value.trim();
+                this.noteNameIndex.add(newNoteName);
+                
+                // Also add to tools manager's global index if available
+                if (window.toolsManager && window.toolsManager.allNoteNames) {
+                    window.toolsManager.allNoteNames.add(newNoteName);
                 }
             }
             
@@ -877,13 +892,16 @@ export class PatchManager {
         const rows = tbody.querySelectorAll('tr[data-note-index]');
         rows.forEach(row => {
             const noteInput = row.querySelector('.note-name-input');
-            const noteNumber = row.getAttribute('data-note-index');
+            const noteDisplay = row.querySelector('.note-number-display');
             
-            if (noteInput && noteNumber) {
-                noteData.push({
-                    number: parseInt(noteNumber),
-                    name: noteInput.value.trim()
-                });
+            if (noteInput && noteDisplay) {
+                const noteNumber = noteDisplay.getAttribute('data-note');
+                if (noteNumber) {
+                    noteData.push({
+                        number: parseInt(noteNumber),
+                        name: noteInput.value.trim()
+                    });
+                }
             }
         });
         
@@ -1045,6 +1063,16 @@ export class PatchManager {
             return;
         }
         
+        // Store the original patch name before updating
+        const originalName = appState.selectedPatch.originalName || appState.selectedPatch.name;
+        
+        // Collect current patch name and number from editor inputs
+        const nameInput = document.getElementById('patch-name-input');
+        const numberInput = document.getElementById('patch-number-input');
+        
+        const updatedName = nameInput ? nameInput.value.trim() : appState.selectedPatch.name;
+        const updatedNumber = numberInput ? numberInput.value.trim() : appState.selectedPatch.number;
+        
         // Collect current note data from the editor
         const noteData = this.collectNoteDataFromEditor();
         
@@ -1057,12 +1085,24 @@ export class PatchManager {
                 body: JSON.stringify({
                     deviceId: appState.selectedDevice.id,
                     patchBank: appState.selectedPatchBank.name,
-                    patch: appState.selectedPatch,
+                    originalPatchName: originalName,
+                    patch: {
+                        ...appState.selectedPatch,
+                        name: updatedName,
+                        number: updatedNumber
+                    },
                     notes: noteData
                 })
             });
             
             if (!response.ok) throw new Error('Failed to save patch');
+            
+            // Update the original name to the new name for future saves
+            if (appState.selectedPatch) {
+                appState.selectedPatch.originalName = updatedName;
+                appState.selectedPatch.name = updatedName;
+                appState.selectedPatch.number = updatedNumber;
+            }
             
             // Mark as saved
             appState.pendingChanges.hasUnsavedChanges = false;
@@ -1135,6 +1175,11 @@ export class PatchManager {
         // Store current patch
         this.currentPatch = patch;
         this.currentPatchIndex = index;
+        
+        // Store the original name for saving purposes
+        if (!patch.originalName) {
+            patch.originalName = patch.name;
+        }
         
         // Set app state for the patch editor
         appState.selectedPatch = patch;

@@ -102,11 +102,15 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
             device_id = data.get('deviceId')
             patch_bank = data.get('patchBank')
             patch = data.get('patch')
+            original_patch_name = data.get('originalPatchName')
             notes = data.get('notes', [])
             
             if not device_id or not patch:
                 self.send_error(400, "Missing required fields")
                 return
+            
+            # Use original name to find the patch, fall back to current name
+            patch_name_to_find = original_patch_name if original_patch_name else patch.get('name')
             
             # Find the corresponding .midnam file
             patch_files = self.get_patch_files()
@@ -130,12 +134,12 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
             for bank in root.findall('.//PatchBank'):
                 if bank.get('Name') == patch_bank:
                     for patch_elem in bank.findall('.//Patch'):
-                        if patch_elem.get('Name') == patch.get('name'):
+                        if patch_elem.get('Name') == patch_name_to_find:
                             # Update patch name and number
                             if patch.get('name'):
                                 patch_elem.set('Name', patch.get('name'))
                             if patch.get('number'):
-                                patch_elem.set('UserID', patch.get('number'))
+                                patch_elem.set('Number', patch.get('number'))
                             
                             # Update note list
                             note_list_name = None
