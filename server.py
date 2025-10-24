@@ -139,7 +139,7 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                             if patch.get('name'):
                                 patch_elem.set('Name', patch.get('name'))
                             if patch.get('number'):
-                                patch_elem.set('UserID', patch.get('number'))
+                                patch_elem.set('Number', patch.get('number'))
                             
                             # Update note list
                             note_list_name = None

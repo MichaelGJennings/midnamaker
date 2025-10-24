@@ -135,7 +135,7 @@
             </PatchMIDICommands>
             <UsesNoteNameList Name="Techno-Logic Notes" />
           </Patch>
-          <Patch Number="15" Name="Hard &amp; Rocking" UserID="15">
+          <Patch Number="15" Name="Hard &amp; Rockin'">
             <PatchMIDICommands>
               <ProgramChange Number="15" />
             </PatchMIDICommands>
