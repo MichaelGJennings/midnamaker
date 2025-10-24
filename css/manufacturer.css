@@ -1,0 +1,158 @@
+/* Manufacturer Tab Styles */
+.manufacturer-dropdown {
+    position: relative;
+    margin-top: 1rem;
+}
+
+.manufacturer-input {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+.manufacturer-dropdown-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #ddd;
+    border-top: none;
+    border-radius: 0 0 4px 4px;
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 1000;
+    display: none;
+}
+
+.manufacturer-dropdown-list.show {
+    display: block;
+}
+
+.manufacturer-option {
+    padding: 0.75rem;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.manufacturer-option:hover {
+    background: #f8f9fa;
+}
+
+.manufacturer-option.selected {
+    background: #e3f2fd;
+    color: #1976d2;
+}
+
+.manufacturer-name {
+    font-weight: 600;
+    margin-bottom: 0.25rem;
+}
+
+.manufacturer-stats {
+    font-size: 0.8rem;
+    color: #666;
+    font-style: italic;
+}
+
+.manufacturer-details {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-top: 1rem;
+    display: none;
+}
+
+.manufacturer-details.show {
+    display: block;
+}
+
+.manufacturer-info {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.info-item {
+    background: #f8f9fa;
+    padding: 0.75rem;
+    border-radius: 4px;
+}
+
+.info-label {
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 0.25rem;
+}
+
+.info-value {
+    font-weight: 600;
+    font-family: monospace;
+}
+
+.device-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1rem;
+    background: white;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.device-table th {
+    background: #f8f9fa;
+    padding: 1rem;
+    text-align: left;
+    font-weight: 600;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.device-table td {
+    padding: 1rem;
+    border-bottom: 1px solid #dee2e6;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.device-table tr:hover td {
+    background: #f8f9fa;
+}
+
+.device-table tr.selected td {
+    background: #e3f2fd;
+    color: #1976d2;
+}
+
+.device-name {
+    font-weight: 600;
+}
+
+.device-type {
+    font-size: 0.9rem;
+    color: #666;
+}
+
+.device-capabilities {
+    font-size: 0.85rem;
+    color: #666;
+}
+
+.capability-tag {
+    display: inline-block;
+    background: #e9ecef;
+    color: #495057;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    margin: 0.125rem;
+}
+
+.capability-tag.active {
+    background: #d4edda;
+    color: #155724;
+}

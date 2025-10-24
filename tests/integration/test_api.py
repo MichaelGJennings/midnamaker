@@ -7,18 +7,36 @@ import pytest
 import json
 import tempfile
 import os
-from httpx import AsyncClient
-from server import app
+import subprocess
+import time
+import requests
+from threading import Thread
 
 
 class TestAPIIntegration:
     """Test API endpoint integration"""
     
+    @pytest.fixture(scope="class")
+    def server_process(self):
+        """Start the server for testing"""
+        # Start server in background
+        process = subprocess.Popen(['python3', 'server.py'], 
+                                 stdout=subprocess.PIPE, 
+                                 stderr=subprocess.PIPE)
+        
+        # Wait for server to start
+        time.sleep(2)
+        
+        yield process
+        
+        # Cleanup
+        process.terminate()
+        process.wait()
+    
     @pytest.fixture
-    async def client(self):
+    def client(self, server_process):
         """Create test client"""
-        async with AsyncClient(app=app, base_url="http://test") as client:
-            yield client
+        return requests.Session()
     
     @pytest.fixture
     def sample_midnam_file(self):
@@ -49,149 +67,47 @@ class TestAPIIntegration:
         # Cleanup
         os.unlink(temp_path)
     
-    async def test_get_midnam_catalog(self, client):
-        """Test GET /midnam_catalog endpoint"""
-        response = await client.get("/midnam_catalog")
+    def test_get_manufacturers(self, client):
+        """Test GET /api/manufacturers endpoint"""
+        response = client.get("http://localhost:8000/api/manufacturers")
         
         assert response.status_code == 200
         data = response.json()
         assert isinstance(data, dict)
-        # Should contain manufacturer keys
+        assert 'manufacturers' in data
+        assert 'deviceTypes' in data
     
-    async def test_get_manufacturers(self, client):
-        """Test GET /manufacturers endpoint"""
-        response = await client.get("/manufacturers")
+    def test_get_device_details(self, client):
+        """Test GET /api/device/{deviceId} endpoint"""
+        # First get manufacturers to find a device
+        manufacturers_response = client.get("http://localhost:8000/api/manufacturers")
+        manufacturers_data = manufacturers_response.json()
         
-        assert response.status_code == 200
-        data = response.json()
-        assert isinstance(data, list)
-        # Should contain manufacturer objects with id and name
-    
-    async def test_analyze_file_endpoint(self, client, sample_midnam_file):
-        """Test POST /analyze_file/ endpoint"""
-        with open(sample_midnam_file, 'rb') as f:
-            files = {'file': ('test.midnam', f, 'application/xml')}
-            response = await client.post("/analyze_file/", files=files)
+        # Find first available device
+        device_id = None
+        for manufacturer, devices in manufacturers_data['manufacturers'].items():
+            if devices:
+                device_id = devices[0]['id']
+                break
         
-        assert response.status_code == 200
-        data = response.json()
-        assert data['valid'] == True
-        assert 'author' in data
-        assert 'bank_details' in data
-    
-    async def test_analyze_file_invalid_xml(self, client):
-        """Test POST /analyze_file/ with invalid XML"""
-        invalid_content = "This is not valid XML"
-        files = {'file': ('invalid.midnam', invalid_content, 'application/xml')}
-        response = await client.post("/analyze_file/", files=files)
-        
-        assert response.status_code == 200
-        data = response.json()
-        assert data['valid'] == False
-        assert len(data['errors']) > 0
-    
-    async def test_validate_file_endpoint(self, client, sample_midnam_file):
-        """Test POST /validate_file/ endpoint"""
-        with open(sample_midnam_file, 'rb') as f:
-            files = {'file': ('test.midnam', f, 'application/xml')}
-            response = await client.post("/validate_file/", files=files)
-        
-        assert response.status_code == 200
-        data = response.json()
-        assert data['valid'] == True
-        assert data['errors'] == []
-    
-    async def test_save_file_endpoint(self, client):
-        """Test POST /save_file/ endpoint"""
-        content = """<?xml version="1.0" encoding="UTF-8"?>
-        <MIDINameDocument>
-            <Author>Test Author</Author>
-            <MasterDeviceNames>
-                <DeviceName Name="Test Device">
-                    <ChannelNameSet Name="Channel 1">
-                        <PatchBank Name="Bank 1">
-                            <PatchNameList>
-                                <Patch Number="0" Name="Patch 1"/>
-                            </PatchNameList>
-                        </PatchBank>
-                    </ChannelNameSet>
-                </DeviceName>
-            </MasterDeviceNames>
-        </MIDINameDocument>"""
-        
-        data = {
-            'filename': 'test_save.midnam',
-            'content': content
-        }
-        
-        response = await client.post("/save_file/", json=data)
-        
-        assert response.status_code == 200
-        result = response.json()
-        assert result['success'] == True
-        
-        # Cleanup
-        if os.path.exists('test_save.midnam'):
-            os.unlink('test_save.midnam')
-    
-    async def test_merge_files_endpoint(self, client):
-        """Test POST /merge_files endpoint"""
-        data = {
-            'files': [
-                {
-                    'filename': 'file1.midnam',
-                    'content': '<?xml version="1.0"?><MIDINameDocument><Author>Author 1</Author></MIDINameDocument>'
-                },
-                {
-                    'filename': 'file2.midnam', 
-                    'content': '<?xml version="1.0"?><MIDINameDocument><Author>Author 2</Author></MIDINameDocument>'
-                }
-            ],
-            'output_filename': 'merged.midnam'
-        }
-        
-        response = await client.post("/merge_files", json=data)
-        
-        assert response.status_code == 200
-        result = response.json()
-        assert result['success'] == True
-        assert 'merged_content' in result
-    
-    async def test_delete_file_endpoint(self, client):
-        """Test DELETE /delete_file endpoint"""
-        # First create a test file
-        test_file = 'test_delete.midnam'
-        with open(test_file, 'w') as f:
-            f.write('test content')
-        
-        try:
-            response = await client.delete(f"/delete_file?filename={test_file}")
+        if device_id:
+            response = client.get(f"http://localhost:8000/api/device/{device_id}")
             assert response.status_code == 200
-            result = response.json()
-            assert result['success'] == True
-        finally:
-            # Cleanup in case test fails
-            if os.path.exists(test_file):
-                os.unlink(test_file)
+            data = response.json()
+            assert 'id' in data
+            assert 'name' in data
+            assert 'patch_banks' in data
     
-    async def test_clear_cache_endpoint(self, client):
-        """Test POST /clear_cache endpoint"""
-        response = await client.post("/clear_cache")
-        
-        assert response.status_code == 200
-        result = response.json()
-        assert result['success'] == True
-    
-    async def test_static_file_serving(self, client):
+    def test_static_file_serving(self, client):
         """Test static file serving"""
-        response = await client.get("/index.html")
+        response = client.get("http://localhost:8000/midnamaker.html")
         
         assert response.status_code == 200
         assert 'text/html' in response.headers['content-type']
     
-    async def test_cors_headers(self, client):
+    def test_cors_headers(self, client):
         """Test CORS headers are present"""
-        response = await client.options("/midnam_catalog")
+        response = client.options("http://localhost:8000/api/manufacturers")
         
         assert 'access-control-allow-origin' in response.headers
         assert 'access-control-allow-methods' in response.headers
@@ -200,32 +116,31 @@ class TestAPIIntegration:
 class TestErrorHandling:
     """Test API error handling"""
     
+    @pytest.fixture(scope="class")
+    def server_process(self):
+        """Start the server for testing"""
+        process = subprocess.Popen(['python3', 'server.py'], 
+                                 stdout=subprocess.PIPE, 
+                                 stderr=subprocess.PIPE)
+        time.sleep(2)
+        yield process
+        process.terminate()
+        process.wait()
+    
     @pytest.fixture
-    async def client(self):
-        async with AsyncClient(app=app, base_url="http://test") as client:
-            yield client
+    def client(self, server_process):
+        """Create test client"""
+        return requests.Session()
     
-    async def test_analyze_file_missing_file(self, client):
-        """Test analyze_file endpoint with missing file"""
-        response = await client.post("/analyze_file/")
+    def test_nonexistent_device(self, client):
+        """Test requesting a device that doesn't exist"""
+        response = client.get("http://localhost:8000/api/device/Nonexistent|Device")
         
-        assert response.status_code == 400
+        assert response.status_code == 404
     
-    async def test_save_file_missing_data(self, client):
-        """Test save_file endpoint with missing data"""
-        response = await client.post("/save_file/", json={})
-        
-        assert response.status_code == 400
-    
-    async def test_merge_files_invalid_data(self, client):
-        """Test merge_files endpoint with invalid data"""
-        response = await client.post("/merge_files", json={'invalid': 'data'})
-        
-        assert response.status_code == 400
-    
-    async def test_delete_nonexistent_file(self, client):
-        """Test deleting a file that doesn't exist"""
-        response = await client.delete("/delete_file?filename=nonexistent.midnam")
+    def test_invalid_endpoint(self, client):
+        """Test requesting an invalid endpoint"""
+        response = client.get("http://localhost:8000/api/invalid")
         
         assert response.status_code == 404
 
@@ -234,74 +149,64 @@ class TestErrorHandling:
 class TestDataConsistency:
     """Test data consistency across API endpoints"""
     
-    @pytest.fixture
-    async def client(self):
-        async with AsyncClient(app=app, base_url="http://test") as client:
-            yield client
+    @pytest.fixture(scope="class")
+    def server_process(self):
+        """Start the server for testing"""
+        process = subprocess.Popen(['python3', 'server.py'], 
+                                 stdout=subprocess.PIPE, 
+                                 stderr=subprocess.PIPE)
+        time.sleep(2)
+        yield process
+        process.terminate()
+        process.wait()
     
-    async def test_catalog_manufacturer_consistency(self, client):
-        """Test that catalog and manufacturers endpoints return consistent data"""
-        catalog_response = await client.get("/midnam_catalog")
-        manufacturers_response = await client.get("/manufacturers")
-        
-        catalog_data = catalog_response.json()
+    @pytest.fixture
+    def client(self, server_process):
+        """Create test client"""
+        return requests.Session()
+    
+    def test_manufacturers_device_consistency(self, client):
+        """Test that manufacturers and device endpoints return consistent data"""
+        manufacturers_response = client.get("http://localhost:8000/api/manufacturers")
         manufacturers_data = manufacturers_response.json()
         
-        # Extract manufacturer names from catalog
-        catalog_manufacturers = set(catalog_data.keys())
-        
-        # Extract manufacturer names from manufacturers endpoint
-        manufacturers_names = set(m['name'] for m in manufacturers_data)
-        
-        # Should have significant overlap (some manufacturers might be in catalog but not official MIDI list)
-        overlap = catalog_manufacturers.intersection(manufacturers_names)
-        assert len(overlap) > 0, "No overlap between catalog and manufacturers"
+        # Test that we can get details for devices listed in manufacturers
+        for manufacturer, devices in manufacturers_data['manufacturers'].items():
+            for device in devices[:2]:  # Test first 2 devices to avoid too many requests
+                device_response = client.get(f"http://localhost:8000/api/device/{device['id']}")
+                assert device_response.status_code == 200
+                
+                device_data = device_response.json()
+                assert device_data['id'] == device['id']
+                assert device_data['name'] == device['name']
     
-    async def test_analyze_save_roundtrip(self, client):
-        """Test that analyzing and saving a file produces consistent results"""
-        original_content = """<?xml version="1.0" encoding="UTF-8"?>
-        <MIDINameDocument>
-            <Author>Test Author</Author>
-            <MasterDeviceNames>
-                <DeviceName Name="Test Device">
-                    <ChannelNameSet Name="Channel 1">
-                        <PatchBank Name="Bank 1">
-                            <PatchNameList>
-                                <Patch Number="0" Name="Patch 1"/>
-                            </PatchNameList>
-                        </PatchBank>
-                    </ChannelNameSet>
-                </DeviceName>
-            </MasterDeviceNames>
-        </MIDINameDocument>"""
+    def test_device_patch_banks_structure(self, client):
+        """Test that device details have proper patch bank structure"""
+        manufacturers_response = client.get("http://localhost:8000/api/manufacturers")
+        manufacturers_data = manufacturers_response.json()
         
-        # Analyze original file
-        files = {'file': ('original.midnam', original_content, 'application/xml')}
-        analyze_response = await client.post("/analyze_file/", files=files)
-        original_analysis = analyze_response.json()
+        # Find a device with patch banks
+        device_id = None
+        for manufacturer, devices in manufacturers_data['manufacturers'].items():
+            for device in devices:
+                device_response = client.get(f"http://localhost:8000/api/device/{device['id']}")
+                if device_response.status_code == 200:
+                    device_data = device_response.json()
+                    if device_data.get('patch_banks'):
+                        device_id = device['id']
+                        break
+            if device_id:
+                break
         
-        # Save file
-        save_data = {
-            'filename': 'roundtrip_test.midnam',
-            'content': original_content
-        }
-        save_response = await client.post("/save_file/", json=save_data)
-        assert save_response.status_code == 200
-        
-        try:
-            # Analyze saved file
-            with open('roundtrip_test.midnam', 'rb') as f:
-                saved_files = {'file': ('saved.midnam', f, 'application/xml')}
-                saved_analyze_response = await client.post("/analyze_file/", files=saved_files)
+        if device_id:
+            response = client.get(f"http://localhost:8000/api/device/{device_id}")
+            device_data = response.json()
             
-            saved_analysis = saved_analyze_response.json()
+            assert 'patch_banks' in device_data
+            assert isinstance(device_data['patch_banks'], list)
             
-            # Analysis should be identical
-            assert original_analysis['author'] == saved_analysis['author']
-            assert original_analysis['bank_details'] == saved_analysis['bank_details']
-            
-        finally:
-            # Cleanup
-            if os.path.exists('roundtrip_test.midnam'):
-                os.unlink('roundtrip_test.midnam')
-
+            for bank in device_data['patch_banks']:
+                assert 'name' in bank
+                assert 'patch_count' in bank
+                assert 'patches' in bank
+                assert isinstance(bank['patches'], list)

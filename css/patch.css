@@ -1,0 +1,750 @@
+/* Patch Tab Styles */
+.patch-program-change-btn {
+    background: #007AFF;
+    color: white;
+    border: none;
+    padding: 0.25rem 0.5rem;
+    border-radius: 3px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background 0.2s;
+    font-family: monospace;
+}
+
+.patch-program-change-btn:hover {
+    background: #0056CC;
+}
+
+.bank-select-info {
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    background: #f8f9fa;
+    border-radius: 4px;
+    border: 1px solid #e9ecef;
+}
+
+.bank-select-commands {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+}
+
+.bank-select-command {
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    background: #e9ecef;
+    border-radius: 3px;
+    font-family: monospace;
+    font-size: 0.85rem;
+}
+
+.bank-select-btn {
+    background: #007AFF;
+    color: white;
+    border: none;
+    padding: 0.25rem 0.5rem;
+    border-radius: 3px;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: background 0.2s;
+    margin-left: 0.5rem;
+}
+
+.bank-select-btn:hover {
+    background: #0056CC;
+}
+
+.bank-select-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+.bank-select-summary {
+    padding: 0.5rem 1rem;
+    background: #f8f9fa;
+    border-top: 1px solid #e9ecef;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.bank-select-preview {
+    font-size: 0.9rem;
+    color: #495057;
+    font-family: monospace;
+}
+
+.bank-select-summary .bank-select-btn {
+    margin: 0;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.8rem;
+}
+
+.note-editor-controls {
+    background: #f8f9fa;
+    padding: 1rem;
+    border-radius: 4px;
+    margin: 1rem 0;
+}
+
+.note-editor-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.note-editor-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.note-table-container {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.note-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.note-table th {
+    background: #f8f9fa;
+    padding: 0.75rem;
+    text-align: left;
+    font-weight: 600;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.note-table td {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.note-table tr:last-child td {
+    border-bottom: none;
+}
+
+/* Black key row styling */
+.note-table tr.black-key-row {
+    background-color: #e8e8e8;
+}
+
+.note-table tr.black-key-row:hover {
+    background-color: #d8d8d8;
+}
+
+.note-table tr.black-key-row td {
+    background-color: #e8e8e8;
+}
+
+.note-table tr.black-key-row:hover td {
+    background-color: #d8d8d8;
+}
+
+/* Note actions styling */
+.note-actions {
+    text-align: center;
+    white-space: nowrap;
+}
+
+.note-actions .btn {
+    margin: 0 2px;
+    min-width: 32px;
+    height: 32px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.add-note-btn {
+    background: #28a745;
+    border-color: #28a745;
+    color: white;
+}
+
+.add-note-btn:hover {
+    background: #218838;
+    border-color: #1e7e34;
+}
+
+.remove-note-btn {
+    background: #dc3545;
+    border-color: #dc3545;
+    color: white;
+}
+
+.remove-note-btn:hover {
+    background: #c82333;
+    border-color: #bd2130;
+}
+
+/* Note name dropdown styling */
+.note-name-cell {
+    position: relative;
+}
+
+.note-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #ddd;
+    border-top: none;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    display: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.note-dropdown.dropdown-above {
+    top: auto;
+    bottom: 100%;
+    border-top: 1px solid #ddd;
+    border-bottom: none;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.note-dropdown-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 14px;
+}
+
+.note-dropdown-item:hover {
+    background: #f0f0f0;
+}
+
+.note-dropdown-item.selected {
+    background: #007AFF;
+    color: white;
+}
+
+.note-dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.note-number-input,
+.note-name-input {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    font-size: 0.9rem;
+}
+
+.note-number-input:focus,
+.note-name-input:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}
+
+/* Note number display styling */
+.note-number-display {
+    display: inline-block;
+    padding: 0.4rem 1rem;
+    text-align: center;
+    border-radius: 0px 6px 6px 0;
+    cursor: url('/assets/kbd.png') 0 0, pointer !important;
+    user-select: none;
+    border: 1px solid #ddd;
+    min-width: 4rem;
+}
+
+.note-number-display small {
+    display: inline;
+    font-size: 0.7rem;
+    opacity: 0.7;
+    margin-left: 0.25rem;
+}
+
+.patch-editor {
+    margin-top: 1rem;
+}
+
+.patch-controls {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 1rem;
+}
+
+.patch-list {
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.patch-item {
+    border-bottom: 1px solid #f0f0f0;
+    margin-left: 2rem;
+    border-left: 3px solid #007bff;
+    padding-left: 1rem;
+    margin-bottom: 0.5rem;
+}
+
+.patch-item:last-child {
+    border-bottom: none;
+}
+
+.patch-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem 1rem;
+    background: #f8f9fa;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.patch-info-inline {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    font-size: 0.9rem;
+}
+
+.patch-number {
+    font-weight: 600;
+    color: #007bff;
+    background: #e3f2fd;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: monospace;
+    color: #666;
+    margin-left: 0.5rem;
+}
+
+.patch-name {
+    font-weight: 500;
+    color: #333;
+    font-weight: 600;
+    color: #495057;
+}
+
+.patch-name.clickable {
+    cursor: pointer;
+    color: #007bff;
+    text-decoration: underline;
+    transition: color 0.2s ease;
+}
+
+.patch-name.clickable:hover {
+    color: #0056b3;
+    text-decoration: none;
+}
+
+.patch-program-change {
+    color: #666;
+    font-size: 0.85rem;
+}
+
+.patch-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.patch-details {
+    padding: 1rem;
+    background: white;
+}
+
+.patch-info {
+    margin-bottom: 1rem;
+    color: #666;
+}
+
+.patch-note-lists {
+    border-top: 1px solid #f0f0f0;
+    padding-top: 1rem;
+}
+
+.note-list-reference {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.5rem;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    margin-bottom: 0.5rem;
+    margin-left: 3rem;
+    border-left: 3px solid #28a745;
+    padding-left: 1rem;
+}
+
+.note-list-reference .note-list-name {
+    font-weight: 500;
+    color: #495057;
+}
+
+.patch-selection-list {
+    margin-top: 1rem;
+}
+
+.patch-bank-section {
+    margin-bottom: 1.5rem;
+}
+
+.patch-bank-section h5 {
+    margin: 0 0 0.5rem 0;
+    color: #666;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.patch-selection-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 0.75rem;
+    margin-bottom: 0.5rem;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.patch-selection-item:hover {
+    background: #f8f9fa;
+    border-color: #007AFF;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.patch-selection-item .patch-number {
+    font-family: monospace;
+    font-weight: bold;
+    color: #007AFF;
+    min-width: 40px;
+}
+
+.patch-selection-item .patch-name {
+    flex: 1;
+    font-weight: 500;
+}
+
+.patch-selection-item .patch-program-change {
+    font-family: monospace;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+.patch-selection {
+    background: #f8f9fa;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 1rem;
+}
+
+.patch-selection label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 600;
+    color: #333;
+}
+
+.patch-selection select {
+    width: 100%;
+    padding: 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+    background: white;
+}
+
+.patch-selection select:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.25);
+}
+
+.note-list-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem;
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 3px;
+    margin-bottom: 0.5rem;
+}
+
+.note-list-name {
+    font-weight: 500;
+    color: #495057;
+}
+
+.note-list-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+/* Patch Editor Styles */
+.patch-editor {
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    padding: 1.5rem;
+}
+
+.patch-info {
+    margin-bottom: 2rem;
+    padding-bottom: 1rem;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.patch-info h3 {
+    margin: 0 0 0.5rem 0;
+    color: #495057;
+    font-size: 1.5rem;
+}
+
+.patch-meta {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+}
+
+.patch-number {
+    background: #007bff;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    font-weight: 500;
+}
+
+.patch-bank {
+    color: #6c757d;
+    font-size: 0.9rem;
+    font-style: italic;
+}
+
+.patch-details {
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+}
+
+.detail-section {
+    background: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    padding: 1.5rem;
+}
+
+.detail-section h4 {
+    margin: 0 0 1rem 0;
+    color: #495057;
+    font-size: 1.1rem;
+}
+
+.form-group {
+    margin-bottom: 1rem;
+}
+
+.form-group:last-child {
+    margin-bottom: 0;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+    color: #495057;
+}
+
+.form-control {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 1rem;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.form-control:focus {
+    outline: 0;
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.note-names {
+    background: white;
+    border: 1px solid #e9ecef;
+    border-radius: 4px;
+    padding: 1rem;
+    min-height: 100px;
+}
+
+.note-names p {
+    margin: 0;
+    color: #6c757d;
+    font-style: italic;
+}
+
+.note-list-info {
+    margin-bottom: 1rem;
+    padding: 0.5rem;
+    background: #e9ecef;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+.note-count {
+    color: #6c757d;
+    font-weight: normal;
+}
+
+/* Note editing interface styles */
+.note-editor-actions {
+    margin-bottom: 1rem;
+}
+
+.note-table-container {
+    background: white;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.note-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.note-table th {
+    background: #f8f9fa;
+    padding: 0.75rem;
+    text-align: left;
+    font-weight: 600;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.note-table td {
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.note-table tr:last-child td {
+    border-bottom: none;
+}
+
+.note-actions {
+    text-align: center;
+    white-space: nowrap;
+}
+
+.note-actions .btn {
+    margin: 0 2px;
+    min-width: 32px;
+    height: 32px;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.add-note-btn {
+    background: #28a745;
+    border-color: #28a745;
+    color: white;
+}
+
+.add-note-btn:hover {
+    background: #218838;
+    border-color: #1e7e34;
+}
+
+.remove-note-btn {
+    background: #dc3545;
+    border-color: #dc3545;
+    color: white;
+}
+
+.remove-note-btn:hover {
+    background: #c82333;
+    border-color: #bd2130;
+}
+
+.note-name-cell {
+    position: relative;
+}
+
+.note-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: white;
+    border: 1px solid #ddd;
+    border-top: none;
+    max-height: 200px;
+    overflow-y: auto;
+    z-index: 1000;
+    display: none;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.note-dropdown.dropdown-above {
+    top: auto;
+    bottom: 100%;
+    border-top: 1px solid #ddd;
+    border-bottom: none;
+    box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.note-dropdown-item {
+    padding: 8px 12px;
+    cursor: pointer;
+    border-bottom: 1px solid #f0f0f0;
+    font-size: 14px;
+}
+
+.note-dropdown-item:hover {
+    background: #f0f0f0;
+}
+
+.note-dropdown-item.selected {
+    background: #007AFF;
+    color: white;
+}
+
+.note-dropdown-item:last-child {
+    border-bottom: none;
+}
+
+.note-number-input,
+.note-name-input {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 3px;
+    font-size: 0.9rem;
+}
+
+.note-number-input:focus,
+.note-name-input:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+}

@@ -28,8 +28,10 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
     def do_GET(self):
         if self.path.startswith('/patchfiles/'):
             self.serve_patchfile()
-        elif self.path == '/manufacturers':
+        elif self.path == '/manufacturers' or self.path == '/api/manufacturers':
             self.serve_manufacturers()
+        elif self.path.startswith('/api/device/'):
+            self.serve_device_details()
         elif self.path == '/midnam_catalog':
             self.serve_midnam_catalog()
         elif self.path.startswith('/analyze_file/'):
@@ -40,6 +42,8 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
     def do_POST(self):
         if self.path == '/save_file':
             self.save_file()
+        elif self.path == '/api/patch/save':
+            self.save_patch()
         elif self.path == '/clear_cache':
             self.clear_cache()
         elif self.path == '/merge_files':
@@ -86,6 +90,167 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
         except Exception as e:
             self.send_error(500, f"Error saving file: {str(e)}")
     
+    def save_patch(self):
+        """Save patch changes"""
+        try:
+            import json
+            content_length = int(self.headers['Content-Length'])
+            post_data = self.rfile.read(content_length).decode()
+            
+            # Parse JSON data
+            data = json.loads(post_data)
+            device_id = data.get('deviceId')
+            patch_bank = data.get('patchBank')
+            patch = data.get('patch')
+            notes = data.get('notes', [])
+            
+            if not device_id or not patch:
+                self.send_error(400, "Missing required fields")
+                return
+            
+            # Find the corresponding .midnam file
+            patch_files = self.get_patch_files()
+            device_file = None
+            
+            for pfile in patch_files:
+                if pfile.get('id') == device_id:
+                    device_file = pfile.get('file_path')
+                    break
+            
+            if not device_file or not os.path.exists(device_file):
+                self.send_error(404, "Device file not found")
+                return
+            
+            # Parse XML and update patch notes
+            import xml.etree.ElementTree as ET
+            tree = ET.parse(device_file)
+            root = tree.getroot()
+            
+            # Find the patch and update its note list
+            for bank in root.findall('.//PatchBank'):
+                if bank.get('Name') == patch_bank:
+                    for patch_elem in bank.findall('.//Patch'):
+                        if patch_elem.get('Name') == patch.get('name'):
+                            # Update patch name and number
+                            if patch.get('name'):
+                                patch_elem.set('Name', patch.get('name'))
+                            if patch.get('number'):
+                                patch_elem.set('UserID', patch.get('number'))
+                            
+                            # Update note list
+                            note_list_name = None
+                            uses_note_list = patch_elem.find('UsesNoteNameList')
+                            if uses_note_list is not None:
+                                note_list_name = uses_note_list.get('Name')
+                            
+                            if note_list_name:
+                                # Find and update the note list
+                                for note_list in root.findall('.//NoteNameList'):
+                                    if note_list.get('Name') == note_list_name:
+                                        # Clear existing notes
+                                        for note in note_list.findall('Note'):
+                                            note_list.remove(note)
+                                        
+                                        # Add updated notes
+                                        for note_data in notes:
+                                            note_elem = ET.SubElement(note_list, 'Note')
+                                            note_elem.set('Number', str(note_data.get('number', '')))
+                                            note_elem.set('Name', note_data.get('name', ''))
+                                        
+                                        break
+                            break
+                    break
+            
+            # Create backup
+            import shutil
+            from datetime import datetime
+            backup_name = f'{device_file}.backup.{datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}'
+            shutil.copy(device_file, backup_name)
+            
+            # Pretty print XML
+            self.indent_xml(root)
+            
+            # Save updated XML with pretty printing
+            tree.write(device_file, encoding='utf-8', xml_declaration=True)
+            
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({
+                'success': True,
+                'backup': backup_name,
+                'device_id': device_id,
+                'patch_name': patch.get('name')
+            }).encode())
+            
+        except Exception as e:
+            self.send_error(500, f"Error saving patch: {str(e)}")
+    
+    def get_patch_files(self):
+        """Get list of all patch files with their metadata"""
+        patch_files = []
+        
+        # Build manufacturer ID lookup
+        manufacturer_ids = self.build_manufacturer_id_lookup()
+        
+        # Find all .midnam files
+        for root, dirs, files in os.walk('patchfiles'):
+            for file in files:
+                if file.endswith('.midnam'):
+                    file_path = os.path.join(root, file)
+                    relative_path = file_path.replace('\\', '/')
+                    
+                    try:
+                        with open(file_path, 'r', encoding='utf-8') as f:
+                            content = f.read()
+                        
+                        # Parse XML
+                        import xml.etree.ElementTree as ET
+                        root_elem = ET.fromstring(content)
+                        
+                        # Extract device information
+                        device_info = self.extract_device_info(root_elem, relative_path)
+                        if device_info:
+                            # Look up manufacturer ID
+                            manufacturer_id = manufacturer_ids.get(device_info['manufacturer'])
+                            if manufacturer_id:
+                                device_info['manufacturer_id'] = manufacturer_id
+                            
+                            # Create device key
+                            device_key = f"{device_info['manufacturer']}|{device_info['model']}"
+                            
+                            patch_files.append({
+                                'id': device_key,
+                                'name': device_info['model'],
+                                'manufacturer': device_info['manufacturer'],
+                                'type': device_info.get('type', 'Unknown'),
+                                'file_path': relative_path,
+                                'manufacturer_id': device_info.get('manufacturer_id'),
+                                'family_id': device_info.get('family_id'),
+                                'device_id': device_info.get('device_id')
+                            })
+                    except Exception as e:
+                        print(f"Error processing {file_path}: {e}")
+                        continue
+        
+        return patch_files
+    
+    def indent_xml(self, elem, level=0):
+        """Pretty-print XML by adding indentation"""
+        i = "\n" + level * "  "
+        if len(elem):
+            if not elem.text or not elem.text.strip():
+                elem.text = i + "  "
+            if not elem.tail or not elem.tail.strip():
+                elem.tail = i
+            for child in elem:
+                self.indent_xml(child, level+1)
+            if not child.tail or not child.tail.strip():
+                child.tail = i
+        else:
+            if level and (not elem.tail or not elem.tail.strip()):
+                elem.tail = i
+    
     def serve_patchfile(self):
         """Serve patchfiles from the patchfiles directory"""
         try:
@@ -116,32 +281,275 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
             self.send_error(500, f"Error serving file: {str(e)}")
     
     def serve_manufacturers(self):
-        """Serve manufacturer data"""
+        """Serve manufacturer data from actual .midnam files"""
         try:
-            # For now, return a static list of manufacturers
-            # In a real implementation, this would fetch from the npm package
-            manufacturers = [
-                {"name": "Alesis Studio Electronics", "id": "00 00 0E"},
-                {"name": "Yamaha Corporation", "id": "43"},
-                {"name": "Roland Corporation", "id": "41"},
-                {"name": "Korg Inc", "id": "42"},
-                {"name": "Kawai Musical Instruments", "id": "40"},
-                {"name": "Casio Computer Co Ltd", "id": "44"},
-                {"name": "Akai Electric Co Ltd", "id": "47"},
-                {"name": "Sony Corporation", "id": "4C"},
-                {"name": "Behringer GmbH", "id": "00 20 32"},
-                {"name": "Arturia", "id": "00 20 6B"},
-                {"name": "Novation", "id": "00 20 29"},
-                {"name": "M-Audio", "id": "00 20 0D"}
-            ]
+            # Build catalog by scanning all .midnam files
+            manufacturers_dict = {}
+            
+            # First, build a manufacturer ID lookup from .middev files
+            manufacturer_ids = self.build_manufacturer_id_lookup()
+            
+            # Find all .midnam files
+            print("Scanning for .midnam files...")
+            file_count = 0
+            for root, dirs, files in os.walk('patchfiles'):
+                for file in files:
+                    if file.endswith('.midnam'):
+                        file_count += 1
+                        file_path = os.path.join(root, file)
+                        relative_path = file_path.replace('\\', '/')  # Normalize path separators
+                        
+                        try:
+                            with open(file_path, 'r', encoding='utf-8') as f:
+                                content = f.read()
+                            
+                            # Parse XML
+                            import xml.etree.ElementTree as ET
+                            root_elem = ET.fromstring(content)
+                            
+                            # Extract device information
+                            device_info = self.extract_device_info(root_elem, relative_path)
+                            if device_info:
+                                # Look up manufacturer ID from .middev files
+                                manufacturer_id = manufacturer_ids.get(device_info['manufacturer'])
+                                if manufacturer_id:
+                                    device_info['manufacturer_id'] = manufacturer_id
+                                
+                                # Create device key from manufacturer + model
+                                device_key = f"{device_info['manufacturer']}|{device_info['model']}"
+                                
+                                if device_info['manufacturer'] not in manufacturers_dict:
+                                    manufacturers_dict[device_info['manufacturer']] = []
+                                
+                                # Add device to manufacturer's list
+                                device_data = {
+                                    'id': device_key,
+                                    'name': device_info['model'],
+                                    'type': device_info.get('type', 'Unknown'),
+                                    'file_path': relative_path,
+                                    'manufacturer_id': device_info.get('manufacturer_id'),
+                                    'family_id': device_info.get('family_id'),
+                                    'device_id': device_info.get('device_id')
+                                }
+                                
+                                manufacturers_dict[device_info['manufacturer']].append(device_data)
+                                
+                        except Exception as e:
+                            print(f"Error parsing {file_path}: {e}")
+                            continue
+            
+            print(f"Scanned {file_count} .midnam files, found {len(manufacturers_dict)} manufacturers")
+            
+            device_types = ["Synthesizer", "Drum Machine", "Sampler", "Controller", "Effects Unit", "Unknown"]
+            
+            response_data = {
+                "manufacturers": manufacturers_dict,
+                "deviceTypes": device_types
+            }
             
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
             self.end_headers()
-            self.wfile.write(json.dumps(manufacturers).encode())
+            self.wfile.write(json.dumps(response_data).encode())
             
         except Exception as e:
             self.send_error(500, f"Error serving manufacturers: {str(e)}")
+
+    def serve_device_details(self):
+        """Serve detailed information about a specific device"""
+        try:
+            # Extract device ID from URL (e.g., /api/device/Alesis%7CD4 -> Alesis|D4)
+            device_id = self.path.replace('/api/device/', '')
+            device_id = device_id.replace('%7C', '|')  # URL decode the pipe character
+            
+            print(f"Requesting device details for: {device_id}")
+            
+            # Find the device in our manufacturers data
+            manufacturers_data = self.get_manufacturers_data()
+            device_data = None
+            
+            for manufacturer, devices in manufacturers_data.items():
+                for device in devices:
+                    if device['id'] == device_id:
+                        device_data = device
+                        break
+                if device_data:
+                    break
+            
+            if not device_data:
+                self.send_error(404, f"Device not found: {device_id}")
+                return
+            
+            # Read the actual .midnam file
+            file_path = device_data['file_path']
+            if not os.path.exists(file_path):
+                self.send_error(404, f"Device file not found: {file_path}")
+                return
+            
+            with open(file_path, 'r', encoding='utf-8') as f:
+                midnam_content = f.read()
+            
+            # Parse the XML to extract more details
+            import xml.etree.ElementTree as ET
+            root_elem = ET.fromstring(midnam_content)
+            
+            # Extract additional device information
+            device_details = {
+                'id': device_data['id'],
+                'name': device_data['name'],
+                'type': device_data['type'],
+                'file_path': device_data['file_path'],
+                'manufacturer_id': device_data.get('manufacturer_id'),
+                'family_id': device_data.get('family_id'),
+                'device_id': device_data.get('device_id'),
+                'midnam_content': midnam_content,
+                'raw_xml': midnam_content
+            }
+            
+            # Try to extract patch banks and patches
+            banks = root_elem.findall('.//PatchBank')
+            patches = root_elem.findall('.//Patch')
+            note_lists = root_elem.findall('.//NoteNameList')
+            
+            device_details['patch_banks'] = []
+            for bank in banks:
+                bank_name = bank.get('Name', 'Unnamed Bank')
+                bank_patches = bank.findall('.//Patch')
+                
+                patches_data = []
+                for patch in bank_patches:
+                    patch_name = patch.get('Name', 'Unnamed')
+                    patch_number = patch.get('Number', '0')
+                    
+                    # Find the note name list used by this patch
+                    uses_note_list = patch.find('.//UsesNoteNameList')
+                    note_list_name = uses_note_list.get('Name', '') if uses_note_list is not None else ''
+                    
+                    patches_data.append({
+                        'name': patch_name,
+                        'number': patch_number,
+                        'note_list_name': note_list_name
+                    })
+                
+                device_details['patch_banks'].append({
+                    'name': bank_name,
+                    'patch_count': len(bank_patches),
+                    'patches': patches_data
+                })
+            
+            device_details['total_patches'] = len(patches)
+            device_details['total_note_lists'] = len(note_lists)
+            
+            # Extract ChannelNameSetAssignments (channel assignments)
+            device_details['channel_name_set_assignments'] = []
+            channel_assignments = root_elem.findall('.//ChannelNameSetAssign')
+            for assignment in channel_assignments:
+                channel = assignment.get('Channel', '')
+                name_set = assignment.get('NameSet', '')
+                device_details['channel_name_set_assignments'].append({
+                    'channel': channel,
+                    'name_set': name_set
+                })
+
+            # Extract ChannelNameSets (the actual name sets)
+            device_details['channel_name_sets'] = []
+            channel_name_sets = root_elem.findall('.//ChannelNameSet')
+            for name_set in channel_name_sets:
+                name_set_name = name_set.get('Name', 'Unnamed Name Set')
+                
+                # Extract available channels
+                available_channels = []
+                for channel in name_set.findall('.//AvailableChannel'):
+                    channel_num = channel.get('Channel', '')
+                    available = channel.get('Available', 'false')
+                    available_channels.append({
+                        'channel': channel_num,
+                        'available': available.lower() == 'true'
+                    })
+                
+                device_details['channel_name_sets'].append({
+                    'name': name_set_name,
+                    'available_channels': available_channels
+                })
+
+            # Extract note lists (for patch editing context)
+            device_details['note_lists'] = []
+            for note_list in note_lists:
+                note_list_name = note_list.get('Name', 'Unnamed Note List')
+                note_list_id = note_list.get('ID', '')
+
+                # Extract individual notes
+                notes = []
+                for note in note_list.findall('.//Note'):
+                    note_number = note.get('Number', '')
+                    note_name = note.get('Name', '')
+                    notes.append({
+                        'number': note_number,
+                        'name': note_name
+                    })
+
+                device_details['note_lists'].append({
+                    'name': note_list_name,
+                    'id': note_list_id,
+                    'notes': notes
+                })
+            
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps(device_details).encode())
+            
+        except Exception as e:
+            self.send_error(500, f"Error serving device details: {str(e)}")
+
+    def get_manufacturers_data(self):
+        """Get manufacturers data (cached version of serve_manufacturers logic)"""
+        manufacturers_dict = {}
+        
+        # First, build a manufacturer ID lookup from .middev files
+        manufacturer_ids = self.build_manufacturer_id_lookup()
+        
+        # Find all .midnam files
+        for root, dirs, files in os.walk('patchfiles'):
+            for file in files:
+                if file.endswith('.midnam'):
+                    file_path = os.path.join(root, file)
+                    relative_path = file_path.replace('\\', '/')
+                    
+                    try:
+                        with open(file_path, 'r', encoding='utf-8') as f:
+                            content = f.read()
+                        
+                        import xml.etree.ElementTree as ET
+                        root_elem = ET.fromstring(content)
+                        
+                        device_info = self.extract_device_info(root_elem, relative_path)
+                        if device_info:
+                            manufacturer_id = manufacturer_ids.get(device_info['manufacturer'])
+                            if manufacturer_id:
+                                device_info['manufacturer_id'] = manufacturer_id
+                            
+                            device_key = f"{device_info['manufacturer']}|{device_info['model']}"
+                            
+                            if device_info['manufacturer'] not in manufacturers_dict:
+                                manufacturers_dict[device_info['manufacturer']] = []
+                            
+                            device_data = {
+                                'id': device_key,
+                                'name': device_info['model'],
+                                'type': device_info.get('type', 'Unknown'),
+                                'file_path': relative_path,
+                                'manufacturer_id': device_info.get('manufacturer_id'),
+                                'family_id': device_info.get('family_id'),
+                                'device_id': device_info.get('device_id')
+                            }
+                            
+                            manufacturers_dict[device_info['manufacturer']].append(device_data)
+                            
+                    except Exception as e:
+                        continue
+        
+        return manufacturers_dict
 
     def build_manufacturer_id_lookup(self):
         """Build a lookup table of manufacturer names to IDs from .middev files"""
@@ -175,9 +583,9 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                                             hex_val = int(manufacturer_id, 16)
                                             three_byte_id = f"00 00 {manufacturer_id.zfill(2).upper()}"
                                             manufacturer_ids[manufacturer_name] = three_byte_id
-                                            print(f"Found manufacturer ID: {manufacturer_name} = {three_byte_id}")
+                                            # Found manufacturer ID: {manufacturer_name} = {three_byte_id}
                                         except ValueError:
-                                            print(f"Invalid hex manufacturer ID: {manufacturer_id}")
+                                            pass  # Invalid hex manufacturer ID
                             
                         except Exception as e:
                             print(f"Error parsing {file_path}: {e}")

@@ -1,0 +1,156 @@
+/* MIDI Controls Styles */
+.global-midi-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(10px);
+    padding: 0.5rem 0.75rem;
+    border-radius: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    min-width: 240px;
+}
+
+.midi-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    border-radius: 15px;
+    transition: all 0.3s ease;
+    user-select: none;
+}
+
+.midi-toggle:hover {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.midi-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: #dc3545;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.midi-dot.enabled {
+    background: #28a745;
+    box-shadow: 0 0 8px rgba(40, 167, 69, 0.4);
+}
+
+.midi-dot.enabled::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 6px;
+    height: 6px;
+    background: white;
+    border-radius: 50%;
+}
+
+.midi-label {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.9);
+}
+
+.midi-device-section {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    flex: 1;
+}
+
+.midi-device-select {
+    padding: 0.375rem 0.5rem;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    background: white;
+    min-width: 180px;
+}
+
+.midi-device-select:disabled {
+    background: #f8f9fa;
+    color: #6c757d;
+}
+
+.midi-device-info {
+    font-size: 0.7rem;
+    color: rgba(255, 255, 255, 0.7);
+    font-weight: 500;
+}
+
+.midi-device-info.connected {
+    color: #28a745;
+}
+
+/* MIDI Note Utilities */
+.note-number-cell {
+    font-family: monospace;
+    text-align: center;
+    background: #007AFF;
+    color: white;
+    padding: 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: background 0.2s;
+    width: 80px;
+    border: none;
+    font-size: 12px;
+    font-weight: 500;
+}
+
+.note-number-cell:hover {
+    background: #0056CC;
+}
+
+.note-number-cell.playable {
+    background: #17a2b8;
+    border: 1px solid #138496;
+}
+
+.note-number-cell.playable:hover {
+    background: #138496;
+}
+
+.play-note-btn {
+    background: #17a2b8;
+    font-size: 12px;
+    padding: 4px 8px;
+    min-width: 60px;
+}
+
+.play-note-btn:hover {
+    background: #138496;
+}
+
+/* Piano key styling */
+.note-table tr.black-key {
+    background-color: #f0f0f0;
+}
+
+.note-table tr.black-key .note-number-cell {
+    background: #333333;
+    color: white;
+    border: 2px solid #000;
+}
+
+.note-table tr.black-key .note-number-cell:hover {
+    background: #555555;
+}
+
+.note-table tr.middle-c {
+    background-color: #fff3cd;
+    border-left: 4px solid #ffc107;
+}
+
+.note-table tr.middle-c .note-number-cell {
+    background: #ffeaa7;
+    font-weight: bold;
+    color: #856404;
+}
