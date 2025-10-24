@@ -514,8 +514,43 @@ export class PatchManager {
             });
         });
         
+        // Position the dropdown using fixed positioning
+        this.positionDropdown(index, dropdown);
+        
         dropdown.style.display = 'block';
         this.filterDropdown(index, '');
+    }
+    
+    positionDropdown(index, dropdown) {
+        const input = document.getElementById(`note-input-${index}`);
+        if (!input) return;
+        
+        const inputRect = input.getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+        const dropdownMaxHeight = 200; // Match CSS max-height
+        
+        // Calculate if there's space below
+        const spaceBelow = viewportHeight - inputRect.bottom;
+        const spaceAbove = inputRect.top;
+        
+        // Position dropdown
+        dropdown.style.position = 'fixed';
+        dropdown.style.left = `${inputRect.left}px`;
+        dropdown.style.width = `${inputRect.width}px`;
+        dropdown.style.minWidth = '200px';
+        
+        // Decide whether to show above or below
+        if (spaceBelow >= dropdownMaxHeight || spaceBelow >= spaceAbove) {
+            // Show below
+            dropdown.style.top = `${inputRect.bottom}px`;
+            dropdown.style.bottom = 'auto';
+            dropdown.classList.remove('dropdown-above');
+        } else {
+            // Show above
+            dropdown.style.bottom = `${viewportHeight - inputRect.top}px`;
+            dropdown.style.top = 'auto';
+            dropdown.classList.add('dropdown-above');
+        }
     }
     
     hideNoteDropdown(index) {
@@ -567,6 +602,8 @@ export class PatchManager {
         // Keep dropdown visible if there are matches
         if (visibleCount > 0) {
             dropdown.style.display = 'block';
+            // Reposition in case content changed or scroll occurred
+            this.positionDropdown(index, dropdown);
         }
     }
     

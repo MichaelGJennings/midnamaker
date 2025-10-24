@@ -1174,6 +1174,16 @@
         <Note Number="84" Name="TrqWrnch" />
         <Note Number="85" Name="AirWrnch" />
         <Note Number="86" Name="AirWrnch" />
+        <Note Number="87" Name="AirWrnch" />
+        <Note Number="88" Name="AirWrnch" />
+        <Note Number="89" Name="AirWrnch" />
+        <Note Number="90" Name="AirWrnch" />
+        <Note Number="91" Name="Silence" />
+        <Note Number="92" Name="FaceSlap" />
+        <Note Number="93" Name="FaceSlap" />
+        <Note Number="94" Name="FaceSlap" />
+        <Note Number="95" Name="FaceSlap" />
+        <Note Number="96" Name="FaceSlap" />
       </NoteNameList>
       <NoteNameList Name="Hard &amp; Rockin' Notes">
         <Note Number="36" Name="Stab HL" />
@@ -1332,7 +1342,16 @@
         <Note Number="78" Name="Mute Cuica" />
         <Note Number="79" Name="Open Cuica" />
         <Note Number="80" Name="Mute Triangle" />
-        <Note Number="81" Name="Open Triangle" />
+        <Note Number="81" Name="Anvil" />
+        <Note Number="82" Name="Tamboo" />
+        <Note Number="83" Name="Anvil" />
+        <Note Number="84" Name="Lo Ethnc" />
+        <Note Number="85" Name="DinrBell" />
+        <Note Number="86" Name="Md Ethnc" />
+        <Note Number="87" Name="Triangle" />
+        <Note Number="88" Name="Md Ethnc" />
+        <Note Number="89" Name="Hi Ethnc" />
+        <Note Number="90" Name="LoTimble" />
       </NoteNameList>
       <NoteNameList Name="Chromatic #1 Notes">
         <Note Number="36" Name="Custom Kick 3" />
