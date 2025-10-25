@@ -392,6 +392,18 @@ export class ToolsManager {
         appState.selectedPatch = patch;
         appState.selectedPatchBank = bank;
         
+        // Send MIDI patch change if navigating to a different patch and MIDI is enabled
+        if (isDifferentPatch && window.midiManager && window.midiManager.isDeviceSelected()) {
+            // Send program change for the patch
+            if (patch.programChange !== undefined) {
+                const programNumber = parseInt(patch.programChange);
+                if (!isNaN(programNumber)) {
+                    window.midiManager.sendProgramChange(programNumber, 0);
+                    this.logToDebugConsole(`Sent patch change: Program ${programNumber} for "${patchName}"`, 'success');
+                }
+            }
+        }
+        
         // Switch to the patch tab
         if (window.tabManager) {
             window.tabManager.switchTab('patch');

@@ -211,10 +211,9 @@ export class PatchManager {
                                                 return `
                                                     <tr data-note-index="${index}" class="${isBlack ? 'black-key-row' : ''}">
                                                         <td>
-                                                            <span class="note-number-display" 
+                                                            <span class="note-number-display ${isBlack ? 'black-key' : 'white-key'}" 
                                                                   data-note="${noteNum}"
-                                                                  data-piano-key="${pianoKey}"
-                                                                  style="${isBlack ? 'background: #333; color: white;' : ''}">
+                                                                  data-piano-key="${pianoKey}">
                                                                 ${noteNum} <small>(${pianoKey})</small>
                                                             </span>
                                                         </td>
@@ -285,49 +284,132 @@ export class PatchManager {
         // Build note name index from existing notes
         this.buildNoteNameIndex();
         
-        // Add event listeners to each row
-        const rows = tbody.querySelectorAll('tr[data-note-index]');
-        rows.forEach((row, index) => {
-            const noteInput = row.querySelector('.note-name-input');
-            const insertBtn = row.querySelector('button[data-index]');
-            const deleteBtn = row.querySelector('.remove-note-btn');
-            const noteDisplay = row.querySelector('.note-number-display');
+        // Remove old event listeners by replacing tbody with a clone
+        // This prevents duplicate listeners from accumulating
+        if (!tbody.dataset.listenersInitialized) {
+            // First time setup - use event delegation on tbody
+            tbody.dataset.listenersInitialized = 'true';
             
-            // Note input event listeners
-            if (noteInput) {
-                noteInput.addEventListener('focus', () => this.handleNoteInputFocus(index));
-                noteInput.addEventListener('blur', () => this.handleNoteInputBlur(index));
-                noteInput.addEventListener('keydown', (e) => this.handleNoteInputKeydown(e, index));
-                noteInput.addEventListener('input', (e) => this.handleNoteInputChange(e, index));
-            }
-            
-            // Insert button listener
-            if (insertBtn) {
-                insertBtn.addEventListener('click', () => this.insertNote(index));
-                insertBtn.addEventListener('keydown', (e) => this.handleInsertButtonKeydown(e, index));
-            }
-            
-            // Delete button listener
-            if (deleteBtn) {
-                deleteBtn.addEventListener('click', () => this.removeNote(index));
-            }
-            
-            // Note display click listener
-            if (noteDisplay) {
-                noteDisplay.addEventListener('click', () => {
-                    const noteNum = parseInt(noteDisplay.getAttribute('data-note'));
-                    this.playNote(noteNum);
-                });
+            // Use event delegation for click events
+            tbody.addEventListener('click', (e) => {
+                const target = e.target;
                 
-                // Set tooltip immediately (no delay)
-                this.updateNoteDisplayTooltip(noteDisplay);
+                // Handle insert button clicks (button with ID starting with "insert-btn-")
+                if (target.tagName === 'BUTTON' && target.id && target.id.startsWith('insert-btn-')) {
+                    const index = parseInt(target.getAttribute('data-index'));
+                    if (!isNaN(index)) {
+                        this.insertNote(index);
+                    }
+                    return;
+                }
+                
+                // Handle delete button clicks
+                if (target.classList.contains('remove-note-btn') || target.closest('.remove-note-btn')) {
+                    const row = target.closest('tr[data-note-index]');
+                    if (row) {
+                        const index = parseInt(row.getAttribute('data-note-index'));
+                        if (!isNaN(index)) {
+                            this.removeNote(index);
+                        }
+                    }
+                    return;
+                }
+                
+                // Handle note number display clicks (for MIDI playback)
+                if (target.classList.contains('note-number-display')) {
+                    const noteNum = parseInt(target.getAttribute('data-note'));
+                    if (!isNaN(noteNum)) {
+                        this.playNote(noteNum);
+                    }
+                    return;
+                }
+            });
+            
+            // Use event delegation for keydown events
+            tbody.addEventListener('keydown', (e) => {
+                const target = e.target;
+                
+                // Handle insert button keydown (button with ID starting with "insert-btn-")
+                if (target.tagName === 'BUTTON' && target.id && target.id.startsWith('insert-btn-')) {
+                    const index = parseInt(target.getAttribute('data-index'));
+                    if (!isNaN(index)) {
+                        this.handleInsertButtonKeydown(e, index);
+                    }
+                    return;
+                }
+                
+                // Handle note input keydown
+                if (target.classList.contains('note-name-input')) {
+                    const row = target.closest('tr[data-note-index]');
+                    if (row) {
+                        const index = parseInt(row.getAttribute('data-note-index'));
+                        if (!isNaN(index)) {
+                            this.handleNoteInputKeydown(e, index);
+                        }
+                    }
+                    return;
+                }
+            });
+            
+            // Use event delegation for focus events
+            tbody.addEventListener('focus', (e) => {
+                const target = e.target;
+                if (target.classList.contains('note-name-input')) {
+                    const row = target.closest('tr[data-note-index]');
+                    if (row) {
+                        const index = parseInt(row.getAttribute('data-note-index'));
+                        if (!isNaN(index)) {
+                            this.handleNoteInputFocus(index);
+                        }
+                    }
+                }
+            }, true); // Use capture phase for focus events
+            
+            // Use event delegation for blur events
+            tbody.addEventListener('blur', (e) => {
+                const target = e.target;
+                if (target.classList.contains('note-name-input')) {
+                    const row = target.closest('tr[data-note-index]');
+                    if (row) {
+                        const index = parseInt(row.getAttribute('data-note-index'));
+                        if (!isNaN(index)) {
+                            this.handleNoteInputBlur(index);
+                        }
+                    }
+                }
+            }, true); // Use capture phase for blur events
+            
+            // Use event delegation for input events
+            tbody.addEventListener('input', (e) => {
+                const target = e.target;
+                if (target.classList.contains('note-name-input')) {
+                    const row = target.closest('tr[data-note-index]');
+                    if (row) {
+                        const index = parseInt(row.getAttribute('data-note-index'));
+                        if (!isNaN(index)) {
+                            this.handleNoteInputChange(e, index);
+                        }
+                    }
+                }
+            });
+            
+            // Global keyboard listener for Escape key (only add once)
+            if (!this.escapeListenerInitialized) {
+                this.escapeListenerInitialized = true;
+                document.addEventListener('keydown', (e) => {
+                    if (e.key === 'Escape') {
+                        this.hideAllDropdowns();
+                    }
+                });
             }
-        });
+        }
         
-        // Global keyboard listener for Escape key
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                this.hideAllDropdowns();
+        // Update tooltips for all note displays
+        const rows = tbody.querySelectorAll('tr[data-note-index]');
+        rows.forEach((row) => {
+            const noteDisplay = row.querySelector('.note-number-display');
+            if (noteDisplay) {
+                this.updateNoteDisplayTooltip(noteDisplay);
             }
         });
     }
@@ -746,10 +828,9 @@ export class PatchManager {
         
         newRow.innerHTML = `
             <td>
-                <span class="note-number-display" 
+                <span class="note-number-display ${isBlack ? 'black-key' : 'white-key'}" 
                       data-note="${newNoteNumber}"
-                      data-piano-key="${pianoKey}"
-                      style="${isBlack ? 'background: #333; color: white;' : ''}">
+                      data-piano-key="${pianoKey}">
                     ${newNoteNumber} <small>(${pianoKey})</small>
                 </span>
             </td>
@@ -814,10 +895,9 @@ export class PatchManager {
         
         newRow.innerHTML = `
             <td>
-                <span class="note-number-display" 
+                <span class="note-number-display ${isBlack ? 'black-key' : 'white-key'}" 
                       data-note="${newNoteNumber}"
-                      data-piano-key="${pianoKey}"
-                      style="${isBlack ? 'background: #333; color: white;' : ''}">
+                      data-piano-key="${pianoKey}">
                     ${newNoteNumber} <small>(${pianoKey})</small>
                 </span>
             </td>
