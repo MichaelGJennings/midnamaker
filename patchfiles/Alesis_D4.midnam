@@ -724,7 +724,7 @@
         <Note Number="80" Name="Triangle" />
         <Note Number="81" Name="Triangle" />
         <Note Number="82" Name="Puh!" />
-        <Note Number="83" Name="Puh-Tooy" />
+        <Note Number="83" Name="Puh-tooy" />
         <Note Number="84" Name="Low Pipe" />
         <Note Number="85" Name="Low Pipe" />
         <Note Number="86" Name="Low Pipe" />
@@ -1093,7 +1093,7 @@
         <Note Number="66" Name="Lo W/Vrb" />
         <Note Number="67" Name="Hi Muted" />
         <Note Number="68" Name="Md Muted" />
-        <Note Number="69" Name="LatCabas" />
+        <Note Number="69" Name="FatCabas" />
         <Note Number="70" Name="Maracas" />
         <Note Number="71" Name="Hi Vibra" />
         <Note Number="72" Name="Lo Vibra" />
@@ -1106,15 +1106,15 @@
         <Note Number="79" Name="Hollow 3" />
         <Note Number="80" Name="GlassBrk" />
         <Note Number="81" Name="Hollow 4" />
-        <Note Number="82" Name="LoDbl RM" />
-        <Note Number="83" Name="Tension" />
-        <Note Number="84" Name="WindowBrk" />
-        <Note Number="85" Name="Hollow 5" />
-        <Note Number="86" Name="Hollow 6" />
-        <Note Number="87" Name="Re-Bent" />
-        <Note Number="88" Name="Hollow 7" />
-        <Note Number="89" Name="BentBngo" />
-        <Note Number="90" Name="Hollow 8" />
+        <Note Number="82" Name="WindowBrk" />
+        <Note Number="83" Name="Hollow 5" />
+        <Note Number="84" Name="Hollow 6" />
+        <Note Number="85" Name="Re-Bent" />
+        <Note Number="86" Name="Hollow 7" />
+        <Note Number="87" Name="BentBngo" />
+        <Note Number="88" Name="Hollow 8" />
+        <Note Number="89" Name="DinrBell" />
+        <Note Number="90" Name="Pwr Snap" />
         <Note Number="91" Name="DinrBell" />
         <Note Number="92" Name="Pwr Snap" />
         <Note Number="93" Name="DinrBell" />
