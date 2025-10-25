@@ -211,10 +211,9 @@ export class PatchManager {
                                                 return `
                                                     <tr data-note-index="${index}" class="${isBlack ? 'black-key-row' : ''}">
                                                         <td>
-                                                            <span class="note-number-display" 
+                                                            <span class="note-number-display ${isBlack ? 'black-key' : 'white-key'}" 
                                                                   data-note="${noteNum}"
-                                                                  data-piano-key="${pianoKey}"
-                                                                  style="${isBlack ? 'background: #333; color: white;' : ''}">
+                                                                  data-piano-key="${pianoKey}">
                                                                 ${noteNum} <small>(${pianoKey})</small>
                                                             </span>
                                                         </td>
@@ -829,10 +828,9 @@ export class PatchManager {
         
         newRow.innerHTML = `
             <td>
-                <span class="note-number-display" 
+                <span class="note-number-display ${isBlack ? 'black-key' : 'white-key'}" 
                       data-note="${newNoteNumber}"
-                      data-piano-key="${pianoKey}"
-                      style="${isBlack ? 'background: #333; color: white;' : ''}">
+                      data-piano-key="${pianoKey}">
                     ${newNoteNumber} <small>(${pianoKey})</small>
                 </span>
             </td>
@@ -897,10 +895,9 @@ export class PatchManager {
         
         newRow.innerHTML = `
             <td>
-                <span class="note-number-display" 
+                <span class="note-number-display ${isBlack ? 'black-key' : 'white-key'}" 
                       data-note="${newNoteNumber}"
-                      data-piano-key="${pianoKey}"
-                      style="${isBlack ? 'background: #333; color: white;' : ''}">
+                      data-piano-key="${pianoKey}">
                     ${newNoteNumber} <small>(${pianoKey})</small>
                 </span>
             </td>

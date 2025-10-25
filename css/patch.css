@@ -253,7 +253,7 @@
     box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
 }
 
-/* Note number display styling */
+/* Note number display styling - piano key appearance */
 .note-number-display {
     display: inline-block;
     padding: 0.4rem 1rem;
@@ -263,6 +263,49 @@
     user-select: none;
     border: 1px solid #ddd;
     min-width: 4rem;
+    transition: all 0.1s ease;
+}
+
+/* White keys (natural notes: C, D, E, F, G, A, B) */
+.note-number-display.white-key {
+    background: linear-gradient(to bottom, #ffffff 0%, #f8f8f8 100%);
+    border: 2px solid #333;
+    border-right: 1px solid #999;
+    min-width: 8rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.note-number-display.white-key:hover {
+    background: linear-gradient(to bottom, #f0f0f0 0%, #e8e8e8 100%);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+}
+
+.note-number-display.white-key:active {
+    background: linear-gradient(to bottom, #e0e0e0 0%, #d8d8d8 100%);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+/* Black keys (sharps/flats: C#, D#, F#, G#, A#) */
+.note-number-display.black-key {
+    background: linear-gradient(to bottom, #2a2a2a 0%, #000000 100%);
+    border: 2px solid #000;
+    color: #fff;
+    min-width: 4rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.note-number-display.black-key:hover {
+    background: linear-gradient(to bottom, #3a3a3a 0%, #1a1a1a 100%);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.note-number-display.black-key:active {
+    background: linear-gradient(to bottom, #1a1a1a 0%, #0a0a0a 100%);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.note-number-display.black-key small {
+    color: #ccc;
 }
 
 .note-number-display small {
