@@ -123,14 +123,36 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                     device_file = pfile.get('file_path')
                     break
             
-            if not device_file or not os.path.exists(device_file):
-                self.send_error(404, "Device file not found")
+            if not device_file:
+                # NOTE: We cannot auto-create a valid file because we only extract and store
+                # the portions of the XML we're editing (patches, notes). We don't maintain
+                # a complete representation of all XML elements, so we can't reconstruct a
+                # valid .midnam file from scratch.
+                
+                # Log details for debugging
+                print(f"[save_patch] No valid file found for <{device_id}> for the update")
+                print(f"[save_patch] This device may have been excluded from the catalog due to invalid XML or missing required elements")
+                print(f"[save_patch] Available devices in catalog: {len(patch_files)}")
+                for pf in patch_files[:5]:  # Show first 5 devices
+                    print(f"  - {pf.get('id')} -> {pf.get('file_path')}")
+                if len(patch_files) > 5:
+                    print(f"  ... and {len(patch_files) - 5} more")
+                
+                self.send_error(404, f"No valid file found for <{device_id}> for the update. The file may have invalid XML or missing required elements (MIDINameDocument root, Manufacturer, Model).")
+                return
+            
+            if not os.path.exists(device_file):
+                self.send_error(404, f"Device file not found: {device_file}")
                 return
             
             # Parse XML and update patch notes
             import xml.etree.ElementTree as ET
-            tree = ET.parse(device_file)
-            root = tree.getroot()
+            try:
+                tree = ET.parse(device_file)
+                root = tree.getroot()
+            except ET.ParseError as e:
+                self.send_error(422, f"Cannot save to invalid XML file: {device_file}. Parse error: {str(e)}")
+                return
             
             # Find the patch and update its note list
             for bank in root.findall('.//PatchBank'):
@@ -235,8 +257,10 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                                 'family_id': device_info.get('family_id'),
                                 'device_id': device_info.get('device_id')
                             })
+                        else:
+                            print(f"[get_patch_files] No device info extracted from {relative_path}")
                     except Exception as e:
-                        print(f"Error processing {file_path}: {e}")
+                        print(f"[get_patch_files] Error processing {relative_path}: {e}")
                         continue
         
         return patch_files
@@ -746,6 +770,7 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
         try:
             # The root element should be MIDINameDocument
             if root_elem.tag != 'MIDINameDocument':
+                print(f"[extract_device_info] {file_path}: Root element is '{root_elem.tag}', expected 'MIDINameDocument'")
                 return None
             
             midnam_doc = root_elem
@@ -758,6 +783,7 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                 model_elem = master_device.find('Model')
                 
                 if manufacturer_elem is None or model_elem is None:
+                    print(f"[extract_device_info] {file_path}: Missing Manufacturer or Model in MasterDeviceNames")
                     return None
                 
                 manufacturer = manufacturer_elem.text or ''
@@ -787,6 +813,7 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                 # Extract manufacturer
                 manufacturer_elem = extending_device.find('Manufacturer')
                 if manufacturer_elem is None:
+                    print(f"[extract_device_info] {file_path}: Missing Manufacturer in ExtendingDeviceNames")
                     return None
                 
                 manufacturer = manufacturer_elem.text or ''
@@ -794,6 +821,7 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                 # Get all models
                 model_elems = extending_device.findall('Model')
                 if not model_elems:
+                    print(f"[extract_device_info] {file_path}: No Model elements in ExtendingDeviceNames")
                     return None
                 
                 # Use the first model as the primary model
@@ -809,6 +837,7 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                     'all_models': [m.text.strip() for m in model_elems if m.text]
                 }
             
+            print(f"[extract_device_info] {file_path}: No MasterDeviceNames or ExtendingDeviceNames found")
             return None
             
         except Exception as e:

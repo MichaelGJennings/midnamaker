@@ -1259,6 +1259,13 @@ export class PatchManager {
         // Collect current note data from the editor
         const noteData = this.collectNoteDataFromEditor();
         
+        // Get file path for better error reporting
+        const filePath = (appState.selectedDevice && appState.selectedDevice.file_path) 
+            ? appState.selectedDevice.file_path 
+            : (appState.currentMidnam && appState.currentMidnam.file_path)
+                ? appState.currentMidnam.file_path
+                : 'unknown file';
+        
         try {
             const response = await fetch('/api/patch/save', {
                 method: 'POST',
@@ -1278,7 +1285,43 @@ export class PatchManager {
                 })
             });
             
-            if (!response.ok) throw new Error('Failed to save patch');
+            if (!response.ok) {
+                // Try to extract error message from response
+                let errorMessage = response.statusText || `HTTP ${response.status}`;
+                
+                try {
+                    const errorText = await response.text();
+                    // Try to parse as JSON first
+                    try {
+                        const errorJson = JSON.parse(errorText);
+                        errorMessage = errorJson.error || errorJson.message || errorMessage;
+                    } catch {
+                        // Not JSON, use the text directly if it's meaningful and not HTML
+                        if (errorText && errorText.length < 200 && !errorText.includes('<!DOCTYPE')) {
+                            errorMessage = errorText;
+                        }
+                    }
+                } catch {
+                    // Couldn't read response body, use statusText
+                }
+                
+                // Log detailed error to debug console
+                this.logToDebugConsole(`✗ Failed to save patch to: ${filePath}`, 'error');
+                this.logToDebugConsole(`  Error: ${errorMessage}`, 'error');
+                
+                // Special handling for 422 (invalid XML)
+                if (response.status === 422) {
+                    this.logToDebugConsole('  ⚠ The file contains invalid XML. Use the Validate button to see details.', 'error');
+                }
+                
+                // Special handling for 404 (file not in catalog due to invalid structure)
+                if (response.status === 404 && errorMessage.includes('No valid file found')) {
+                    this.logToDebugConsole('  ⚠ The file was excluded from the catalog due to invalid XML structure.', 'error');
+                    this.logToDebugConsole('  ℹ Required: MIDINameDocument root element, Manufacturer, and Model elements.', 'info');
+                }
+                
+                throw new Error(errorMessage);
+            }
             
             // Update the original name to the new name for future saves
             if (appState.selectedPatch) {
@@ -1324,10 +1367,20 @@ export class PatchManager {
             // Reset validation state to unvalidated (can now validate the saved file)
             this.setValidationState('unvalidated');
             
+            this.logToDebugConsole(`✓ Patch saved successfully to: ${filePath}`, 'success');
             Utils.showNotification('Patch saved successfully', 'success');
         } catch (error) {
             console.error('Error saving patch:', error);
-            Utils.showNotification('Failed to save patch', 'error');
+            
+            // Show user-friendly error notification
+            const errorMsg = error.message || 'Failed to save patch';
+            
+            // Check if this is an XML validation error
+            if (errorMsg.toLowerCase().includes('invalid xml') || errorMsg.toLowerCase().includes('parse error')) {
+                Utils.showNotification('Cannot save: File contains invalid XML. Check debug console for details.', 'error');
+            } else {
+                Utils.showNotification(`Save failed: ${errorMsg}`, 'error');
+            }
         }
     }
     
