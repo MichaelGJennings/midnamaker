@@ -825,8 +825,17 @@ export class PatchManager {
     }
     
     addNote() {
-        const tbody = document.getElementById('note-list-tbody');
-        if (!tbody) return;
+        let tbody = document.getElementById('note-list-tbody');
+        
+        // If no tbody exists, we need to create the entire note list structure
+        if (!tbody) {
+            this.createNoteListStructure();
+            tbody = document.getElementById('note-list-tbody');
+            if (!tbody) {
+                console.error('Failed to create note list structure');
+                return;
+            }
+        }
         
         const rows = tbody.querySelectorAll('tr[data-note-index]');
         const newIndex = rows.length;
@@ -880,6 +889,7 @@ export class PatchManager {
         tbody.appendChild(newRow);
         this.setupNoteEditingListeners();
         this.markPatchChanged();
+        this.updateNoteCount();
         
         // Focus and select the new note name
         setTimeout(() => {
@@ -889,6 +899,64 @@ export class PatchManager {
                 input.select();
             }
         }, 100);
+    }
+    
+    updateNoteCount() {
+        const tbody = document.getElementById('note-list-tbody');
+        const noteCountSpan = document.querySelector('.note-count');
+        if (tbody && noteCountSpan) {
+            const count = tbody.querySelectorAll('tr[data-note-index]').length;
+            noteCountSpan.textContent = `(${count} note${count !== 1 ? 's' : ''})`;
+        }
+    }
+    
+    createNoteListStructure() {
+        // Find the note-names container that currently shows "No note names available"
+        const noteNamesContainer = document.querySelector('.note-names');
+        if (!noteNamesContainer) {
+            console.error('Could not find note-names container');
+            return;
+        }
+        
+        // Create a note list name based on the patch name
+        const patchName = appState.selectedPatch?.name || 'Patch';
+        const noteListName = `${patchName} Notes`;
+        
+        // Replace the content with the note list structure
+        noteNamesContainer.innerHTML = `
+            <div class="note-list-info">
+                <strong>Note List:</strong> ${Utils.escapeHtml(noteListName)}
+                <span class="note-count">(0 notes)</span>
+            </div>
+            <div class="note-editor-actions">
+                <button class="btn btn-primary add-note-btn" onclick="patchManager.addNote()">
+                    + Add Note
+                </button>
+            </div>
+            <div class="note-table-container">
+                <table class="note-table">
+                    <thead>
+                        <tr>
+                            <th>Note #</th>
+                            <th>Name</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="note-list-tbody">
+                    </tbody>
+                </table>
+            </div>
+        `;
+        
+        // Update the patch to use this new note list
+        if (appState.selectedPatch) {
+            appState.selectedPatch.usesNoteList = noteListName;
+            appState.selectedPatch.note_list_name = noteListName;
+        }
+        
+        // Log the creation
+        this.logToDebugConsole(`Created new note list: "${noteListName}"`, 'info');
+        this.markPatchChanged();
     }
     
     insertNote(index) {
@@ -977,6 +1045,7 @@ export class PatchManager {
             this.renumberNotes();
             this.setupNoteEditingListeners();
             this.markPatchChanged();
+            this.updateNoteCount();
         }
     }
     
@@ -1281,7 +1350,8 @@ export class PatchManager {
                         name: updatedName,
                         number: updatedNumber
                     },
-                    notes: noteData
+                    notes: noteData,
+                    noteListName: appState.selectedPatch?.usesNoteList || appState.selectedPatch?.note_list_name
                 })
             });
             

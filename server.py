@@ -106,6 +106,7 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
             patch = data.get('patch')
             original_patch_name = data.get('originalPatchName')
             notes = data.get('notes', [])
+            note_list_name = data.get('noteListName')
             
             if not device_id or not patch:
                 self.send_error(400, "Missing required fields")
@@ -155,39 +156,74 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                 return
             
             # Find the patch and update its note list
+            patch_found = False
             for bank in root.findall('.//PatchBank'):
                 if bank.get('Name') == patch_bank:
                     for patch_elem in bank.findall('.//Patch'):
                         if patch_elem.get('Name') == patch_name_to_find:
+                            patch_found = True
+                            
                             # Update patch name and number
                             if patch.get('name'):
                                 patch_elem.set('Name', patch.get('name'))
                             if patch.get('number'):
                                 patch_elem.set('Number', patch.get('number'))
                             
-                            # Update note list
-                            note_list_name = None
+                            # Handle note list
+                            # First check if note list name was provided in request (for new note lists)
+                            # Otherwise check existing UsesNoteNameList element
+                            actual_note_list_name = note_list_name
                             uses_note_list = patch_elem.find('UsesNoteNameList')
-                            if uses_note_list is not None:
-                                note_list_name = uses_note_list.get('Name')
                             
-                            if note_list_name:
-                                # Find and update the note list
+                            if not actual_note_list_name and uses_note_list is not None:
+                                actual_note_list_name = uses_note_list.get('Name')
+                            
+                            if actual_note_list_name and notes:
+                                # Ensure the patch has a UsesNoteNameList element
+                                if uses_note_list is None:
+                                    uses_note_list = ET.SubElement(patch_elem, 'UsesNoteNameList')
+                                uses_note_list.set('Name', actual_note_list_name)
+                                
+                                # Find or create the note list
+                                note_list_elem = None
                                 for note_list in root.findall('.//NoteNameList'):
-                                    if note_list.get('Name') == note_list_name:
-                                        # Clear existing notes
-                                        for note in note_list.findall('Note'):
-                                            note_list.remove(note)
-                                        
-                                        # Add updated notes
-                                        for note_data in notes:
-                                            note_elem = ET.SubElement(note_list, 'Note')
-                                            note_elem.set('Number', str(note_data.get('number', '')))
-                                            note_elem.set('Name', note_data.get('name', ''))
-                                        
+                                    if note_list.get('Name') == actual_note_list_name:
+                                        note_list_elem = note_list
                                         break
+                                
+                                if note_list_elem is None:
+                                    # Create new note list - need to find the right parent
+                                    # Note lists typically go in MasterDeviceNames or ChannelNameSet
+                                    master_device = root.find('.//MasterDeviceNames')
+                                    if master_device is not None:
+                                        # Find or create CustomNoteNameList container
+                                        custom_note_name_list = master_device.find('CustomNoteNameList')
+                                        if custom_note_name_list is None:
+                                            custom_note_name_list = ET.SubElement(master_device, 'CustomNoteNameList')
+                                        note_list_elem = ET.SubElement(custom_note_name_list, 'NoteNameList')
+                                        note_list_elem.set('Name', actual_note_list_name)
+                                        print(f"[save_patch] Created new NoteNameList: {actual_note_list_name}")
+                                
+                                if note_list_elem is not None:
+                                    # Clear existing notes
+                                    for note in note_list_elem.findall('Note'):
+                                        note_list_elem.remove(note)
+                                    
+                                    # Add updated notes
+                                    for note_data in notes:
+                                        note_elem = ET.SubElement(note_list_elem, 'Note')
+                                        note_elem.set('Number', str(note_data.get('number', '')))
+                                        note_elem.set('Name', note_data.get('name', ''))
+                                    
+                                    print(f"[save_patch] Updated NoteNameList '{actual_note_list_name}' with {len(notes)} notes")
+                            
                             break
-                    break
+                    if patch_found:
+                        break
+            
+            if not patch_found:
+                self.send_error(404, f"Patch '{patch_name_to_find}' not found in bank '{patch_bank}'")
+                return
             
             # Create backup
             import shutil
