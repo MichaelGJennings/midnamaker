@@ -205,6 +205,19 @@ export class PatchManager {
                                     <button class="btn btn-primary add-note-btn" onclick="patchManager.addNote()">
                                         + Add Note
                                     </button>
+                                    <div class="note-range-control">
+                                        <label>Note Range:</label>
+                                        <select id="note-range-min" class="note-range-select">
+                                            ${this.generateNoteRangeOptions('min', noteList.notes)}
+                                        </select>
+                                        <span>to</span>
+                                        <select id="note-range-max" class="note-range-select">
+                                            ${this.generateNoteRangeOptions('max', noteList.notes)}
+                                        </select>
+                                        <button class="btn btn-secondary btn-sm" onclick="patchManager.updateNoteRange()">
+                                            Extend
+                                        </button>
+                                    </div>
                                 </div>
                                 <div class="note-table-container">
                                     <table class="note-table">
@@ -839,7 +852,18 @@ export class PatchManager {
         
         const rows = tbody.querySelectorAll('tr[data-note-index]');
         const newIndex = rows.length;
-        const newNoteNumber = newIndex + 36; // Start from C2 (note 36)
+        
+        // Determine the new note number based on existing notes
+        let newNoteNumber = 36; // Default to C2 if no notes exist
+        if (rows.length > 0) {
+            // Get the last note's number and add 1
+            const lastRow = rows[rows.length - 1];
+            const lastNoteDisplay = lastRow.querySelector('.note-number-display');
+            if (lastNoteDisplay) {
+                const lastNoteNumber = parseInt(lastNoteDisplay.getAttribute('data-note'));
+                newNoteNumber = lastNoteNumber + 1;
+            }
+        }
         
         const pianoKey = this.getPianoKeyName(newNoteNumber);
         const isBlack = this.isBlackKey(newNoteNumber);
@@ -890,6 +914,7 @@ export class PatchManager {
         this.setupNoteEditingListeners();
         this.markPatchChanged();
         this.updateNoteCount();
+        this.updateNoteRangeDropdowns();
         
         // Focus and select the new note name
         setTimeout(() => {
@@ -908,6 +933,202 @@ export class PatchManager {
             const count = tbody.querySelectorAll('tr[data-note-index]').length;
             noteCountSpan.textContent = `(${count} note${count !== 1 ? 's' : ''})`;
         }
+    }
+    
+    updateNoteRangeDropdowns() {
+        const tbody = document.getElementById('note-list-tbody');
+        const minSelect = document.getElementById('note-range-min');
+        const maxSelect = document.getElementById('note-range-max');
+        
+        if (!tbody || !minSelect || !maxSelect) return;
+        
+        // Get current notes for constraint calculation
+        const rows = tbody.querySelectorAll('tr[data-note-index]');
+        const notes = [];
+        rows.forEach(row => {
+            const noteNumSpan = row.querySelector('.note-number-display');
+            if (noteNumSpan) {
+                const noteNum = parseInt(noteNumSpan.getAttribute('data-note'));
+                if (!isNaN(noteNum)) {
+                    notes.push({ number: noteNum });
+                }
+            }
+        });
+        
+        // Regenerate options
+        minSelect.innerHTML = this.generateNoteRangeOptions('min', notes);
+        maxSelect.innerHTML = this.generateNoteRangeOptions('max', notes);
+    }
+    
+    generateNoteRangeOptions(type, notes) {
+        // Generate options for min and max dropdowns
+        // Min: 0, 12, 24, 36, 48, 60, 72, 84, 96, 108, 120
+        // Max: 24, 36, 48, 60, 72, 84, 96, 108, 120, 127
+        
+        const minOptions = [0, 12, 24, 36, 48, 60, 72, 84, 96, 108, 120];
+        const maxOptions = [24, 36, 48, 60, 72, 84, 96, 108, 120, 127];
+        
+        let options = type === 'min' ? minOptions : maxOptions;
+        let currentMin = null;
+        let currentMax = null;
+        let defaultMin = 36;  // Default to C2
+        let defaultMax = 96;  // Default to C7
+        
+        // If notes exist, determine constraints
+        if (notes && notes.length > 0) {
+            const noteNumbers = notes.map(n => parseInt(n.number)).filter(n => !isNaN(n));
+            if (noteNumbers.length > 0) {
+                currentMin = Math.min(...noteNumbers);
+                currentMax = Math.max(...noteNumbers);
+            }
+        }
+        
+        // Filter options based on constraints only if notes exist
+        if (type === 'min') {
+            if (currentMin !== null) {
+                // Min can't be higher than the lowest existing note
+                options = options.filter(opt => opt <= currentMin);
+                if (options.length === 0) options = [currentMin]; // Always include at least current min
+            }
+            // If no notes exist, show all options
+        } else {
+            if (currentMax !== null) {
+                // Max can't be lower than the highest existing note
+                options = options.filter(opt => opt >= currentMax);
+                if (options.length === 0) options = [currentMax]; // Always include at least current max
+            }
+            // If no notes exist, show all options
+        }
+        
+        // Generate HTML options
+        return options.map(noteNum => {
+            const pianoKey = this.getPianoKeyName(noteNum);
+            // Select current min/max if exists, otherwise select default
+            const shouldSelect = currentMin !== null 
+                ? ((type === 'min' && noteNum === currentMin) || (type === 'max' && noteNum === currentMax))
+                : ((type === 'min' && noteNum === defaultMin) || (type === 'max' && noteNum === defaultMax));
+            return `<option value="${noteNum}" ${shouldSelect ? 'selected' : ''}>${noteNum} (${pianoKey})</option>`;
+        }).join('');
+    }
+    
+    updateNoteRange() {
+        const minSelect = document.getElementById('note-range-min');
+        const maxSelect = document.getElementById('note-range-max');
+        const tbody = document.getElementById('note-list-tbody');
+        
+        if (!minSelect || !maxSelect || !tbody) {
+            console.error('Note range controls not found');
+            return;
+        }
+        
+        const minNote = parseInt(minSelect.value);
+        const maxNote = parseInt(maxSelect.value);
+        
+        if (isNaN(minNote) || isNaN(maxNote) || minNote > maxNote) {
+            Utils.showNotification('Range must be wider', 'error');
+            return;
+        }
+        
+        // Get existing notes as a map and determine current range
+        const existingNotes = new Map();
+        let currentMin = null;
+        let currentMax = null;
+        const rows = tbody.querySelectorAll('tr[data-note-index]');
+        rows.forEach(row => {
+            const noteNumSpan = row.querySelector('.note-number-display');
+            const noteInput = row.querySelector('.note-name-input');
+            if (noteNumSpan && noteInput) {
+                const noteNum = parseInt(noteNumSpan.getAttribute('data-note'));
+                const noteName = noteInput.value;
+                if (!isNaN(noteNum)) {
+                    existingNotes.set(noteNum, noteName);
+                    if (currentMin === null || noteNum < currentMin) currentMin = noteNum;
+                    if (currentMax === null || noteNum > currentMax) currentMax = noteNum;
+                }
+            }
+        });
+        
+        // Validate that we're not shrinking the range below existing notes
+        if (existingNotes.size > 0) {
+            if (minNote > currentMin) {
+                Utils.showNotification(`Cannot raise minimum above ${currentMin} - would lose existing notes`, 'error');
+                this.logToDebugConsole(`Range extension blocked: min ${minNote} > current min ${currentMin}`, 'error');
+                return;
+            }
+            if (maxNote < currentMax) {
+                Utils.showNotification(`Cannot lower maximum below ${currentMax} - would lose existing notes`, 'error');
+                this.logToDebugConsole(`Range extension blocked: max ${maxNote} < current max ${currentMax}`, 'error');
+                return;
+            }
+        }
+        
+        // Clear the tbody
+        tbody.innerHTML = '';
+        
+        // Build new note list with all notes in range
+        let index = 0;
+        for (let noteNum = minNote; noteNum <= maxNote; noteNum++) {
+            const noteName = existingNotes.has(noteNum) 
+                ? existingNotes.get(noteNum) 
+                : this.getDefaultNoteName(noteNum);
+            
+            const pianoKey = this.getPianoKeyName(noteNum);
+            const isBlack = this.isBlackKey(noteNum);
+            const insertBtnId = `insert-btn-${index}`;
+            const noteInputId = `note-input-${index}`;
+            const dropdownId = `note-dropdown-${index}`;
+            
+            const newRow = document.createElement('tr');
+            newRow.setAttribute('data-note-index', index);
+            if (isBlack) newRow.classList.add('black-key-row');
+            
+            newRow.innerHTML = `
+                <td>
+                    <span class="note-number-display ${isBlack ? 'black-key' : 'white-key'}" 
+                          data-note="${noteNum}"
+                          data-piano-key="${pianoKey}">
+                        ${noteNum} <small>(${pianoKey})</small>
+                    </span>
+                </td>
+                <td class="note-name-cell">
+                    <input type="text" 
+                           id="${noteInputId}"
+                           class="note-name-input" 
+                           value="${Utils.escapeHtml(noteName)}"
+                           data-index="${index}"
+                           tabindex="${index === 0 ? '1' : '0'}"
+                           readonly>
+                    <div class="note-dropdown" id="${dropdownId}" style="display: none;"></div>
+                </td>
+                <td class="note-actions">
+                    <button class="btn btn-sm btn-outline-primary" 
+                            id="${insertBtnId}"
+                            data-index="${index}"
+                            tabindex="${index === 0 ? '2' : '0'}"
+                            title="Insert Note">
+                        +I
+                    </button>
+                    <button class="btn btn-sm btn-danger remove-note-btn" 
+                            data-index="${index}"
+                            tabindex="-1"
+                            title="Delete Note">
+                        ×
+                    </button>
+                </td>
+            `;
+            
+            tbody.appendChild(newRow);
+            index++;
+        }
+        
+        this.setupNoteEditingListeners();
+        this.markPatchChanged();
+        this.updateNoteCount();
+        this.updateNoteRangeDropdowns();
+        
+        const addedCount = (maxNote - minNote + 1) - existingNotes.size;
+        this.logToDebugConsole(`Updated note range: ${minNote}-${maxNote} (${addedCount} new notes added)`, 'info');
+        Utils.showNotification(`Note range updated: ${minNote}-${maxNote}`, 'success');
     }
     
     createNoteListStructure() {
@@ -932,6 +1153,19 @@ export class PatchManager {
                 <button class="btn btn-primary add-note-btn" onclick="patchManager.addNote()">
                     + Add Note
                 </button>
+                <div class="note-range-control">
+                    <label>Note Range:</label>
+                    <select id="note-range-min" class="note-range-select">
+                        ${this.generateNoteRangeOptions('min', [])}
+                    </select>
+                    <span>to</span>
+                    <select id="note-range-max" class="note-range-select">
+                        ${this.generateNoteRangeOptions('max', [])}
+                    </select>
+                    <button class="btn btn-secondary btn-sm" onclick="patchManager.updateNoteRange()">
+                        Extend
+                    </button>
+                </div>
             </div>
             <div class="note-table-container">
                 <table class="note-table">
@@ -963,9 +1197,16 @@ export class PatchManager {
         const tbody = document.getElementById('note-list-tbody');
         if (!tbody) return;
         
-        const rows = tbody.querySelectorAll('tr[data-note-index]');
+        // Get the current row to find its actual MIDI note number
+        const currentRow = tbody.querySelector(`tr[data-note-index="${index}"]`);
+        if (!currentRow) return;
+        
+        const currentNoteDisplay = currentRow.querySelector('.note-number-display');
+        if (!currentNoteDisplay) return;
+        
+        const currentNoteNumber = parseInt(currentNoteDisplay.getAttribute('data-note'));
         const insertIndex = parseInt(index) + 1;
-        const newNoteNumber = parseInt(index) + 37; // Insert after current note
+        const newNoteNumber = currentNoteNumber + 1; // Insert after current note
         
         const pianoKey = this.getPianoKeyName(newNoteNumber);
         const isBlack = this.isBlackKey(newNoteNumber);
@@ -1012,8 +1253,7 @@ export class PatchManager {
             </td>
         `;
         
-        // Insert after the current row
-        const currentRow = tbody.querySelector(`tr[data-note-index="${index}"]`);
+        // Insert after the current row (currentRow is already defined at the top)
         if (currentRow) {
             currentRow.insertAdjacentElement('afterend', newRow);
         } else {
@@ -1024,6 +1264,7 @@ export class PatchManager {
         this.renumberNotes();
         this.setupNoteEditingListeners();
         this.markPatchChanged();
+        this.updateNoteRangeDropdowns();
         
         // Focus and select the new note name
         setTimeout(() => {
@@ -1041,11 +1282,17 @@ export class PatchManager {
         
         const row = tbody.querySelector(`tr[data-note-index="${index}"]`);
         if (row) {
+            const noteDisplay = row.querySelector('.note-number-display');
+            const noteNumber = noteDisplay ? noteDisplay.getAttribute('data-note') : 'unknown';
+            
             row.remove();
             this.renumberNotes();
             this.setupNoteEditingListeners();
             this.markPatchChanged();
             this.updateNoteCount();
+            this.updateNoteRangeDropdowns();
+            
+            this.logToDebugConsole(`Removed note ${noteNumber} (was at row index ${index})`, 'info');
         }
     }
     
@@ -1054,27 +1301,45 @@ export class PatchManager {
         if (!tbody) return;
         
         const rows = tbody.querySelectorAll('tr[data-note-index]');
+        if (rows.length === 0) return;
+        
+        // Get the starting note number from the first row
+        const firstRow = rows[0];
+        const firstNoteDisplay = firstRow.querySelector('.note-number-display');
+        const startingNoteNumber = firstNoteDisplay ? parseInt(firstNoteDisplay.getAttribute('data-note')) : 36;
+        
+        console.log(`[renumberNotes] Renumbering ${rows.length} rows starting from note ${startingNoteNumber}`);
+        
         rows.forEach((row, newIndex) => {
             const oldIndex = row.getAttribute('data-note-index');
             row.setAttribute('data-note-index', newIndex);
             
-            // Update note number
-            const noteNumber = newIndex + 36; // Start from C2
+            // Calculate the new MIDI note number based on position in the list
+            const noteNumber = startingNoteNumber + newIndex;
             const pianoKey = this.getPianoKeyName(noteNumber);
             const isBlack = this.isBlackKey(noteNumber);
             
+            // Update the note display
             const noteDisplay = row.querySelector('.note-number-display');
             if (noteDisplay) {
                 noteDisplay.setAttribute('data-note', noteNumber);
                 noteDisplay.setAttribute('data-piano-key', pianoKey);
                 noteDisplay.innerHTML = `${noteNumber} <small>(${pianoKey})</small>`;
-                noteDisplay.style.cssText = `${isBlack ? 'background: #333; color: white;' : ''}`;
+                noteDisplay.className = `note-number-display ${isBlack ? 'black-key' : 'white-key'}`;
             }
             
-            // Update row class
-            row.className = isBlack ? 'black-key-row' : '';
+            // Update row styling for black/white keys
+            if (isBlack) {
+                row.classList.add('black-key-row');
+            } else {
+                row.classList.remove('black-key-row');
+            }
             
-            // Update input IDs and data attributes
+            if (oldIndex !== String(newIndex)) {
+                console.log(`[renumberNotes] Row ${oldIndex} → ${newIndex}, Note: ${noteNumber} (${pianoKey})`);
+            }
+            
+            // Update input IDs and data attributes to match new index
             const input = row.querySelector('.note-name-input');
             if (input) {
                 input.id = `note-input-${newIndex}`;
@@ -1086,12 +1351,14 @@ export class PatchManager {
                 dropdown.id = `note-dropdown-${newIndex}`;
             }
             
-            const insertBtn = row.querySelector('button[data-index]');
+            // Update insert button
+            const insertBtn = row.querySelector('button.btn-outline-primary:not(.remove-note-btn)');
             if (insertBtn) {
                 insertBtn.id = `insert-btn-${newIndex}`;
                 insertBtn.setAttribute('data-index', newIndex);
             }
             
+            // Update delete button
             const deleteBtn = row.querySelector('.remove-note-btn');
             if (deleteBtn) {
                 deleteBtn.setAttribute('data-index', newIndex);

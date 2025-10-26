@@ -103,6 +103,38 @@
 .note-editor-actions {
     display: flex;
     gap: 0.5rem;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.note-range-control {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem;
+    background: #f8f9fa;
+    border-radius: 4px;
+    border: 1px solid #dee2e6;
+}
+
+.note-range-control label {
+    font-weight: 500;
+    margin: 0;
+    white-space: nowrap;
+    font-size: 0.9rem;
+}
+
+.note-range-select {
+    padding: 0.25rem 0.5rem;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    background: white;
+    font-size: 0.9rem;
+}
+
+.note-range-control span {
+    color: #6c757d;
+    font-size: 0.9rem;
 }
 
 .note-table-container {
