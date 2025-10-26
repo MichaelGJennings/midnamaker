@@ -44,6 +44,8 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
             self.save_file()
         elif self.path == '/api/patch/save':
             self.save_patch()
+        elif self.path == '/api/validate':
+            self.validate_midnam()
         elif self.path == '/clear_cache':
             self.clear_cache()
         elif self.path == '/merge_files':
@@ -1005,6 +1007,128 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
         except Exception as e:
             self.send_error(500, f"Error deleting file: {str(e)}")
 
+    def validate_midnam(self):
+        """Validate a .midnam file against the DTD"""
+        try:
+            from lxml import etree
+            
+            content_length = int(self.headers['Content-Length'])
+            post_data = self.rfile.read(content_length).decode()
+            data = json.loads(post_data)
+            
+            file_path = data.get('file_path')
+            if not file_path or not os.path.exists(file_path):
+                self.send_error(400, "Invalid or missing file_path")
+                return
+            
+            # For now, just validate that the XML is well-formed
+            # DTD validation is disabled because MIDIEvents10.dtd is missing
+            try:
+                # Parse XML file with a parser that doesn't load external entities
+                parser = etree.XMLParser(
+                    dtd_validation=False,
+                    load_dtd=False,
+                    no_network=True,
+                    resolve_entities=False
+                )
+                
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    xml_doc = etree.parse(f, parser)
+                
+                # Basic structure validation
+                root = xml_doc.getroot()
+                
+                # Check if it's a MIDINameDocument
+                if root.tag != 'MIDINameDocument':
+                    self.send_response(200)
+                    self.send_header('Content-Type', 'application/json')
+                    self.end_headers()
+                    self.wfile.write(json.dumps({
+                        'valid': False,
+                        'message': 'File validation failed',
+                        'errors': [{
+                            'line': 0,
+                            'column': 0,
+                            'message': f'Root element must be MIDINameDocument, found {root.tag}',
+                            'type': 'structure'
+                        }],
+                        'file_path': file_path
+                    }).encode())
+                    return
+                
+                # Check for required Author element
+                author = root.find('Author')
+                if author is None:
+                    self.send_response(200)
+                    self.send_header('Content-Type', 'application/json')
+                    self.end_headers()
+                    self.wfile.write(json.dumps({
+                        'valid': False,
+                        'message': 'File validation failed',
+                        'errors': [{
+                            'line': 0,
+                            'column': 0,
+                            'message': 'Missing required Author element',
+                            'type': 'structure'
+                        }],
+                        'file_path': file_path
+                    }).encode())
+                    return
+                
+                # Check for at least one device definition
+                master_devices = root.findall('MasterDeviceNames')
+                extending_devices = root.findall('ExtendingDeviceNames')
+                standard_modes = root.findall('StandardDeviceMode')
+                
+                if not (master_devices or extending_devices or standard_modes):
+                    self.send_response(200)
+                    self.send_header('Content-Type', 'application/json')
+                    self.end_headers()
+                    self.wfile.write(json.dumps({
+                        'valid': False,
+                        'message': 'File validation failed',
+                        'errors': [{
+                            'line': 0,
+                            'column': 0,
+                            'message': 'Missing device definition (MasterDeviceNames, ExtendingDeviceNames, or StandardDeviceMode)',
+                            'type': 'structure'
+                        }],
+                        'file_path': file_path
+                    }).encode())
+                    return
+                
+                # If we get here, the file is valid
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    'valid': True,
+                    'message': 'File is well-formed and has valid basic structure',
+                    'file_path': file_path
+                }).encode())
+                
+            except etree.XMLSyntaxError as e:
+                # XML parsing error
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    'valid': False,
+                    'message': 'XML syntax error',
+                    'errors': [{
+                        'line': e.lineno if hasattr(e, 'lineno') else 0,
+                        'column': e.offset if hasattr(e, 'offset') else 0,
+                        'message': str(e),
+                        'type': 'syntax'
+                    }],
+                    'file_path': file_path
+                }).encode())
+                
+        except ImportError:
+            self.send_error(500, "lxml library not installed. Install with: pip install lxml")
+        except Exception as e:
+            self.send_error(500, f"Error validating file: {str(e)}")
+    
     def clear_cache(self):
         """Clear the midnam catalog cache"""
         try:

@@ -785,3 +785,28 @@
     border-color: #3498db;
     box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
 }
+
+/* Validation button states */
+.btn-validated {
+    background-color: #28a745 !important;
+    border-color: #28a745 !important;
+    color: white !important;
+    cursor: not-allowed;
+    opacity: 0.8;
+}
+
+.btn-validated:disabled {
+    opacity: 0.8;
+}
+
+.btn-invalid {
+    background-color: #dc3545 !important;
+    border-color: #dc3545 !important;
+    color: white !important;
+    cursor: pointer;
+}
+
+.btn-invalid:hover {
+    background-color: #c82333 !important;
+    border-color: #bd2130 !important;
+}
