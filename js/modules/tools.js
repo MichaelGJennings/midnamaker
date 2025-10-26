@@ -8,6 +8,9 @@ export class ToolsManager {
         this.debugConsole = null;
         this.allNoteNames = new Set();
         this.selectedToolsSort = 'alphabetical';
+        this.messageBuffer = []; // Buffer messages until debug console is available
+        this.toolsTabLoaded = false; // Track if Tools tab has been loaded
+        this.toolsTabActivated = false; // Track if we've logged the activation message
         this.init();
     }
     
@@ -16,23 +19,48 @@ export class ToolsManager {
     }
     
     setupEventListeners() {
-        // Initialize debug console
-        this.debugConsole = document.getElementById('debug-console');
+        // Initialize debug console - will be updated when Tools tab loads
+        this.ensureDebugConsole();
+    }
+    
+    ensureDebugConsole() {
+        // Try to get the debug console output first (after Tools tab is rendered)
+        let debugConsoleEl = document.getElementById('debug-console-output');
+        if (!debugConsoleEl) {
+            // Fall back to the original debug console
+            debugConsoleEl = document.getElementById('debug-console');
+        }
+        this.debugConsole = debugConsoleEl;
+        return debugConsoleEl;
     }
     
     loadToolsTab() {
-        this.renderToolsContent();
+        // Only render content if not already loaded, otherwise just refresh data
+        const isFirstLoad = !this.toolsTabLoaded;
+        
+        if (isFirstLoad) {
+            this.toolsTabLoaded = true; // Mark that Tools tab has been loaded
+            this.renderToolsContent();
+        }
+        
         this.populateToolsBankSelector();
-        this.collectNoteNamesFromPatches();
+        
+        // Log on first load, silent on subsequent loads
+        this.collectNoteNamesFromPatches(!isFirstLoad);
         this.updateIndexDisplay();
-        this.logToDebugConsole('Tools tab activated', 'info');
+        
+        // Only log activation on first load
+        if (!this.toolsTabActivated) {
+            this.toolsTabActivated = true;
+            this.logToDebugConsole('Tools tab activated', 'info');
+        }
     }
     
     renderToolsContent() {
         const content = document.getElementById('tools-content');
         if (!content) return;
         
-        // Always render the content - the condition was preventing re-rendering
+        // Render the Tools tab content
         content.innerHTML = `
             <div class="tools-section">
                 <h3>Note Name Consistency Tool</h3>
@@ -84,41 +112,19 @@ export class ToolsManager {
         `;
         
         // Initialize debug console
-        this.debugConsole = document.getElementById('debug-console-output');
+        this.ensureDebugConsole();
         this.setupDebugConsole();
+        
+        // Flush any buffered messages (this will add validation messages to the console)
+        this.flushMessageBuffer();
     }
     
     setupDebugConsole() {
-        // Intercept console.log, console.error, etc. to display in debug console
-        const originalLog = console.log;
-        const originalError = console.error;
-        const originalWarn = console.warn;
+        // Don't intercept console.log/error/warn anymore to avoid duplicates
+        // All debug messages should go through logToDebugConsole() explicitly
         
-        console.log = (...args) => {
-            originalLog.apply(console, args);
-            this.addToDebugConsole('log', args.join(' '));
-        };
-        
-        console.error = (...args) => {
-            originalError.apply(console, args);
-            this.addToDebugConsole('error', args.join(' '));
-        };
-        
-        console.warn = (...args) => {
-            originalWarn.apply(console, args);
-            this.addToDebugConsole('warn', args.join(' '));
-        };
-    }
-    
-    addToDebugConsole(type, message) {
-        if (!this.debugConsole) return;
-        
-        const div = document.createElement('div');
-        div.className = `debug-message debug-${type}`;
-        div.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
-        
-        this.debugConsole.appendChild(div);
-        this.debugConsole.scrollTop = this.debugConsole.scrollHeight;
+        // Keep this method in case we want to add interception later
+        // but for now, do nothing to avoid duplicate messages
     }
     
     clearDebugConsole() {
@@ -137,7 +143,22 @@ export class ToolsManager {
     }
     
     logToDebugConsole(message, type = 'info') {
-        if (!this.debugConsole) return;
+        // Always buffer messages until Tools tab has been loaded
+        if (!this.toolsTabLoaded) {
+            this.messageBuffer.push({ message, type, timestamp: new Date().toLocaleTimeString() });
+            console.log(`[DEBUG - ${type}] ${message} (buffered)`);
+            return;
+        }
+        
+        // Ensure debug console is available
+        const debugConsoleEl = this.ensureDebugConsole();
+        
+        if (!debugConsoleEl) {
+            // Shouldn't happen if toolsTabLoaded is true, but handle it anyway
+            this.messageBuffer.push({ message, type, timestamp: new Date().toLocaleTimeString() });
+            console.log(`[DEBUG - ${type}] ${message} (buffered - no element)`);
+            return;
+        }
         
         const div = document.createElement('div');
         div.className = `debug-message debug-${type}`;
@@ -145,6 +166,21 @@ export class ToolsManager {
         
         this.debugConsole.appendChild(div);
         this.debugConsole.scrollTop = this.debugConsole.scrollHeight;
+    }
+    
+    flushMessageBuffer() {
+        // Output any buffered messages to the debug console
+        if (this.messageBuffer.length > 0 && this.debugConsole) {
+            console.log(`[ToolsManager] Flushing ${this.messageBuffer.length} buffered messages`);
+            this.messageBuffer.forEach(({ message, type, timestamp }) => {
+                const div = document.createElement('div');
+                div.className = `debug-message debug-${type}`;
+                div.textContent = `[${timestamp}] ${message}`;
+                this.debugConsole.appendChild(div);
+            });
+            this.messageBuffer = [];
+            this.debugConsole.scrollTop = this.debugConsole.scrollHeight;
+        }
     }
     
     updateIndexDisplay() {
@@ -539,7 +575,7 @@ export class ToolsManager {
     
     refreshIndex() {
         // Rebuild the index from scratch
-        this.collectNoteNamesFromPatches();
+        this.collectNoteNamesFromPatches(false); // Not silent - log when user explicitly refreshes
         this.updateIndexDisplay();
         this.logToDebugConsole('Index refreshed from patches', 'success');
         Utils.showNotification('Note name index refreshed', 'success');
@@ -573,7 +609,7 @@ export class ToolsManager {
         return Array.from(this.allNoteNames);
     }
     
-    collectNoteNamesFromPatches() {
+    collectNoteNamesFromPatches(silent = false) {
         this.allNoteNames.clear();
         
         // If we have a selected patch bank, collect note names from all patches in that bank
@@ -605,7 +641,9 @@ export class ToolsManager {
                 }
             });
             
-            this.logToDebugConsole(`Collected ${this.allNoteNames.size} note names from bank "${bank.name}"`, 'info');
+            if (!silent) {
+                this.logToDebugConsole(`Collected ${this.allNoteNames.size} note names from bank "${bank.name}"`, 'info');
+            }
         } else {
             // Fallback: collect from all note lists if no bank is selected
             if (appState.currentMidnam && appState.currentMidnam.note_lists) {
@@ -620,7 +658,9 @@ export class ToolsManager {
                 });
             }
             
-            this.logToDebugConsole(`Collected ${this.allNoteNames.size} note names from all patches`, 'info');
+            if (!silent) {
+                this.logToDebugConsole(`Collected ${this.allNoteNames.size} note names from all patches`, 'info');
+            }
         }
     }
     

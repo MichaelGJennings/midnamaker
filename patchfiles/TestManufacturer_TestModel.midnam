@@ -45,13 +45,13 @@
       </AvailableForChannels>
       <PatchBank Name="Tones">
         <PatchNameList>
-          <Patch Number="A11" Name="Acoustic Piano" ProgramChange="0" />
+          <Patch Number="A11" Name="Acoustic Pianos" ProgramChange="0" />
           <Patch Number="A12" Name="Electric Piano" ProgramChange="1" />
           <Patch Number="A13" Name="Harpsichord" ProgramChange="2" />
           <Patch Number="A14" Name="Organ" ProgramChange="3" />
           <Patch Number="A15" Name="Strings" ProgramChange="4" />
           <Patch Number="A16" Name="Brass" ProgramChange="5" />
-          <Patch Number="A17" Name="Woodwinds" ProgramChange="6" />
+          <Patch Number="A17" Name="Woodwind" ProgramChange="6" />
           <Patch Number="A18" Name="Synth Lead" ProgramChange="7" />
         </PatchNameList>
       </PatchBank>

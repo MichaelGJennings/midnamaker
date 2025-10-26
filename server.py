@@ -44,6 +44,8 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
             self.save_file()
         elif self.path == '/api/patch/save':
             self.save_patch()
+        elif self.path == '/api/validate':
+            self.validate_midnam()
         elif self.path == '/clear_cache':
             self.clear_cache()
         elif self.path == '/merge_files':
@@ -104,6 +106,7 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
             patch = data.get('patch')
             original_patch_name = data.get('originalPatchName')
             notes = data.get('notes', [])
+            note_list_name = data.get('noteListName')
             
             if not device_id or not patch:
                 self.send_error(400, "Missing required fields")
@@ -121,49 +124,106 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                     device_file = pfile.get('file_path')
                     break
             
-            if not device_file or not os.path.exists(device_file):
-                self.send_error(404, "Device file not found")
+            if not device_file:
+                # NOTE: We cannot auto-create a valid file because we only extract and store
+                # the portions of the XML we're editing (patches, notes). We don't maintain
+                # a complete representation of all XML elements, so we can't reconstruct a
+                # valid .midnam file from scratch.
+                
+                # Log details for debugging
+                print(f"[save_patch] No valid file found for <{device_id}> for the update")
+                print(f"[save_patch] This device may have been excluded from the catalog due to invalid XML or missing required elements")
+                print(f"[save_patch] Available devices in catalog: {len(patch_files)}")
+                for pf in patch_files[:5]:  # Show first 5 devices
+                    print(f"  - {pf.get('id')} -> {pf.get('file_path')}")
+                if len(patch_files) > 5:
+                    print(f"  ... and {len(patch_files) - 5} more")
+                
+                self.send_error(404, f"No valid file found for <{device_id}> for the update. The file may have invalid XML or missing required elements (MIDINameDocument root, Manufacturer, Model).")
+                return
+            
+            if not os.path.exists(device_file):
+                self.send_error(404, f"Device file not found: {device_file}")
                 return
             
             # Parse XML and update patch notes
             import xml.etree.ElementTree as ET
-            tree = ET.parse(device_file)
-            root = tree.getroot()
+            try:
+                tree = ET.parse(device_file)
+                root = tree.getroot()
+            except ET.ParseError as e:
+                self.send_error(422, f"Cannot save to invalid XML file: {device_file}. Parse error: {str(e)}")
+                return
             
             # Find the patch and update its note list
+            patch_found = False
             for bank in root.findall('.//PatchBank'):
                 if bank.get('Name') == patch_bank:
                     for patch_elem in bank.findall('.//Patch'):
                         if patch_elem.get('Name') == patch_name_to_find:
+                            patch_found = True
+                            
                             # Update patch name and number
                             if patch.get('name'):
                                 patch_elem.set('Name', patch.get('name'))
                             if patch.get('number'):
                                 patch_elem.set('Number', patch.get('number'))
                             
-                            # Update note list
-                            note_list_name = None
+                            # Handle note list
+                            # First check if note list name was provided in request (for new note lists)
+                            # Otherwise check existing UsesNoteNameList element
+                            actual_note_list_name = note_list_name
                             uses_note_list = patch_elem.find('UsesNoteNameList')
-                            if uses_note_list is not None:
-                                note_list_name = uses_note_list.get('Name')
                             
-                            if note_list_name:
-                                # Find and update the note list
+                            if not actual_note_list_name and uses_note_list is not None:
+                                actual_note_list_name = uses_note_list.get('Name')
+                            
+                            if actual_note_list_name and notes:
+                                # Ensure the patch has a UsesNoteNameList element
+                                if uses_note_list is None:
+                                    uses_note_list = ET.SubElement(patch_elem, 'UsesNoteNameList')
+                                uses_note_list.set('Name', actual_note_list_name)
+                                
+                                # Find or create the note list
+                                note_list_elem = None
                                 for note_list in root.findall('.//NoteNameList'):
-                                    if note_list.get('Name') == note_list_name:
-                                        # Clear existing notes
-                                        for note in note_list.findall('Note'):
-                                            note_list.remove(note)
-                                        
-                                        # Add updated notes
-                                        for note_data in notes:
-                                            note_elem = ET.SubElement(note_list, 'Note')
-                                            note_elem.set('Number', str(note_data.get('number', '')))
-                                            note_elem.set('Name', note_data.get('name', ''))
-                                        
+                                    if note_list.get('Name') == actual_note_list_name:
+                                        note_list_elem = note_list
                                         break
+                                
+                                if note_list_elem is None:
+                                    # Create new note list - need to find the right parent
+                                    # Note lists typically go in MasterDeviceNames or ChannelNameSet
+                                    master_device = root.find('.//MasterDeviceNames')
+                                    if master_device is not None:
+                                        # Find or create CustomNoteNameList container
+                                        custom_note_name_list = master_device.find('CustomNoteNameList')
+                                        if custom_note_name_list is None:
+                                            custom_note_name_list = ET.SubElement(master_device, 'CustomNoteNameList')
+                                        note_list_elem = ET.SubElement(custom_note_name_list, 'NoteNameList')
+                                        note_list_elem.set('Name', actual_note_list_name)
+                                        print(f"[save_patch] Created new NoteNameList: {actual_note_list_name}")
+                                
+                                if note_list_elem is not None:
+                                    # Clear existing notes
+                                    for note in note_list_elem.findall('Note'):
+                                        note_list_elem.remove(note)
+                                    
+                                    # Add updated notes
+                                    for note_data in notes:
+                                        note_elem = ET.SubElement(note_list_elem, 'Note')
+                                        note_elem.set('Number', str(note_data.get('number', '')))
+                                        note_elem.set('Name', note_data.get('name', ''))
+                                    
+                                    print(f"[save_patch] Updated NoteNameList '{actual_note_list_name}' with {len(notes)} notes")
+                            
                             break
-                    break
+                    if patch_found:
+                        break
+            
+            if not patch_found:
+                self.send_error(404, f"Patch '{patch_name_to_find}' not found in bank '{patch_bank}'")
+                return
             
             # Create backup
             import shutil
@@ -233,8 +293,10 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                                 'family_id': device_info.get('family_id'),
                                 'device_id': device_info.get('device_id')
                             })
+                        else:
+                            print(f"[get_patch_files] No device info extracted from {relative_path}")
                     except Exception as e:
-                        print(f"Error processing {file_path}: {e}")
+                        print(f"[get_patch_files] Error processing {relative_path}: {e}")
                         continue
         
         return patch_files
@@ -744,6 +806,7 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
         try:
             # The root element should be MIDINameDocument
             if root_elem.tag != 'MIDINameDocument':
+                print(f"[extract_device_info] {file_path}: Root element is '{root_elem.tag}', expected 'MIDINameDocument'")
                 return None
             
             midnam_doc = root_elem
@@ -756,6 +819,7 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                 model_elem = master_device.find('Model')
                 
                 if manufacturer_elem is None or model_elem is None:
+                    print(f"[extract_device_info] {file_path}: Missing Manufacturer or Model in MasterDeviceNames")
                     return None
                 
                 manufacturer = manufacturer_elem.text or ''
@@ -785,6 +849,7 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                 # Extract manufacturer
                 manufacturer_elem = extending_device.find('Manufacturer')
                 if manufacturer_elem is None:
+                    print(f"[extract_device_info] {file_path}: Missing Manufacturer in ExtendingDeviceNames")
                     return None
                 
                 manufacturer = manufacturer_elem.text or ''
@@ -792,6 +857,7 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                 # Get all models
                 model_elems = extending_device.findall('Model')
                 if not model_elems:
+                    print(f"[extract_device_info] {file_path}: No Model elements in ExtendingDeviceNames")
                     return None
                 
                 # Use the first model as the primary model
@@ -807,6 +873,7 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                     'all_models': [m.text.strip() for m in model_elems if m.text]
                 }
             
+            print(f"[extract_device_info] {file_path}: No MasterDeviceNames or ExtendingDeviceNames found")
             return None
             
         except Exception as e:
@@ -1005,6 +1072,128 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
         except Exception as e:
             self.send_error(500, f"Error deleting file: {str(e)}")
 
+    def validate_midnam(self):
+        """Validate a .midnam file against the DTD"""
+        try:
+            from lxml import etree
+            
+            content_length = int(self.headers['Content-Length'])
+            post_data = self.rfile.read(content_length).decode()
+            data = json.loads(post_data)
+            
+            file_path = data.get('file_path')
+            if not file_path or not os.path.exists(file_path):
+                self.send_error(400, "Invalid or missing file_path")
+                return
+            
+            # For now, just validate that the XML is well-formed
+            # DTD validation is disabled because MIDIEvents10.dtd is missing
+            try:
+                # Parse XML file with a parser that doesn't load external entities
+                parser = etree.XMLParser(
+                    dtd_validation=False,
+                    load_dtd=False,
+                    no_network=True,
+                    resolve_entities=False
+                )
+                
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    xml_doc = etree.parse(f, parser)
+                
+                # Basic structure validation
+                root = xml_doc.getroot()
+                
+                # Check if it's a MIDINameDocument
+                if root.tag != 'MIDINameDocument':
+                    self.send_response(200)
+                    self.send_header('Content-Type', 'application/json')
+                    self.end_headers()
+                    self.wfile.write(json.dumps({
+                        'valid': False,
+                        'message': 'File validation failed',
+                        'errors': [{
+                            'line': 0,
+                            'column': 0,
+                            'message': f'Root element must be MIDINameDocument, found {root.tag}',
+                            'type': 'structure'
+                        }],
+                        'file_path': file_path
+                    }).encode())
+                    return
+                
+                # Check for required Author element
+                author = root.find('Author')
+                if author is None:
+                    self.send_response(200)
+                    self.send_header('Content-Type', 'application/json')
+                    self.end_headers()
+                    self.wfile.write(json.dumps({
+                        'valid': False,
+                        'message': 'File validation failed',
+                        'errors': [{
+                            'line': 0,
+                            'column': 0,
+                            'message': 'Missing required Author element',
+                            'type': 'structure'
+                        }],
+                        'file_path': file_path
+                    }).encode())
+                    return
+                
+                # Check for at least one device definition
+                master_devices = root.findall('MasterDeviceNames')
+                extending_devices = root.findall('ExtendingDeviceNames')
+                standard_modes = root.findall('StandardDeviceMode')
+                
+                if not (master_devices or extending_devices or standard_modes):
+                    self.send_response(200)
+                    self.send_header('Content-Type', 'application/json')
+                    self.end_headers()
+                    self.wfile.write(json.dumps({
+                        'valid': False,
+                        'message': 'File validation failed',
+                        'errors': [{
+                            'line': 0,
+                            'column': 0,
+                            'message': 'Missing device definition (MasterDeviceNames, ExtendingDeviceNames, or StandardDeviceMode)',
+                            'type': 'structure'
+                        }],
+                        'file_path': file_path
+                    }).encode())
+                    return
+                
+                # If we get here, the file is valid
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    'valid': True,
+                    'message': 'File is well-formed and has valid basic structure',
+                    'file_path': file_path
+                }).encode())
+                
+            except etree.XMLSyntaxError as e:
+                # XML parsing error
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    'valid': False,
+                    'message': 'XML syntax error',
+                    'errors': [{
+                        'line': e.lineno if hasattr(e, 'lineno') else 0,
+                        'column': e.offset if hasattr(e, 'offset') else 0,
+                        'message': str(e),
+                        'type': 'syntax'
+                    }],
+                    'file_path': file_path
+                }).encode())
+                
+        except ImportError:
+            self.send_error(500, "lxml library not installed. Install with: pip install lxml")
+        except Exception as e:
+            self.send_error(500, f"Error validating file: {str(e)}")
+    
     def clear_cache(self):
         """Clear the midnam catalog cache"""
         try:
