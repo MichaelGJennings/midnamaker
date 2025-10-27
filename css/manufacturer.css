@@ -193,6 +193,12 @@
     color: #212529;
 }
 
+.manufacturer-header-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
+}
+
 .btn-toggle-manufacturer-list {
     background: transparent;
     border: none;
@@ -373,6 +379,12 @@
 .device-list-header h3 {
     margin: 0;
     color: #007bff;
+}
+
+.device-header-actions {
+    display: flex;
+    gap: 0.5rem;
+    align-items: center;
 }
 
 .device-list {

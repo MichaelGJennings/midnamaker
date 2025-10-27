@@ -48,9 +48,12 @@
             <div class="manufacturer-section-collapsible" id="manufacturer-section-collapsible">
                 <div class="manufacturer-section-header" id="manufacturer-section-header">
                     <h3>Select Manufacturer</h3>
-                    <button class="btn-toggle-manufacturer-list" id="toggle-manufacturer-list" style="display: none;">
-                        <span class="toggle-icon">▼</span>
-                    </button>
+                    <div class="manufacturer-header-actions">
+                        <button class="btn btn-small btn-primary" id="add-manufacturer-btn" title="Create new manufacturer file">+</button>
+                        <button class="btn-toggle-manufacturer-list" id="toggle-manufacturer-list" style="display: none;">
+                            <span class="toggle-icon">▼</span>
+                        </button>
+                    </div>
                 </div>
                 
                 <div class="manufacturer-section-content" id="manufacturer-section-content">
@@ -72,7 +75,10 @@
             <div class="device-list-container" id="device-list-container" style="display: none;">
                 <div class="device-list-header">
                     <h3 id="selected-manufacturer-name">Devices</h3>
-                    <button class="btn btn-small btn-secondary" id="clear-manufacturer-selection">Change Manufacturer</button>
+                    <div class="device-header-actions">
+                        <button class="btn btn-small btn-primary" id="add-device-btn" title="Add new device to manufacturer">+</button>
+                        <button class="btn btn-small btn-secondary" id="clear-manufacturer-selection">Change Manufacturer</button>
+                    </div>
                 </div>
                 <div id="device-list" class="device-list">
                     <!-- Device list will be populated here -->
@@ -86,7 +92,7 @@
         <div class="device-header">
             <h2 id="device-title">Select a Device</h2>
             <div class="device-actions">
-                <button class="btn btn-primary" id="save-device-btn" disabled>Save Device</button>
+                <button class="btn btn-primary" id="save-device-btn" disabled>Saved</button>
                 <button class="btn btn-secondary" id="validate-device-btn" disabled>Validate</button>
             </div>
         </div>
@@ -99,10 +105,9 @@
     <!-- Patch Editor Tab -->
     <div class="tab-content" id="patch-tab">
         <div class="patch-header">
-            <h2>Patch Editor</h2>
+            <h2 id="patch-title">Patch Editor</h2>
             <div class="patch-actions">
-                <button class="btn btn-primary" id="save-patch-btn" disabled>Save Patch</button>
-                <button class="btn btn-secondary" id="validate-patch-btn" disabled>Validate</button>
+                <button class="btn btn-primary" id="save-patch-btn" disabled>Saved</button>
             </div>
         </div>
         
@@ -190,6 +195,7 @@
     
     <!-- Feature Modules -->
     <script type="module" src="js/modules/midi.js"></script>
+    <script type="module" src="js/modules/middev.js"></script>
     <script type="module" src="js/modules/manufacturer.js"></script>
     <script type="module" src="js/modules/device.js"></script>
     <script type="module" src="js/modules/patch.js"></script>

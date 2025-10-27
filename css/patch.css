@@ -375,13 +375,21 @@
     border-bottom: none;
 }
 
-.patch-header {
+.patch-header,
+.device-header {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;
+    gap: 0.75rem;
     padding: 0.75rem 1rem;
     background: #f8f9fa;
     border-bottom: 1px solid #e9ecef;
+}
+
+.patch-header h2,
+.device-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: #212529;
 }
 
 .patch-info-inline {
@@ -426,9 +434,11 @@
     font-size: 0.85rem;
 }
 
-.patch-actions {
+.patch-actions,
+.device-actions {
     display: flex;
     gap: 0.5rem;
+    align-items: center;
 }
 
 .patch-details {
@@ -841,4 +851,71 @@
 .btn-invalid:hover {
     background-color: #c82333 !important;
     border-color: #bd2130 !important;
+}
+
+/* Patch Edit Mode Styles */
+.patch-edit-table-container {
+    margin: 1rem 0;
+    overflow-x: auto;
+}
+
+.patch-edit-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.patch-edit-table thead th {
+    background: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+    padding: 0.75rem;
+    text-align: left;
+    font-weight: 600;
+    color: #212529;
+}
+
+.patch-edit-table tbody tr {
+    border-bottom: 1px solid #dee2e6;
+}
+
+.patch-edit-table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+.patch-edit-table td {
+    padding: 0.75rem;
+    vertical-align: middle;
+}
+
+.patch-id-input,
+.patch-name-input-edit,
+.patch-program-change-input {
+    width: 100%;
+    padding: 0.5rem;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 0.95rem;
+}
+
+.patch-id-input:focus,
+.patch-name-input-edit:focus,
+.patch-program-change-input:focus {
+    outline: none;
+    border-color: #007bff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.patch-program-change-input {
+    width: 80px;
+}
+
+.patch-edit-actions {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: nowrap;
+}
+
+.patch-edit-actions .btn {
+    white-space: nowrap;
 }
