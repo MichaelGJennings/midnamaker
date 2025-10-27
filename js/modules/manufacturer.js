@@ -370,10 +370,10 @@ export class ManufacturerManager {
                 midi_commands: bank.midi_commands || [],
                 patch: bank.patches ? bank.patches.map(p => ({
                     name: p.name,
-                    programChange: parseInt(p.number.replace(/\D/g, '')) || 0,
+                    Number: p.Number || '0',
+                    programChange: p.programChange !== undefined ? parseInt(p.programChange) : 0,
                     usesNoteList: p.note_list_name,
-                    note_list_name: p.note_list_name,
-                    number: p.number
+                    note_list_name: p.note_list_name
                 })) : []
             }));
         }

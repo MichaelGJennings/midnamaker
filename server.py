@@ -47,6 +47,8 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
             self.save_file()
         elif self.path == '/api/patch/save':
             self.save_patch()
+        elif self.path == '/api/midnam/save':
+            self.save_midnam_structure()
         elif self.path == '/api/validate':
             self.validate_midnam()
         elif self.path == '/api/middev/create':
@@ -256,6 +258,155 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
             
         except Exception as e:
             self.send_error(500, f"Error saving patch: {str(e)}")
+    
+    def save_midnam_structure(self):
+        """Save the entire MIDNAM structure from frontend"""
+        try:
+            import json
+            import xml.etree.ElementTree as ET
+            import shutil
+            from datetime import datetime
+            from xml.dom import minidom
+            
+            content_length = int(self.headers['Content-Length'])
+            post_data = self.rfile.read(content_length).decode()
+            data = json.loads(post_data)
+            
+            file_path = data.get('file_path')
+            midnam = data.get('midnam')
+            
+            if not file_path or not midnam:
+                self.send_error(400, "Missing file_path or midnam data")
+                return
+            
+            # Check if file exists
+            if not os.path.exists(file_path):
+                self.send_error(404, f"File not found: {file_path}")
+                return
+            
+            # Parse existing file to get its structure and DOCTYPE
+            tree = ET.parse(file_path)
+            root = tree.getroot()
+            
+            # Read the original file to extract DOCTYPE if present
+            with open(file_path, 'r', encoding='utf-8') as f:
+                original_content = f.read()
+            
+            # Extract DOCTYPE declaration if present
+            doctype_line = ''
+            for line in original_content.split('\n'):
+                if '<!DOCTYPE' in line:
+                    doctype_line = line.strip() + '\n'
+                    break
+            
+            # Update the XML with changes from midnam structure
+            # Find all patch banks and update patch lists
+            for master_device in root.findall('.//MasterDeviceNames'):
+                for channel_name_set in master_device.findall('.//ChannelNameSet'):
+                    patch_banks = channel_name_set.findall('.//PatchBank')
+                    
+                    # Match banks by index position (order matters)
+                    if 'patchList' in midnam:
+                        # Remove banks that no longer exist in frontend
+                        if len(midnam['patchList']) < len(patch_banks):
+                            # Remove extra banks from the end
+                            for bank_index in range(len(midnam['patchList']), len(patch_banks)):
+                                bank_to_remove = patch_banks[bank_index]
+                                bank_name = bank_to_remove.get('Name', f'Bank {bank_index + 1}')
+                                channel_name_set.remove(bank_to_remove)
+                                print(f"[save_midnam_structure] Removed bank: {bank_name}")
+                            
+                            # Refresh the list after removal
+                            patch_banks = channel_name_set.findall('.//PatchBank')
+                        
+                        # Update existing banks
+                        for bank_index, patch_bank in enumerate(patch_banks):
+                            if bank_index < len(midnam['patchList']):
+                                midnam_bank = midnam['patchList'][bank_index]
+                                
+                                # Update bank name if it has changed
+                                if 'name' in midnam_bank:
+                                    patch_bank.set('Name', midnam_bank['name'])
+                                
+                                # Update patches in this bank
+                                if 'patch' in midnam_bank:
+                                    patch_name_list = patch_bank.find('PatchNameList')
+                                    if patch_name_list is not None:
+                                        # Clear existing patches
+                                        patch_name_list.clear()
+                                        
+                                        # Add updated patches
+                                        for patch_data in midnam_bank['patch']:
+                                            patch_elem = ET.SubElement(patch_name_list, 'Patch')
+                                            patch_elem.set('Name', patch_data.get('name', ''))
+                                            patch_elem.set('Number', str(patch_data.get('Number', '')))
+                                            patch_elem.set('ProgramChange', str(patch_data.get('programChange', '')))
+                        
+                        # Add new banks if frontend has more than XML
+                        if len(midnam['patchList']) > len(patch_banks):
+                            for bank_index in range(len(patch_banks), len(midnam['patchList'])):
+                                midnam_bank = midnam['patchList'][bank_index]
+                                
+                                # Create new PatchBank element
+                                new_patch_bank = ET.SubElement(channel_name_set, 'PatchBank')
+                                new_patch_bank.set('Name', midnam_bank.get('name', f'New Bank {bank_index + 1}'))
+                                
+                                # Add PatchNameList
+                                patch_name_list = ET.SubElement(new_patch_bank, 'PatchNameList')
+                                
+                                # Add patches
+                                if 'patch' in midnam_bank:
+                                    for patch_data in midnam_bank['patch']:
+                                        patch_elem = ET.SubElement(patch_name_list, 'Patch')
+                                        patch_elem.set('Name', patch_data.get('name', ''))
+                                        patch_elem.set('Number', str(patch_data.get('Number', '')))
+                                        patch_elem.set('ProgramChange', str(patch_data.get('programChange', '')))
+                                
+                                print(f"[save_midnam_structure] Created new bank: {midnam_bank.get('name', f'New Bank {bank_index + 1}')}")
+            
+            # Create backup
+            backup_name = f'{file_path}.backup.{datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}'
+            shutil.copy(file_path, backup_name)
+            
+            # Convert to string with pretty printing
+            xml_str = ET.tostring(root, encoding='unicode', method='xml')
+            dom = minidom.parseString(xml_str)
+            pretty_xml = dom.toprettyxml(indent='\t', encoding=None)
+            
+            # Remove extra blank lines
+            lines = [line for line in pretty_xml.split('\n') if line.strip()]
+            pretty_xml = '\n'.join(lines[1:])  # Skip the XML declaration from minidom
+            
+            # Add proper XML declaration and DOCTYPE
+            xml_declaration = '<?xml version="1.0" encoding="UTF-8"?>\n'
+            if not doctype_line:
+                doctype_line = '<!DOCTYPE MIDINameDocument PUBLIC "-//MIDI Manufacturers Association//DTD MIDINameDocument 1.0//EN" "http://www.midi.org/dtds/MIDINameDocument10.dtd">\n'
+            
+            full_xml = xml_declaration + doctype_line + '\n' + pretty_xml
+            
+            # Write to file
+            with open(file_path, 'w', encoding='utf-8') as f:
+                f.write(full_xml)
+            
+            print(f"[save_midnam_structure] Saved changes to: {file_path}")
+            
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({
+                'success': True,
+                'backup': backup_name,
+                'file_path': file_path
+            }).encode())
+            
+        except ET.ParseError as e:
+            print(f"[save_midnam_structure] XML Parse Error: {str(e)}")
+            self.send_error(422, f"Cannot save invalid XML file: {str(e)}")
+        except Exception as e:
+            print(f"[save_midnam_structure] Error: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            self.send_error(500, f"Error saving file: {str(e)}")
     
     def get_patch_files(self):
         """Get list of all patch files with their metadata"""
@@ -566,6 +717,7 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                 for patch in bank_patches:
                     patch_name = patch.get('Name', 'Unnamed')
                     patch_number = patch.get('Number', '0')
+                    program_change = patch.get('ProgramChange', '0')
                     
                     # Find the note name list used by this patch
                     uses_note_list = patch.find('.//UsesNoteNameList')
@@ -573,7 +725,8 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                     
                     patches_data.append({
                         'name': patch_name,
-                        'number': patch_number,
+                        'Number': patch_number,
+                        'programChange': program_change,
                         'note_list_name': note_list_name
                     })
                 

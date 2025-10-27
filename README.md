@@ -6,7 +6,7 @@ I've used this tool to add note name lists for the Alesis D4.  If you're using t
 
 ## Features
 
-Existing midnam and middev files can be dropped into the ptchlist directory and will be cataloged at app startup.  You can select from a list of manufacturers, and it will display device names from the middev files that have corresponding midnam files.
+Existing midnam and middev files can be dropped into the `patchlist` directory and will be cataloged at app startup.  You can select from a list of manufacturers, and it will display device names from the middev files that have corresponding midnam files.  You can add new devices and define new patch lists.
 
 After selecting the device, you'll see patch bank lists and other items from the midnam file.  At this point you may wish to select your device from the MIDI menu in the upper right. (See list of supported browsers below.)  This adds a few convenience features detailed below.
 

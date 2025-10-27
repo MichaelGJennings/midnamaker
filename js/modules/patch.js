@@ -8,6 +8,7 @@ export class PatchManager {
     constructor() {
         this.selectedPatchList = null;
         this.selectedPatch = null;
+        this.patchEditMode = false;  // Track if we're in patch editing mode
         this.noteNameIndex = new Set();
         this.drumNames = [
             'Kick', 'Snare', 'Hi-Hat', 'Crash', 'Ride', 'Tom', 'Open Hat', 'Closed Hat',
@@ -1448,18 +1449,24 @@ export class PatchManager {
                 <div class="patch-list-header">
                     <h3>${Utils.escapeHtml(this.selectedPatchList.name || 'Unnamed Patch List')}</h3>
                     <div class="patch-list-actions">
+                        <button class="btn btn-primary btn-small" id="btn_patch-list-edit" onclick="patchManager.togglePatchEditMode()">${this.patchEditMode ? 'Done' : 'Edit'}</button>
                         <button class="btn btn-primary btn-small" onclick="patchManager.addPatch()">Add Patch</button>
                         <button class="btn btn-secondary btn-small" onclick="patchManager.testPatchList()">Test MIDI</button>
                     </div>
                 </div>
                 
-                ${patches.map((patch, index) => `
+                ${this.patchEditMode ? this.renderPatchEditTable(patches) : patches.map((patch, index) => {
+                    const defaultName = 'Patch ' + (index + 1);
+                    const patchName = patch.name || defaultName;
+                    const patchNumber = patch.Number !== undefined ? patch.Number : index;
+                    const programChange = patch.programChange !== undefined ? patch.programChange : index;
+                    return `
                     <div class="patch-item" data-patch-index="${index}">
                         <div class="patch-header">
                             <div class="patch-info-inline">
-                                <span class="patch-number">${patch.programChange || index}</span>
-                                <span class="patch-name clickable" onclick="patchManager.editPatch(${index})" title="Click to edit patch">${Utils.escapeHtml(patch.name || `Patch ${index + 1}`)}</span>
-                                <span class="patch-program-change">PC: ${patch.programChange || index}</span>
+                                <span class="patch-number">${patchNumber}</span>
+                                <span class="patch-name clickable" onclick="patchManager.editPatch(${index})" title="Click to edit patch">${Utils.escapeHtml(patchName)}</span>
+                                <span class="patch-program-change">PC: ${programChange}</span>
                             </div>
                             <div class="patch-actions">
                                 <button class="btn btn-small btn-secondary" onclick="patchManager.testPatch(${index})">Test</button>
@@ -1468,27 +1475,33 @@ export class PatchManager {
                         </div>
                         <div class="patch-details">
                             <div class="patch-info">
-                                ${patch.bankSelectMSB ? `<p>Bank Select MSB: ${patch.bankSelectMSB}</p>` : ''}
-                                ${patch.bankSelectLSB ? `<p>Bank Select LSB: ${patch.bankSelectLSB}</p>` : ''}
+                                ${patch.bankSelectMSB ? '<p>Bank Select MSB: ' + patch.bankSelectMSB + '</p>' : ''}
+                                ${patch.bankSelectLSB ? '<p>Bank Select LSB: ' + patch.bankSelectLSB + '</p>' : ''}
                             </div>
                             ${this.generatePatchNoteListsHTML(patch)}
                         </div>
                     </div>
-                `).join('')}
+                    `;
+                }).join('')}
             </div>
         `;
         
         content.style.display = 'block';
         
-        // Add click handlers for patch selection
-        content.querySelectorAll('.patch-item').forEach(item => {
-            item.addEventListener('click', (e) => {
-                if (!e.target.closest('.patch-actions')) {
-                    const index = parseInt(item.getAttribute('data-patch-index'));
-                    this.selectPatch(index);
-                }
+        if (!this.patchEditMode) {
+            // Add click handlers for patch selection (only in view mode)
+            content.querySelectorAll('.patch-item').forEach(item => {
+                item.addEventListener('click', (e) => {
+                    if (!e.target.closest('.patch-actions')) {
+                        const index = parseInt(item.getAttribute('data-patch-index'));
+                        this.selectPatch(index);
+                    }
+                });
             });
-        });
+        } else {
+            // In edit mode, setup patch editing event listeners
+            this.setupPatchEditListeners();
+        }
     }
     
     generatePatchNoteListsHTML(patch) {
@@ -1541,6 +1554,14 @@ export class PatchManager {
     }
     
     async savePatch() {
+        // If we're in patch edit mode (editing patch list, not individual patch), use global save
+        if (this.patchEditMode && appState.pendingChanges.hasUnsavedChanges && appState.currentMidnam) {
+            if (window.deviceManager && window.deviceManager.saveMidnamStructure) {
+                await window.deviceManager.saveMidnamStructure();
+                return;
+            }
+        }
+        
         if (!appState.selectedPatch) {
             Utils.showNotification('No patch selected to save', 'warning');
             return;
@@ -1810,6 +1831,376 @@ export class PatchManager {
             averagePatchesPerList: patchLists.length > 0 ? 
                 Math.round(totalPatches / patchLists.length) : 0
         };
+    }
+    
+    // Patch editing methods
+    togglePatchEditMode() {
+        this.patchEditMode = !this.patchEditMode;
+        this.renderPatchListContent();
+    }
+    
+    renderPatchEditTable(patches) {
+        if (patches.length === 0) {
+            return '<div class="empty-state">No patches to edit. Click "Add Patch" to create one.</div>';
+        }
+        
+        return `
+            <div class="patch-edit-table-container">
+                <table class="patch-edit-table">
+                    <thead>
+                        <tr>
+                            <th>Patch ID</th>
+                            <th>Name</th>
+                            <th>Program Change</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="patch-edit-tbody">
+                        ${patches.map((patch, index) => {
+                            const patchId = patch.Number || index;
+                            const programChange = patch.programChange !== undefined ? patch.programChange : index;
+                            
+                            return `
+                                <tr data-patch-index="${index}">
+                                    <td>
+                                        <input type="text" 
+                                               class="patch-id-input"
+                                               value="${patchId}"
+                                               data-index="${index}"
+                                               tabindex="0"
+                                               onkeydown="patchManager.handlePatchEditKeydown(event, ${index}, 'id')"
+                                               onchange="patchManager.updatePatchId(${index}, this.value)">
+                                    </td>
+                                    <td>
+                                        <input type="text" 
+                                               class="patch-name-input-edit"
+                                               value="${Utils.escapeHtml(patch.name || `Patch ${index + 1}`)}"
+                                               data-index="${index}"
+                                               tabindex="0"
+                                               onkeydown="patchManager.handlePatchEditKeydown(event, ${index}, 'name')"
+                                               onchange="patchManager.updatePatchNameInEdit(${index}, this.value)">
+                                    </td>
+                                    <td>
+                                        <input type="number" 
+                                               class="patch-program-change-input"
+                                               value="${programChange}"
+                                               min="0"
+                                               max="127"
+                                               data-index="${index}"
+                                               tabindex="0"
+                                               onkeydown="patchManager.handlePatchEditKeydown(event, ${index}, 'pc')"
+                                               onchange="patchManager.updateProgramChange(${index}, this.value)">
+                                    </td>
+                                    <td class="patch-edit-actions">
+                                        <button class="btn btn-sm btn-outline-primary" 
+                                                data-index="${index}"
+                                                tabindex="0"
+                                                onkeydown="patchManager.handlePatchEditKeydown(event, ${index}, 'insert')"
+                                                onclick="patchManager.insertPatchAt(${index})"
+                                                title="Insert patch after this one">
+                                            +I
+                                        </button>
+                                        <button class="btn btn-sm btn-secondary" 
+                                                tabindex="-1"
+                                                onclick="patchManager.testPatchInEditMode(${index})"
+                                                title="Test this patch">
+                                            <img src="assets/kbd.svg" alt="Test" width="16" height="16" style="vertical-align: middle;">
+                                        </button>
+                                        <button class="btn btn-sm btn-danger" 
+                                                tabindex="-1"
+                                                onclick="patchManager.deletePatchInEditMode(${index})"
+                                                title="Delete this patch">
+                                            ×
+                                        </button>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+    
+    setupPatchEditListeners() {
+        // No special listeners needed for now, all handled via onchange
+    }
+    
+    updatePatchId(index, value) {
+        if (!this.selectedPatchList || !this.selectedPatchList.patch) return;
+        
+        const patch = this.selectedPatchList.patch[index];
+        if (patch) {
+            patch.Number = value;
+            this.markPatchChanged();
+        }
+    }
+    
+    updatePatchNameInEdit(index, value) {
+        if (!this.selectedPatchList || !this.selectedPatchList.patch) return;
+        
+        const patch = this.selectedPatchList.patch[index];
+        if (patch) {
+            patch.name = value;
+            this.markPatchChanged();
+        }
+    }
+    
+    updateProgramChange(index, value) {
+        if (!this.selectedPatchList || !this.selectedPatchList.patch) return;
+        
+        const numValue = parseInt(value);
+        if (isNaN(numValue) || numValue < 0 || numValue > 127) {
+            Utils.showNotification('Program Change must be between 0 and 127', 'warning');
+            return;
+        }
+        
+        const patch = this.selectedPatchList.patch[index];
+        if (patch) {
+            patch.programChange = numValue;
+            this.markPatchChanged();
+        }
+    }
+    
+    handlePatchEditKeydown(event, patchIndex, field) {
+        // Handle Enter key on name field - jump to Insert button
+        if (event.key === 'Enter' && field === 'name') {
+            event.preventDefault();
+            this.focusPatchEditField(patchIndex, 'insert');
+            return;
+        }
+        
+        if (event.key !== 'Tab') return;
+        
+        event.preventDefault();
+        
+        const tbody = document.getElementById('patch-edit-tbody');
+        if (!tbody) return;
+        
+        const rows = tbody.querySelectorAll('tr');
+        const currentRow = rows[patchIndex];
+        if (!currentRow) return;
+        
+        // Define field order
+        const fields = ['id', 'name', 'pc', 'insert'];
+        const currentFieldIndex = fields.indexOf(field);
+        
+        if (event.shiftKey) {
+            // Shift-Tab: go to previous field or previous row
+            if (currentFieldIndex === 0) {
+                // First field, go to last field of previous row
+                if (patchIndex > 0) {
+                    const prevRow = rows[patchIndex - 1];
+                    const insertBtn = prevRow.querySelector('button[tabindex="0"]');
+                    if (insertBtn) insertBtn.focus();
+                }
+            } else {
+                // Go to previous field in same row
+                const prevField = fields[currentFieldIndex - 1];
+                this.focusPatchEditField(patchIndex, prevField);
+            }
+        } else {
+            // Tab: go to next field or next row
+            if (currentFieldIndex === fields.length - 1) {
+                // Last field, go to first field of next row
+                if (patchIndex < rows.length - 1) {
+                    this.focusPatchEditField(patchIndex + 1, 'id');
+                }
+            } else {
+                // Go to next field in same row
+                const nextField = fields[currentFieldIndex + 1];
+                this.focusPatchEditField(patchIndex, nextField);
+            }
+        }
+    }
+    
+    focusPatchEditField(patchIndex, field) {
+        const tbody = document.getElementById('patch-edit-tbody');
+        if (!tbody) return;
+        
+        const row = tbody.querySelector(`tr[data-patch-index="${patchIndex}"]`);
+        if (!row) return;
+        
+        let element;
+        if (field === 'id') {
+            element = row.querySelector('.patch-id-input');
+        } else if (field === 'name') {
+            element = row.querySelector('.patch-name-input-edit');
+        } else if (field === 'pc') {
+            element = row.querySelector('.patch-program-change-input');
+        } else if (field === 'insert') {
+            element = row.querySelector('button[tabindex="0"]');
+        }
+        
+        if (element) {
+            element.focus();
+            if (element.tagName === 'INPUT') {
+                element.select();
+            }
+        }
+    }
+    
+    smartIncrementPatchId(previousId) {
+        const idStr = String(previousId);
+        
+        // Find all numeric sequences in the string
+        const matches = [];
+        const regex = /(\d+\.?\d*|\d*\.\d+)/g;
+        let match;
+        
+        while ((match = regex.exec(idStr)) !== null) {
+            matches.push({
+                value: match[0],
+                index: match.index,
+                length: match[0].length
+            });
+        }
+        
+        if (matches.length === 0) {
+            // No numbers found, just append "1"
+            return idStr + '1';
+        }
+        
+        // Use the last numeric sequence
+        const lastMatch = matches[matches.length - 1];
+        const numStr = lastMatch.value;
+        
+        // Check if it has a decimal point
+        let newNumStr;
+        if (numStr.includes('.')) {
+            // Split into integer and fractional parts
+            const parts = numStr.split('.');
+            const integerPart = parts[0];
+            const fractionalPart = parts[1] || '0';
+            
+            // Increment the fractional part
+            const fractionalNum = parseInt(fractionalPart, 10);
+            const incrementedFractional = fractionalNum + 1;
+            
+            // Preserve leading zeroes in fractional part, but allow it to grow if needed
+            const minLength = fractionalPart.length;
+            const newFractionalStr = String(incrementedFractional).padStart(minLength, '0');
+            
+            newNumStr = integerPart + '.' + newFractionalStr;
+        } else {
+            // No decimal, increment the whole number
+            const num = parseInt(numStr, 10);
+            const incrementedNum = num + 1;
+            
+            // Preserve leading zeroes
+            newNumStr = String(incrementedNum);
+            const leadingZeroes = numStr.length - String(num).length;
+            if (leadingZeroes > 0 && newNumStr.length < numStr.length) {
+                newNumStr = newNumStr.padStart(numStr.length, '0');
+            }
+        }
+        
+        // Reassemble the string
+        const prefix = idStr.substring(0, lastMatch.index);
+        const suffix = idStr.substring(lastMatch.index + lastMatch.length);
+        
+        return prefix + newNumStr + suffix;
+    }
+    
+    insertPatchAt(index) {
+        if (!this.selectedPatchList || !this.selectedPatchList.patch) return;
+        
+        const patches = this.selectedPatchList.patch;
+        
+        // Insert after the current row
+        const insertPosition = index + 1;
+        
+        // Smart ID generation from previous patch
+        const previousPatch = patches[index];
+        const smartId = previousPatch ? this.smartIncrementPatchId(previousPatch.Number || index) : insertPosition;
+        
+        // Create new patch
+        const newPatch = {
+            name: `New Patch ${insertPosition + 1}`,
+            Number: smartId,
+            programChange: insertPosition
+        };
+        
+        // Insert at position (after current row)
+        patches.splice(insertPosition, 0, newPatch);
+        
+        // Renumber program changes for patches after insertion point
+        this.renumberPatches(insertPosition + 1);
+        
+        this.markPatchChanged();
+        this.renderPatchListContent();
+        
+        // Focus and select the name field of the new patch
+        setTimeout(() => {
+            this.focusPatchEditField(insertPosition, 'name');
+        }, 0);
+    }
+    
+    deletePatchInEditMode(index) {
+        if (!this.selectedPatchList || !this.selectedPatchList.patch) return;
+        
+        const patches = this.selectedPatchList.patch;
+        
+        if (patches.length === 1) {
+            Utils.showNotification('Cannot delete the last patch', 'warning');
+            return;
+        }
+        
+        modal.confirm('Are you sure you want to delete this patch?', 'Delete Patch')
+            .then(confirmed => {
+                if (confirmed) {
+                    // Remove patch
+                    patches.splice(index, 1);
+                    
+                    // Renumber program changes
+                    this.renumberPatches(index);
+                    
+                    this.markPatchChanged();
+                    this.renderPatchListContent();
+                }
+            });
+    }
+    
+    renumberPatches(startIndex) {
+        if (!this.selectedPatchList || !this.selectedPatchList.patch) return;
+        
+        const patches = this.selectedPatchList.patch;
+        
+        // Only renumber programChange values, not Patch IDs
+        for (let i = startIndex; i < patches.length; i++) {
+            patches[i].programChange = i;
+        }
+    }
+    
+    async testPatchInEditMode(index) {
+        if (!this.selectedPatchList || !this.selectedPatchList.patch) return;
+        
+        const patch = this.selectedPatchList.patch[index];
+        if (!patch) return;
+        
+        const programChange = patch.programChange !== undefined ? patch.programChange : index;
+        
+        // Send program change before playing notes
+        if (midiManager && midiManager.isOutputConnected()) {
+            // Send program change
+            midiManager.sendProgramChange(programChange);
+            
+            // Wait a bit for the program change to take effect
+            await new Promise(resolve => setTimeout(resolve, 50));
+            
+            // Play 3 random notes
+            const notes = [60, 64, 67]; // C, E, G
+            const randomNotes = notes.sort(() => Math.random() - 0.5).slice(0, 3);
+            
+            for (const note of randomNotes) {
+                midiManager.sendNoteOn(note, 100);
+                await new Promise(resolve => setTimeout(resolve, 200)); // 8th note at 150 BPM
+                midiManager.sendNoteOff(note);
+                await new Promise(resolve => setTimeout(resolve, 50)); // Small gap
+            }
+        } else {
+            Utils.showNotification('MIDI output not connected', 'warning');
+        }
     }
 }
 

@@ -267,8 +267,7 @@ export class AppState {
             const btn = document.getElementById(btnId);
             if (btn) {
                 btn.disabled = false;
-                const originalText = btn.textContent.replace(' *', '');
-                btn.textContent = `${originalText} *`;
+                btn.textContent = 'Save Changes';
                 btn.classList.add('btn-warning');
             }
         });
@@ -287,9 +286,9 @@ export class AppState {
         this.saveButtonIds.forEach(btnId => {
             const btn = document.getElementById(btnId);
             if (btn) {
-                const originalText = btn.textContent.replace(' *', '');
-                btn.textContent = originalText;
+                btn.textContent = 'Saved';
                 btn.classList.remove('btn-warning');
+                btn.disabled = true;
             }
         });
         

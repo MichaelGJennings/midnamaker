@@ -65,6 +65,12 @@ export class KeyboardManager {
             return;
         }
         
+        // Ignore when modifier keys are pressed (Cmd, Ctrl, Alt, Shift with modifier)
+        // This allows system shortcuts like Cmd-C, Cmd-V, etc. to work normally
+        if (e.metaKey || e.ctrlKey || e.altKey) {
+            return;
+        }
+        
         const noteNumber = this.keyboardMap.get(e.code);
         if (noteNumber && !e.repeat) {
             this.playNote(noteNumber);
@@ -76,6 +82,11 @@ export class KeyboardManager {
         // Ignore keyboard shortcuts when typing in input fields
         const target = e.target;
         if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.tagName === 'SELECT' || target.isContentEditable) {
+            return;
+        }
+        
+        // Ignore when modifier keys are pressed
+        if (e.metaKey || e.ctrlKey || e.altKey) {
             return;
         }
         
