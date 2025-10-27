@@ -1576,18 +1576,22 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
             filename = manufacturer.replace(' ', '_') + '.middev'
             file_path = os.path.join('patchfiles', filename)
             
+            # If .middev file doesn't exist, create it
             if not os.path.exists(file_path):
-                self.send_response(404)
-                self.send_header('Content-Type', 'application/json')
-                self.end_headers()
-                self.wfile.write(json.dumps({
-                    'error': f'File not found: {filename}. Create manufacturer first.'
-                }).encode())
-                return
-            
-            # Parse existing file
-            tree = ET.parse(file_path)
-            root = tree.getroot()
+                print(f"[add_device_to_middev] .middev file not found, creating: {file_path}")
+                
+                # Create new .middev file
+                root = ET.Element('MIDIDeviceTypes')
+                
+                # Add Author element
+                author = ET.SubElement(root, 'Author')
+                author.text = f'Created by MIDNAM Maker on {datetime.now().strftime("%Y-%m-%d")}'
+                
+                tree = ET.ElementTree(root)
+            else:
+                # Parse existing file
+                tree = ET.parse(file_path)
+                root = tree.getroot()
             
             # Check if device already exists
             for device_type in root.findall('MIDIDeviceType'):
@@ -1647,9 +1651,11 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
             # Append new device to root
             root.append(device_type)
             
-            # Create backup before modifying
-            backup_name = f'{file_path}.backup.{datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}'
-            shutil.copy(file_path, backup_name)
+            # Create backup before modifying (only if file already existed)
+            backup_name = None
+            if os.path.exists(file_path):
+                backup_name = f'{file_path}.backup.{datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}'
+                shutil.copy(file_path, backup_name)
             
             # Write updated XML
             xml_str = ET.tostring(root, encoding='unicode', method='xml')
@@ -1670,6 +1676,11 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
             # Write to file
             with open(file_path, 'w', encoding='utf-8') as f:
                 f.write(full_xml)
+            
+            if backup_name:
+                print(f"[add_device_to_middev] Updated {file_path}, created backup: {backup_name}")
+            else:
+                print(f"[add_device_to_middev] Created new .middev file: {file_path}")
             
             print(f"[add_device_to_middev] Added device '{model}' to {file_path}")
             
