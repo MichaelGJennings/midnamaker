@@ -1,6 +1,7 @@
 // Manufacturer module
 import { appState } from '../core/state.js';
 import { Utils } from '../core/utils.js';
+import { middevManager } from './middev.js';
 
 export class ManufacturerManager {
     constructor() {
@@ -42,8 +43,34 @@ export class ManufacturerManager {
         // Header click to toggle
         const header = document.getElementById('manufacturer-section-header');
         if (header) {
-            header.addEventListener('click', () => {
+            header.addEventListener('click', (e) => {
+                // Don't toggle if clicking on buttons
+                if (e.target.closest('button')) {
+                    return;
+                }
                 this.toggleManufacturerList();
+            });
+        }
+        
+        // Add manufacturer button
+        const addManufacturerBtn = document.getElementById('add-manufacturer-btn');
+        if (addManufacturerBtn) {
+            addManufacturerBtn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                await middevManager.promptCreateManufacturer();
+            });
+        }
+        
+        // Add device button
+        const addDeviceBtn = document.getElementById('add-device-btn');
+        if (addDeviceBtn) {
+            addDeviceBtn.addEventListener('click', async (e) => {
+                e.stopPropagation();
+                if (appState.selectedManufacturer) {
+                    await middevManager.promptAddDevice(appState.selectedManufacturer);
+                } else {
+                    Utils.showNotification('No manufacturer selected', 'warning');
+                }
             });
         }
     }
@@ -57,15 +84,17 @@ export class ManufacturerManager {
         if (!container) return;
         
         try {
-            // Load catalog to get manufacturer data
-            const response = await fetch('/midnam_catalog');
+            // Load catalog to get manufacturer data (add cache-busting parameter)
+            const response = await fetch(`/midnam_catalog?t=${Date.now()}`);
             if (!response.ok) throw new Error('Failed to load catalog');
             
             const catalog = await response.json();
+            console.log('[ManufacturerManager] Loaded catalog with', Object.keys(catalog).length, 'devices');
             appState.catalog = catalog;
             
             // Build manufacturer list from catalog
             const manufacturers = this.buildManufacturerList(catalog);
+            console.log('[ManufacturerManager] Built manufacturer list with', manufacturers.length, 'manufacturers');
             
             if (manufacturers.length === 0) {
                 container.innerHTML = '<div class="empty-state">No manufacturers found</div>';

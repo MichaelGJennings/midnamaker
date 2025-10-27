@@ -73,6 +73,7 @@ document.addEventListener('DOMContentLoaded', () => {
     window.toolsManager = window.toolsManager || null;
     window.keyboardManager = window.keyboardManager || null;
     window.midiManager = window.midiManager || null;
+    window.middevManager = window.middevManager || null;
     window.tabManager = tabManager;
     
     // Add test method for debugging
@@ -109,7 +110,8 @@ document.addEventListener('DOMContentLoaded', () => {
             catalogManager: typeof window.catalogManager,
             toolsManager: typeof window.toolsManager,
             keyboardManager: typeof window.keyboardManager,
-            midiManager: typeof window.midiManager
+            midiManager: typeof window.midiManager,
+            middevManager: typeof window.middevManager
         });
         console.log('Available test functions:', {
             testTooltip: typeof window.testTooltip,

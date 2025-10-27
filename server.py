@@ -26,15 +26,18 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
         self.end_headers()
     
     def do_GET(self):
-        if self.path.startswith('/patchfiles/'):
+        # Strip query parameters for path matching
+        path_without_query = self.path.split('?')[0]
+        
+        if path_without_query.startswith('/patchfiles/'):
             self.serve_patchfile()
-        elif self.path == '/manufacturers' or self.path == '/api/manufacturers':
+        elif path_without_query == '/manufacturers' or path_without_query == '/api/manufacturers':
             self.serve_manufacturers()
-        elif self.path.startswith('/api/device/'):
+        elif path_without_query.startswith('/api/device/'):
             self.serve_device_details()
-        elif self.path == '/midnam_catalog':
+        elif path_without_query == '/midnam_catalog':
             self.serve_midnam_catalog()
-        elif self.path.startswith('/analyze_file/'):
+        elif path_without_query.startswith('/analyze_file/'):
             self.analyze_midnam_file()
         else:
             super().do_GET()
@@ -46,6 +49,10 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
             self.save_patch()
         elif self.path == '/api/validate':
             self.validate_midnam()
+        elif self.path == '/api/middev/create':
+            self.create_middev_file()
+        elif self.path == '/api/middev/add-device':
+            self.add_device_to_middev()
         elif self.path == '/clear_cache':
             self.clear_cache()
         elif self.path == '/merge_files':
@@ -406,6 +413,45 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
             
             print(f"Scanned {file_count} .midnam files, found {len(manufacturers_dict)} manufacturers")
             
+            # Also include devices and manufacturers from .middev files
+            middev_data = self.get_devices_from_middev_files()
+            
+            # Add devices from .middev files
+            for device_key, device_info in middev_data['devices'].items():
+                # Only add if not already in manufacturers_dict from .midnam files
+                manufacturer = device_info['manufacturer']
+                
+                # Check if device already exists
+                device_exists = False
+                if manufacturer in manufacturers_dict:
+                    for existing_device in manufacturers_dict[manufacturer]:
+                        if existing_device['id'] == device_key:
+                            device_exists = True
+                            break
+                
+                if not device_exists:
+                    if manufacturer not in manufacturers_dict:
+                        manufacturers_dict[manufacturer] = []
+                    
+                    manufacturers_dict[manufacturer].append({
+                        'id': device_key,
+                        'name': device_info['model'],
+                        'type': device_info['type'],
+                        'file_path': device_info['file_path'],
+                        'manufacturer_id': device_info.get('manufacturer_id'),
+                        'family_id': device_info.get('family_id'),
+                        'device_id': device_info.get('device_id'),
+                        'source': 'middev'
+                    })
+            
+            # Add empty manufacturers (no devices yet)
+            for manufacturer_name, file_path in middev_data['manufacturers'].items():
+                if manufacturer_name not in manufacturers_dict:
+                    manufacturers_dict[manufacturer_name] = []
+                    print(f"Added empty manufacturer from .middev: {manufacturer_name}")
+            
+            print(f"Total manufacturers after including .middev: {len(manufacturers_dict)}")
+            
             device_types = ["Synthesizer", "Drum Machine", "Sampler", "Controller", "Effects Unit", "Unknown"]
             
             response_data = {
@@ -698,6 +744,101 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
         except Exception as e:
             print(f"Error building manufacturer ID lookup: {e}")
             return {}
+    
+    def get_devices_from_middev_files(self):
+        """Extract device information from .middev files
+        Returns a dict with two keys:
+        - 'devices': dict of device_key -> device_info
+        - 'manufacturers': dict of manufacturer_name -> file_path (for empty manufacturers)
+        """
+        result = {
+            'devices': {},
+            'manufacturers': {}
+        }
+        
+        try:
+            import xml.etree.ElementTree as ET
+            
+            # Find all .middev files
+            print("[get_devices_from_middev_files] Starting scan...")
+            for root, dirs, files in os.walk('patchfiles'):
+                for file in files:
+                    if file.endswith('.middev'):
+                        file_path = os.path.join(root, file)
+                        relative_path = file_path.replace('\\', '/')
+                        print(f"[get_devices_from_middev_files] Found .middev file: {relative_path}")
+                        
+                        try:
+                            with open(file_path, 'r', encoding='utf-8') as f:
+                                content = f.read()
+                            
+                            # Parse XML
+                            root_elem = ET.fromstring(content)
+                            
+                            # Extract manufacturer name from filename if no devices
+                            # e.g., "MyManufacturer.middev" -> "MyManufacturer"
+                            filename_manufacturer = file.replace('.middev', '').replace('_', ' ')
+                            
+                            # Find all MIDIDeviceType elements
+                            device_types = root_elem.findall('.//MIDIDeviceType')
+                            
+                            if len(device_types) == 0:
+                                # Empty .middev file - just track the manufacturer
+                                print(f"[get_devices_from_middev_files] Empty .middev file for manufacturer: {filename_manufacturer}")
+                                result['manufacturers'][filename_manufacturer] = relative_path
+                            
+                            for device_type in device_types:
+                                manufacturer = device_type.get('Manufacturer')
+                                model = device_type.get('Model')
+                                
+                                if manufacturer and model:
+                                    device_key = f"{manufacturer}|{model}"
+                                    
+                                    # Determine device type from attributes
+                                    device_type_name = 'Unknown'
+                                    if device_type.get('IsSampler') == 'true':
+                                        device_type_name = 'Sampler'
+                                    elif device_type.get('IsDrumMachine') == 'true':
+                                        device_type_name = 'Drum Machine'
+                                    elif device_type.get('IsMixer') == 'true':
+                                        device_type_name = 'Mixer'
+                                    elif device_type.get('IsEffectUnit') == 'true':
+                                        device_type_name = 'Effects Unit'
+                                    elif device_type.get('SupportsGeneralMIDI') == 'true':
+                                        device_type_name = 'Synthesizer'
+                                    
+                                    inquiry_response = device_type.find('InquiryResponse')
+                                    manufacturer_id = None
+                                    family_id = None
+                                    device_id = None
+                                    
+                                    if inquiry_response is not None:
+                                        manufacturer_id = inquiry_response.get('Manufacturer')
+                                        family_id = inquiry_response.get('Family')
+                                        device_id = inquiry_response.get('Member')
+                                    
+                                    result['devices'][device_key] = {
+                                        'manufacturer': manufacturer,
+                                        'model': model,
+                                        'type': device_type_name,
+                                        'file_path': relative_path,
+                                        'manufacturer_id': manufacturer_id,
+                                        'family_id': family_id,
+                                        'device_id': device_id,
+                                        'source': 'middev'
+                                    }
+                                    print(f"[get_devices_from_middev_files] Extracted device: {manufacturer} | {model} ({device_type_name})")
+                        
+                        except Exception as e:
+                            print(f"Error parsing {file_path}: {e}")
+                            continue
+            
+            print(f"Found {len(result['devices'])} devices and {len(result['manufacturers'])} empty manufacturers in .middev files")
+            return result
+            
+        except Exception as e:
+            print(f"Error extracting devices from .middev files: {e}")
+            return {'devices': {}, 'manufacturers': {}}
 
     def serve_midnam_catalog(self):
         """Build and serve a catalog of all .midnam files with device information"""
@@ -782,6 +923,36 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                                 continue
                 
                 print(f"Scanned {file_count} .midnam files, found {len(catalog)} devices")
+                
+                # Also include devices and manufacturers from .middev files
+                middev_data = self.get_devices_from_middev_files()
+                
+                # Add devices from .middev files
+                for device_key, device_info in middev_data['devices'].items():
+                    # Only add if not already in catalog from .midnam files
+                    if device_key not in catalog:
+                        catalog[device_key] = {
+                            'manufacturer': device_info['manufacturer'],
+                            'model': device_info['model'],
+                            'manufacturer_id': device_info.get('manufacturer_id'),
+                            'family_id': device_info.get('family_id'),
+                            'device_id': device_info.get('device_id'),
+                            'type': device_info['type'],
+                            'files': [{
+                                'path': device_info['file_path'],
+                                'size': 0,
+                                'modified': os.path.getmtime(device_info['file_path']) if os.path.exists(device_info['file_path']) else 0
+                            }],
+                            'source': 'middev'
+                        }
+                        print(f"  Added from .middev: {device_info['manufacturer']} {device_info['model']}")
+                
+                # For empty manufacturers, we don't add anything to catalog
+                # (catalog is device-centric, but they'll appear in the manufacturers list)
+                for manufacturer_name, file_path in middev_data['manufacturers'].items():
+                    print(f"  Empty manufacturer found: {manufacturer_name} (no devices yet)")
+                
+                print(f"Total devices after including .middev: {len(catalog)}")
                 
                 # Cache the catalog
                 try:
@@ -1193,6 +1364,403 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
             self.send_error(500, "lxml library not installed. Install with: pip install lxml")
         except Exception as e:
             self.send_error(500, f"Error validating file: {str(e)}")
+    
+    def create_middev_file(self):
+        """Create a new .middev file for a manufacturer with a default device"""
+        try:
+            import xml.etree.ElementTree as ET
+            from datetime import datetime
+            
+            content_length = int(self.headers['Content-Length'])
+            post_data = self.rfile.read(content_length).decode()
+            data = json.loads(post_data)
+            
+            manufacturer = data.get('manufacturer', '').strip()
+            if not manufacturer:
+                self.send_response(400)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    'error': 'Manufacturer name is required'
+                }).encode())
+                return
+            
+            # Generate filenames
+            middev_filename = manufacturer.replace(' ', '_') + '.middev'
+            middev_path = os.path.join('patchfiles', middev_filename)
+            
+            model_name = 'Default Device'
+            midnam_filename = f"{manufacturer.replace(' ', '_')}_{model_name.replace(' ', '_')}.midnam"
+            midnam_path = os.path.join('patchfiles', midnam_filename)
+            
+            # Check if files already exist
+            if os.path.exists(middev_path):
+                self.send_response(400)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    'error': f'File already exists: {middev_filename}'
+                }).encode())
+                return
+            
+            # Create .middev file with default device
+            middev_root = ET.Element('MIDIDeviceTypes')
+            
+            # Add Author element
+            author = ET.SubElement(middev_root, 'Author')
+            author.text = f'Created by MIDNAM Maker on {datetime.now().strftime("%Y-%m-%d")}'
+            
+            # Add default device
+            device_type = ET.SubElement(middev_root, 'MIDIDeviceType', {
+                'Manufacturer': manufacturer,
+                'Model': model_name,
+                'SupportsGeneralMIDI': 'false',
+                'SupportsMMC': 'false',
+                'IsSampler': 'false',
+                'IsDrumMachine': 'false',
+                'IsMixer': 'false',
+                'IsEffectUnit': 'false'
+            })
+            
+            # Add default DeviceID element
+            ET.SubElement(device_type, 'DeviceID', {
+                'Min': '1',
+                'Max': '16',
+                'Default': '1',
+                'Base': '1'
+            })
+            
+            # Add default Receives element
+            ET.SubElement(device_type, 'Receives', {
+                'MaxChannels': '16',
+                'MTC': 'false',
+                'Clock': 'false',
+                'Notes': 'true',
+                'ProgramChanges': 'true',
+                'BankSelectMSB': 'false',
+                'BankSelectLSB': 'false',
+                'PanDisruptsStereo': 'false'
+            })
+            
+            # Add default Transmits element
+            ET.SubElement(device_type, 'Transmits', {
+                'MaxChannels': '1',
+                'MTC': 'false',
+                'Clock': 'false',
+                'Notes': 'true',
+                'ProgramChanges': 'true',
+                'BankSelectMSB': 'false',
+                'BankSelectLSB': 'false'
+            })
+            
+            # Pretty print and save .middev file
+            xml_str = ET.tostring(middev_root, encoding='unicode', method='xml')
+            from xml.dom import minidom
+            dom = minidom.parseString(xml_str)
+            pretty_xml = dom.toprettyxml(indent='\t', encoding=None)
+            lines = [line for line in pretty_xml.split('\n') if line.strip()]
+            pretty_xml = '\n'.join(lines[1:])  # Skip the XML declaration from minidom
+            
+            xml_declaration = '<?xml version="1.0" encoding="UTF-8"?>\n'
+            middev_doctype = '<!DOCTYPE MIDIDeviceTypes PUBLIC "-//MIDI Manufacturers Association//DTD MIDIDeviceTypes 0.3//EN" "http://www.sonosphere.com/dtds/MIDIDeviceTypes.dtd">\n\n'
+            full_middev_xml = xml_declaration + middev_doctype + pretty_xml
+            
+            with open(middev_path, 'w', encoding='utf-8') as f:
+                f.write(full_middev_xml)
+            
+            print(f"[create_middev_file] Created new .middev file: {middev_path}")
+            
+            # Create corresponding .midnam file
+            midnam_root = ET.Element('MIDINameDocument')
+            
+            # Add Author element
+            midnam_author = ET.SubElement(midnam_root, 'Author')
+            midnam_author.text = f'Created by MIDNAM Maker on {datetime.now().strftime("%Y-%m-%d")}'
+            
+            # Add MasterDeviceNames
+            master_device = ET.SubElement(midnam_root, 'MasterDeviceNames')
+            
+            # Add Manufacturer and Model
+            mfr_elem = ET.SubElement(master_device, 'Manufacturer')
+            mfr_elem.text = manufacturer
+            model_elem = ET.SubElement(master_device, 'Model')
+            model_elem.text = model_name
+            
+            # Add CustomDeviceMode with default ChannelNameSet
+            custom_mode = ET.SubElement(master_device, 'CustomDeviceMode', {'Name': 'Default'})
+            channel_name_set_assigns = ET.SubElement(custom_mode, 'ChannelNameSetAssignments')
+            
+            # Add a channel name set assign for channel 1
+            channel_assign = ET.SubElement(channel_name_set_assigns, 'ChannelNameSetAssign', {
+                'Channel': '1',
+                'NameSet': 'Default Patches'
+            })
+            
+            # Add ChannelNameSet with default patch bank
+            channel_name_set = ET.SubElement(master_device, 'ChannelNameSet', {'Name': 'Default Patches'})
+            available_for_channels = ET.SubElement(channel_name_set, 'AvailableForChannels')
+            available_channel = ET.SubElement(available_for_channels, 'AvailableChannel', {
+                'Channel': '1',
+                'Available': 'true'
+            })
+            
+            # Add PatchBank with one default patch
+            patch_bank = ET.SubElement(channel_name_set, 'PatchBank', {'Name': 'Patches'})
+            patch_list = ET.SubElement(patch_bank, 'PatchNameList')
+            
+            # Add one default patch
+            patch = ET.SubElement(patch_list, 'Patch', {
+                'Number': '0',
+                'Name': 'Default Patch',
+                'ProgramChange': '0'
+            })
+            
+            # Pretty print and save .midnam file
+            midnam_xml_str = ET.tostring(midnam_root, encoding='unicode', method='xml')
+            midnam_dom = minidom.parseString(midnam_xml_str)
+            midnam_pretty_xml = midnam_dom.toprettyxml(indent='\t', encoding=None)
+            midnam_lines = [line for line in midnam_pretty_xml.split('\n') if line.strip()]
+            midnam_pretty_xml = '\n'.join(midnam_lines[1:])  # Skip the XML declaration from minidom
+            
+            midnam_doctype = '<!DOCTYPE MIDINameDocument PUBLIC "-//MIDI Manufacturers Association//DTD MIDINameDocument 1.0//EN" "http://www.midi.org/dtds/MIDINameDocument10.dtd">\n\n'
+            full_midnam_xml = xml_declaration + midnam_doctype + midnam_pretty_xml
+            
+            with open(midnam_path, 'w', encoding='utf-8') as f:
+                f.write(full_midnam_xml)
+            
+            print(f"[create_middev_file] Created new .midnam file: {midnam_path}")
+            
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({
+                'success': True,
+                'middev_path': middev_path,
+                'midnam_path': midnam_path,
+                'manufacturer': manufacturer,
+                'model': model_name,
+                'message': f'Created {middev_filename} and {midnam_filename}'
+            }).encode())
+            
+        except Exception as e:
+            print(f"[create_middev_file] Error: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            self.send_error(500, f"Error creating manufacturer files: {str(e)}")
+    
+    def add_device_to_middev(self):
+        """Add a new device to an existing .middev file and create corresponding .midnam file"""
+        try:
+            import xml.etree.ElementTree as ET
+            from datetime import datetime
+            from xml.dom import minidom
+            import shutil
+            
+            content_length = int(self.headers['Content-Length'])
+            post_data = self.rfile.read(content_length).decode()
+            data = json.loads(post_data)
+            
+            manufacturer = data.get('manufacturer', '').strip()
+            model = data.get('model', '').strip()
+            
+            if not manufacturer or not model:
+                self.send_response(400)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    'error': 'Manufacturer and model are required'
+                }).encode())
+                return
+            
+            # Find the .middev file for this manufacturer
+            filename = manufacturer.replace(' ', '_') + '.middev'
+            file_path = os.path.join('patchfiles', filename)
+            
+            if not os.path.exists(file_path):
+                self.send_response(404)
+                self.send_header('Content-Type', 'application/json')
+                self.end_headers()
+                self.wfile.write(json.dumps({
+                    'error': f'File not found: {filename}. Create manufacturer first.'
+                }).encode())
+                return
+            
+            # Parse existing file
+            tree = ET.parse(file_path)
+            root = tree.getroot()
+            
+            # Check if device already exists
+            for device_type in root.findall('MIDIDeviceType'):
+                existing_model = device_type.get('Model', '')
+                if existing_model == model:
+                    self.send_response(400)
+                    self.send_header('Content-Type', 'application/json')
+                    self.end_headers()
+                    self.wfile.write(json.dumps({
+                        'error': f'Device "{model}" already exists in {filename}'
+                    }).encode())
+                    return
+            
+            # Create new MIDIDeviceType element with default attributes
+            device_type = ET.Element('MIDIDeviceType', {
+                'Manufacturer': manufacturer,
+                'Model': model,
+                'SupportsGeneralMIDI': 'false',
+                'SupportsMMC': 'false',
+                'IsSampler': 'false',
+                'IsDrumMachine': 'false',
+                'IsMixer': 'false',
+                'IsEffectUnit': 'false'
+            })
+            
+            # Add default DeviceID element
+            device_id = ET.SubElement(device_type, 'DeviceID', {
+                'Min': '1',
+                'Max': '16',
+                'Default': '1',
+                'Base': '1'
+            })
+            
+            # Add default Receives element
+            receives = ET.SubElement(device_type, 'Receives', {
+                'MaxChannels': '16',
+                'MTC': 'false',
+                'Clock': 'false',
+                'Notes': 'true',
+                'ProgramChanges': 'true',
+                'BankSelectMSB': 'false',
+                'BankSelectLSB': 'false',
+                'PanDisruptsStereo': 'false'
+            })
+            
+            # Add default Transmits element
+            transmits = ET.SubElement(device_type, 'Transmits', {
+                'MaxChannels': '1',
+                'MTC': 'false',
+                'Clock': 'false',
+                'Notes': 'true',
+                'ProgramChanges': 'true',
+                'BankSelectMSB': 'false',
+                'BankSelectLSB': 'false'
+            })
+            
+            # Append new device to root
+            root.append(device_type)
+            
+            # Create backup before modifying
+            backup_name = f'{file_path}.backup.{datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}'
+            shutil.copy(file_path, backup_name)
+            
+            # Write updated XML
+            xml_str = ET.tostring(root, encoding='unicode', method='xml')
+            
+            # Pretty print the XML
+            dom = minidom.parseString(xml_str)
+            pretty_xml = dom.toprettyxml(indent='\t', encoding=None)
+            
+            # Remove extra blank lines
+            lines = [line for line in pretty_xml.split('\n') if line.strip()]
+            pretty_xml = '\n'.join(lines[1:])  # Skip the XML declaration from minidom
+            
+            # Add proper declaration and doctype
+            xml_declaration = '<?xml version="1.0" encoding="UTF-8"?>\n'
+            doctype = '<!DOCTYPE MIDIDeviceTypes PUBLIC "-//MIDI Manufacturers Association//DTD MIDIDeviceTypes 0.3//EN" "http://www.sonosphere.com/dtds/MIDIDeviceTypes.dtd">\n\n'
+            full_xml = xml_declaration + doctype + pretty_xml
+            
+            # Write to file
+            with open(file_path, 'w', encoding='utf-8') as f:
+                f.write(full_xml)
+            
+            print(f"[add_device_to_middev] Added device '{model}' to {file_path}")
+            
+            # Create corresponding .midnam file
+            midnam_filename = f"{manufacturer.replace(' ', '_')}_{model.replace(' ', '_')}.midnam"
+            midnam_path = os.path.join('patchfiles', midnam_filename)
+            
+            # Check if .midnam file already exists
+            if os.path.exists(midnam_path):
+                print(f"[add_device_to_middev] .midnam file already exists: {midnam_path}")
+            else:
+                # Create .midnam file
+                midnam_root = ET.Element('MIDINameDocument')
+                
+                # Add Author element
+                midnam_author = ET.SubElement(midnam_root, 'Author')
+                midnam_author.text = f'Created by MIDNAM Maker on {datetime.now().strftime("%Y-%m-%d")}'
+                
+                # Add MasterDeviceNames
+                master_device = ET.SubElement(midnam_root, 'MasterDeviceNames')
+                
+                # Add Manufacturer and Model
+                mfr_elem = ET.SubElement(master_device, 'Manufacturer')
+                mfr_elem.text = manufacturer
+                model_elem = ET.SubElement(master_device, 'Model')
+                model_elem.text = model
+                
+                # Add CustomDeviceMode with default ChannelNameSet
+                custom_mode = ET.SubElement(master_device, 'CustomDeviceMode', {'Name': 'Default'})
+                channel_name_set_assigns = ET.SubElement(custom_mode, 'ChannelNameSetAssignments')
+                
+                # Add a channel name set assign for channel 1
+                channel_assign = ET.SubElement(channel_name_set_assigns, 'ChannelNameSetAssign', {
+                    'Channel': '1',
+                    'NameSet': 'Default Patches'
+                })
+                
+                # Add ChannelNameSet with default patch bank
+                channel_name_set = ET.SubElement(master_device, 'ChannelNameSet', {'Name': 'Default Patches'})
+                available_for_channels = ET.SubElement(channel_name_set, 'AvailableForChannels')
+                available_channel = ET.SubElement(available_for_channels, 'AvailableChannel', {
+                    'Channel': '1',
+                    'Available': 'true'
+                })
+                
+                # Add PatchBank with one default patch
+                patch_bank = ET.SubElement(channel_name_set, 'PatchBank', {'Name': 'Patches'})
+                patch_list = ET.SubElement(patch_bank, 'PatchNameList')
+                
+                # Add one default patch
+                patch = ET.SubElement(patch_list, 'Patch', {
+                    'Number': '0',
+                    'Name': 'Default Patch',
+                    'ProgramChange': '0'
+                })
+                
+                # Pretty print and save .midnam file
+                midnam_xml_str = ET.tostring(midnam_root, encoding='unicode', method='xml')
+                midnam_dom = minidom.parseString(midnam_xml_str)
+                midnam_pretty_xml = midnam_dom.toprettyxml(indent='\t', encoding=None)
+                midnam_lines = [line for line in midnam_pretty_xml.split('\n') if line.strip()]
+                midnam_pretty_xml = '\n'.join(midnam_lines[1:])  # Skip the XML declaration from minidom
+                
+                midnam_xml_declaration = '<?xml version="1.0" encoding="UTF-8"?>\n'
+                midnam_doctype = '<!DOCTYPE MIDINameDocument PUBLIC "-//MIDI Manufacturers Association//DTD MIDINameDocument 1.0//EN" "http://www.midi.org/dtds/MIDINameDocument10.dtd">\n\n'
+                full_midnam_xml = midnam_xml_declaration + midnam_doctype + midnam_pretty_xml
+                
+                with open(midnam_path, 'w', encoding='utf-8') as f:
+                    f.write(full_midnam_xml)
+                
+                print(f"[add_device_to_middev] Created new .midnam file: {midnam_path}")
+            
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({
+                'success': True,
+                'middev_path': file_path,
+                'midnam_path': midnam_path,
+                'manufacturer': manufacturer,
+                'model': model,
+                'backup': backup_name,
+                'message': f'Added {model} to {manufacturer}'
+            }).encode())
+            
+        except ET.ParseError as e:
+            print(f"[add_device_to_middev] XML Parse Error: {str(e)}")
+            self.send_error(422, f"Cannot modify invalid XML file: {str(e)}")
+        except Exception as e:
+            print(f"[add_device_to_middev] Error: {str(e)}")
+            self.send_error(500, f"Error adding device: {str(e)}")
     
     def clear_cache(self):
         """Clear the midnam catalog cache"""
