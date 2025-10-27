@@ -14,7 +14,6 @@ export class PatchManager {
             'Rim Shot', 'Side Stick', 'Bell', 'Splash', 'China', 'Cowbell', 'Tambourine',
             'Shaker', 'Clap', 'Snap', 'Stick', 'Brush', 'Mallet', 'Finger', 'Thumb'
         ];
-        this.validationState = 'unvalidated'; // 'unvalidated', 'validated', 'invalid'
         this.init();
     }
     
@@ -94,28 +93,6 @@ export class PatchManager {
             });
         }
         
-        // Patch validate button
-        const validateBtn = document.getElementById('validate-patch-btn');
-        if (validateBtn) {
-            validateBtn.addEventListener('click', () => {
-                if (this.validationState === 'invalid') {
-                    // If in invalid state, open Tools tab and scroll to debug console
-                    if (window.tabManager) {
-                        window.tabManager.switchTab('tools');
-                    }
-                    // Scroll to debug console after a short delay to ensure tab has switched
-                    setTimeout(() => {
-                        const debugConsole = document.getElementById('debug-console-display');
-                        if (debugConsole) {
-                            debugConsole.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        }
-                    }, 100);
-                } else {
-                    // Normal validation
-                    this.validatePatch();
-                }
-            });
-        }
     }
     
     loadPatchTab() {
@@ -149,10 +126,8 @@ export class PatchManager {
         
         // Disable action buttons
         const saveBtn = document.getElementById('save-patch-btn');
-        const validateBtn = document.getElementById('validate-patch-btn');
         
         if (saveBtn) saveBtn.disabled = true;
-        if (validateBtn) validateBtn.disabled = true;
     }
     
     renderPatchEditor() {
@@ -293,9 +268,7 @@ export class PatchManager {
         
         // Enable buttons
         const saveBtn = document.getElementById('save-patch-btn');
-        const validateBtn = document.getElementById('validate-patch-btn');
         if (saveBtn) saveBtn.disabled = false;
-        if (validateBtn) validateBtn.disabled = false;
         
         // Setup note editing event listeners
         this.setupNoteEditingListeners();
@@ -1389,17 +1362,8 @@ export class PatchManager {
     }
     
     markPatchChanged() {
-        appState.pendingChanges.hasUnsavedChanges = true;
-        
-        const saveBtn = document.getElementById('save-patch-btn');
-        if (saveBtn) {
-            saveBtn.disabled = false;
-            saveBtn.textContent = 'Save Patch *';
-            saveBtn.classList.add('btn-warning');
-        }
-        
-        // Reset validation state when changes are made
-        this.setValidationState('unvalidated');
+        // Use global save state management
+        appState.markAsChanged();
     }
     
     collectNoteDataFromEditor() {
@@ -1692,17 +1656,8 @@ export class PatchManager {
                 }
             }
             
-            // Mark as saved
-            appState.pendingChanges.hasUnsavedChanges = false;
-            
-            const saveBtn = document.getElementById('save-patch-btn');
-            if (saveBtn) {
-                saveBtn.textContent = 'Save Patch';
-                saveBtn.classList.remove('btn-warning');
-            }
-            
-            // Reset validation state to unvalidated (can now validate the saved file)
-            this.setValidationState('unvalidated');
+            // Mark as saved globally
+            appState.markAsSaved();
             
             this.logToDebugConsole(`✓ Patch saved successfully to: ${filePath}`, 'success');
             Utils.showNotification('Patch saved successfully', 'success');
@@ -1718,109 +1673,6 @@ export class PatchManager {
             } else {
                 Utils.showNotification(`Save failed: ${errorMsg}`, 'error');
             }
-        }
-    }
-    
-    async validatePatch() {
-        // Check if there are unsaved changes
-        if (appState.pendingChanges.hasUnsavedChanges) {
-            Utils.showNotification('Please save your changes before validating', 'warning');
-            this.logToDebugConsole('Validation failed: unsaved changes detected', 'error');
-            return;
-        }
-        
-        // Check if we have a device loaded
-        if (!appState.selectedDevice || !appState.currentMidnam) {
-            Utils.showNotification('No device loaded', 'warning');
-            return;
-        }
-        
-        // Get the file path from the selected device
-        const filePath = appState.selectedDevice.file_path || appState.currentMidnam.file_path;
-        
-        if (!filePath) {
-            Utils.showNotification('Cannot determine file path for validation', 'error');
-            this.logToDebugConsole('Validation failed: no file path available', 'error');
-            return;
-        }
-        
-        this.logToDebugConsole(`Starting validation for: ${filePath}`, 'info');
-        
-        try {
-            const response = await fetch('/api/validate', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    file_path: filePath
-                })
-            });
-            
-            if (!response.ok) {
-                const errorText = await response.text();
-                throw new Error(`Validation request failed: ${errorText}`);
-            }
-            
-            const validationResult = await response.json();
-            
-            if (validationResult.valid) {
-                this.setValidationState('validated');
-                this.logToDebugConsole('✓ Validation PASSED', 'success');
-                this.logToDebugConsole(validationResult.message, 'success');
-                Utils.showNotification('File validated successfully', 'success');
-            } else {
-                this.setValidationState('invalid');
-                this.logToDebugConsole('✗ Validation FAILED', 'error');
-                this.logToDebugConsole(`Found ${validationResult.errors.length} error(s):`, 'error');
-                
-                // Log each error to debug console
-                validationResult.errors.forEach((error, index) => {
-                    this.logToDebugConsole(
-                        `  Error ${index + 1}: Line ${error.line}, Column ${error.column} - ${error.message}`,
-                        'error'
-                    );
-                });
-                
-                Utils.showNotification('Validation failed - see debug console', 'error');
-            }
-        } catch (error) {
-            console.error('Error validating file:', error);
-            this.logToDebugConsole(`Validation error: ${error.message}`, 'error');
-            Utils.showNotification('Failed to validate file', 'error');
-        }
-    }
-    
-    setValidationState(state) {
-        this.validationState = state;
-        const validateBtn = document.getElementById('validate-patch-btn');
-        
-        if (!validateBtn) return;
-        
-        // Remove all state classes
-        validateBtn.classList.remove('btn-validated', 'btn-invalid');
-        
-        switch (state) {
-            case 'validated':
-                validateBtn.textContent = 'Validated';
-                validateBtn.disabled = true;
-                validateBtn.classList.add('btn-validated');
-                validateBtn.title = 'File has been validated against the .midnam specification';
-                break;
-                
-            case 'invalid':
-                validateBtn.textContent = 'invalid';
-                validateBtn.disabled = false;
-                validateBtn.classList.add('btn-invalid');
-                validateBtn.title = 'This .midnam file failed validation. Click to view the validation log in the debug console.';
-                break;
-                
-            case 'unvalidated':
-            default:
-                validateBtn.textContent = 'Validate';
-                validateBtn.disabled = appState.pendingChanges.hasUnsavedChanges;
-                validateBtn.title = 'Validate the saved file against the .midnam file specification.';
-                break;
         }
     }
     

@@ -726,8 +726,12 @@ export class App {
             return;
         }
         
-        // Implementation will be in respective modules
-        Utils.showNotification('Save functionality will be implemented in respective modules', 'info');
+        // Delegate to patch manager if a patch is selected
+        if (appState.selectedPatch && window.patchManager && window.patchManager.savePatch) {
+            window.patchManager.savePatch();
+        } else {
+            Utils.showNotification('Please select a patch to save changes', 'warning');
+        }
     }
     
     closeAllModals() {

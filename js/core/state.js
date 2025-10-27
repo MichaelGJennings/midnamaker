@@ -19,6 +19,9 @@ export class AppState {
             lastModified: null
         };
         
+        // Global save button IDs to update
+        this.saveButtonIds = ['save-device-btn', 'save-patch-btn'];
+        
         // Global MIDI state - persistent across tabs
         this.globalMIDIState = {
             access: null,
@@ -251,6 +254,48 @@ export class AppState {
         } else if (event.port.state === 'connected') {
             // Refresh dropdown to show newly connected device
             this.updateMIDIDeviceDropdown();
+        }
+    }
+    
+    // Global save state management
+    markAsChanged() {
+        this.pendingChanges.hasUnsavedChanges = true;
+        this.pendingChanges.lastModified = new Date().toISOString();
+        
+        // Update all save buttons across all tabs
+        this.saveButtonIds.forEach(btnId => {
+            const btn = document.getElementById(btnId);
+            if (btn) {
+                btn.disabled = false;
+                const originalText = btn.textContent.replace(' *', '');
+                btn.textContent = `${originalText} *`;
+                btn.classList.add('btn-warning');
+            }
+        });
+        
+        // Reset validation state on Device tab
+        if (window.deviceManager && window.deviceManager.setValidationState) {
+            window.deviceManager.setValidationState('unvalidated');
+        }
+    }
+    
+    markAsSaved() {
+        this.pendingChanges.hasUnsavedChanges = false;
+        this.pendingChanges.lastModified = new Date().toISOString();
+        
+        // Update all save buttons across all tabs
+        this.saveButtonIds.forEach(btnId => {
+            const btn = document.getElementById(btnId);
+            if (btn) {
+                const originalText = btn.textContent.replace(' *', '');
+                btn.textContent = originalText;
+                btn.classList.remove('btn-warning');
+            }
+        });
+        
+        // Reset validation state to unvalidated (file has changed, needs revalidation)
+        if (window.deviceManager && window.deviceManager.setValidationState) {
+            window.deviceManager.setValidationState('unvalidated');
         }
     }
 }

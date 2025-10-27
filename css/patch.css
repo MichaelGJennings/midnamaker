@@ -375,13 +375,21 @@
     border-bottom: none;
 }
 
-.patch-header {
+.patch-header,
+.device-header {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;
+    gap: 0.75rem;
     padding: 0.75rem 1rem;
     background: #f8f9fa;
     border-bottom: 1px solid #e9ecef;
+}
+
+.patch-header h2,
+.device-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: #212529;
 }
 
 .patch-info-inline {
@@ -426,9 +434,11 @@
     font-size: 0.85rem;
 }
 
-.patch-actions {
+.patch-actions,
+.device-actions {
     display: flex;
     gap: 0.5rem;
+    align-items: center;
 }
 
 .patch-details {

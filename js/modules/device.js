@@ -5,6 +5,7 @@ import { modal } from '../components/modal.js';
 
 export class DeviceManager {
     constructor() {
+        this.validationState = 'unvalidated'; // Track validation state: unvalidated, validated, invalid
         this.init();
     }
     
@@ -25,7 +26,18 @@ export class DeviceManager {
         const validateBtn = document.getElementById('validate-device-btn');
         if (validateBtn) {
             validateBtn.addEventListener('click', () => {
-                this.validateDevice();
+                if (this.validationState === 'invalid') {
+                    // Switch to Tools tab and scroll to debug console
+                    document.getElementById('nav-tools').click();
+                    setTimeout(() => {
+                        const debugConsole = document.getElementById('debug-console-output') || document.getElementById('debug-console');
+                        if (debugConsole) {
+                            debugConsole.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                        }
+                    }, 100);
+                } else {
+                    this.validateDevice();
+                }
             });
         }
     }
@@ -307,69 +319,130 @@ export class DeviceManager {
     }
     
     async saveDevice() {
-        if (!appState.currentMidnam) {
-            Utils.showNotification('No device loaded to save', 'warning');
+        // Currently, we only support saving patch changes
+        // If a patch is being edited, delegate to the patch manager
+        if (appState.selectedPatch && window.patchManager && window.patchManager.savePatch) {
+            this.logToDebugConsole('Device save: delegating to patch save', 'info');
+            await window.patchManager.savePatch();
             return;
         }
         
-        try {
-            const response = await fetch('/api/device/save', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    deviceId: appState.selectedDevice.id,
-                    midnam: appState.currentMidnam
-                })
-            });
-            
-            if (!response.ok) throw new Error('Failed to save device');
-            
-            // Mark changes as saved
-            appState.pendingChanges.hasUnsavedChanges = false;
-            appState.pendingChanges.lastModified = new Date().toISOString();
-            
-            Utils.showNotification('Device saved successfully', 'success');
-        } catch (error) {
-            console.error('Error saving device:', error);
-            Utils.showNotification('Failed to save device', 'error');
+        // Future: Add device-level save functionality here
+        // For now, just show a message if no patch is selected
+        if (appState.pendingChanges.hasUnsavedChanges) {
+            this.logToDebugConsole('Device save: no patch selected but changes detected', 'warning');
+            Utils.showNotification('Please select a patch to save changes', 'warning');
+        } else {
+            Utils.showNotification('No changes to save', 'info');
         }
     }
     
     async validateDevice() {
-        if (!appState.currentMidnam) {
-            Utils.showNotification('No device loaded to validate', 'warning');
+        // Check if there are unsaved changes
+        if (appState.pendingChanges.hasUnsavedChanges) {
+            Utils.showNotification('Please save your changes before validating', 'warning');
+            this.logToDebugConsole('Validation failed: unsaved changes detected', 'error');
             return;
         }
         
+        // Check if we have a device loaded
+        if (!appState.selectedDevice || !appState.currentMidnam) {
+            Utils.showNotification('No device loaded', 'warning');
+            return;
+        }
+        
+        // Get the file path from the selected device
+        const filePath = appState.selectedDevice.file_path || appState.currentMidnam.file_path;
+        
+        if (!filePath) {
+            Utils.showNotification('Cannot determine file path for validation', 'error');
+            this.logToDebugConsole('Validation failed: no file path available', 'error');
+            return;
+        }
+        
+        this.logToDebugConsole(`Starting validation for: ${filePath}`, 'info');
+        
         try {
-            const response = await fetch('/api/device/validate', {
+            const response = await fetch('/api/validate', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    midnam: appState.currentMidnam
+                    file_path: filePath
                 })
             });
             
-            if (!response.ok) throw new Error('Failed to validate device');
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`Validation request failed: ${errorText}`);
+            }
             
             const validationResult = await response.json();
             
             if (validationResult.valid) {
-                Utils.showNotification('Device validation passed', 'success');
+                this.setValidationState('validated');
+                this.logToDebugConsole('✓ Validation PASSED', 'success');
+                this.logToDebugConsole(validationResult.message, 'success');
+                Utils.showNotification('File validated successfully', 'success');
             } else {
-                const errors = validationResult.errors || [];
-                const errorMessage = errors.length > 0 ? 
-                    `Validation failed: ${errors.join(', ')}` : 
-                    'Device validation failed';
-                Utils.showNotification(errorMessage, 'error');
+                this.setValidationState('invalid');
+                this.logToDebugConsole('✗ Validation FAILED', 'error');
+                this.logToDebugConsole(`Found ${validationResult.errors.length} error(s):`, 'error');
+                
+                // Log each error to debug console
+                validationResult.errors.forEach((error, index) => {
+                    this.logToDebugConsole(
+                        `  Error ${index + 1}: Line ${error.line}, Column ${error.column} - ${error.message}`,
+                        'error'
+                    );
+                });
+                
+                Utils.showNotification('Validation failed - see debug console', 'error');
             }
         } catch (error) {
-            console.error('Error validating device:', error);
-            Utils.showNotification('Failed to validate device', 'error');
+            console.error('Error validating file:', error);
+            this.logToDebugConsole(`Validation error: ${error.message}`, 'error');
+            Utils.showNotification('Failed to validate file', 'error');
+        }
+    }
+    
+    setValidationState(state) {
+        this.validationState = state;
+        const validateBtn = document.getElementById('validate-device-btn');
+        
+        if (!validateBtn) return;
+        
+        // Remove all state classes
+        validateBtn.classList.remove('btn-validated', 'btn-invalid');
+        
+        switch (state) {
+            case 'validated':
+                validateBtn.textContent = 'Validated';
+                validateBtn.disabled = true;
+                validateBtn.classList.add('btn-validated');
+                validateBtn.title = 'File has been validated against the .midnam specification';
+                break;
+                
+            case 'invalid':
+                validateBtn.textContent = 'invalid';
+                validateBtn.disabled = false;
+                validateBtn.classList.add('btn-invalid');
+                validateBtn.title = 'This .midnam file failed validation. Click to view the validation log in the debug console.';
+                break;
+                
+            case 'unvalidated':
+            default:
+                validateBtn.textContent = 'Validate';
+                validateBtn.disabled = appState.pendingChanges.hasUnsavedChanges;
+                validateBtn.title = 'Validate the saved file against the .midnam file specification.';
+                break;
+        }
+    }
+    
+    logToDebugConsole(message, type = 'info') {
+        if (window.toolsManager && window.toolsManager.logToDebugConsole) {
+            window.toolsManager.logToDebugConsole(message, type);
         }
     }
     
