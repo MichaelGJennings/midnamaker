@@ -21,6 +21,35 @@ export class ToolsManager {
     setupEventListeners() {
         // Initialize debug console - will be updated when Tools tab loads
         this.ensureDebugConsole();
+        
+        // Upload file functionality
+        const fileUploadBtn = document.getElementById('file-upload-btn');
+        const fileUploadInput = document.getElementById('file-upload-input');
+        const uploadFilesBtn = document.getElementById('upload-files-btn');
+        
+        if (fileUploadBtn && fileUploadInput) {
+            fileUploadBtn.addEventListener('click', () => {
+                fileUploadInput.click();
+            });
+            
+            fileUploadInput.addEventListener('change', (e) => {
+                this.handleFileSelection(e.target.files);
+            });
+        }
+        
+        if (uploadFilesBtn) {
+            uploadFilesBtn.addEventListener('click', () => {
+                this.uploadFiles();
+            });
+        }
+        
+        // Clear console button
+        const clearConsoleBtn = document.getElementById('clear-console-btn');
+        if (clearConsoleBtn) {
+            clearConsoleBtn.addEventListener('click', () => {
+                this.clearDebugConsole();
+            });
+        }
     }
     
     ensureDebugConsole() {
@@ -57,12 +86,34 @@ export class ToolsManager {
     }
     
     renderToolsContent() {
+        // Don't render if content already exists (to preserve upload UI from HTML)
+        const existingToolsSection = document.querySelector('#tools-content .tool-section');
+        if (existingToolsSection) {
+            // Content already exists, just ensure we have the dynamic sections
+            this.ensureToolsSections();
+            return;
+        }
+        
+        // If no content exists, we're in a legacy state - just set up what we have
+        this.ensureDebugConsole();
+        this.setupDebugConsole();
+        this.flushMessageBuffer();
+    }
+    
+    ensureToolsSections() {
         const content = document.getElementById('tools-content');
         if (!content) return;
         
-        // Render the Tools tab content
-        content.innerHTML = `
-            <div class="tools-section">
+        // Check if Note Name Consistency Tool section exists
+        let consistencySection = document.getElementById('note-consistency-section');
+        if (!consistencySection) {
+            // Find where to insert it (after upload sections but before debug console)
+            const debugConsole = document.getElementById('debug-console');
+            
+            const section = document.createElement('div');
+            section.id = 'note-consistency-section';
+            section.className = 'tool-section';
+            section.innerHTML = `
                 <h3>Note Name Consistency Tool</h3>
                 <p>Click on any note name to see where it's used and fix inconsistencies.</p>
                 
@@ -93,29 +144,26 @@ export class ToolsManager {
                 <div class="index-entries" id="index-entries">
                     <div class="empty-state">No note names in index</div>
                 </div>
-            </div>
+            `;
             
-            <div class="tools-section">
-                <h3>Add New Entry</h3>
-                <div class="add-entry-form">
-                    <input type="text" id="new-entry-input" placeholder="Enter note name..." maxlength="50">
-                    <button class="btn btn-success" onclick="toolsManager.addIndexEntry()">Add</button>
-                </div>
-            </div>
-            
-            <div class="tools-section">
-                <h3>Debug Console</h3>
-                <div class="debug-console-display" id="debug-console-display">
-                    <div class="debug-console-output" id="debug-console-output"></div>
-                </div>
-            </div>
-        `;
+            // Find the debug console's parent tool-section
+            if (debugConsole) {
+                const debugSection = debugConsole.closest('.tool-section');
+                if (debugSection && debugSection.parentNode === content) {
+                    content.insertBefore(section, debugSection);
+                } else {
+                    content.appendChild(section);
+                }
+            } else {
+                content.appendChild(section);
+            }
+        }
         
         // Initialize debug console
         this.ensureDebugConsole();
         this.setupDebugConsole();
         
-        // Flush any buffered messages (this will add validation messages to the console)
+        // Flush any buffered messages
         this.flushMessageBuffer();
     }
     
@@ -131,15 +179,6 @@ export class ToolsManager {
         if (this.debugConsole) {
             this.debugConsole.innerHTML = '';
         }
-    }
-    
-    async testMIDIConnection() {
-        if (!midiManager.isMIDIEnabled()) {
-            Utils.showNotification('MIDI is not enabled. Please enable MIDI first.', 'warning');
-            return;
-        }
-        
-        await midiManager.testMIDIConnection();
     }
     
     logToDebugConsole(message, type = 'info') {
@@ -534,32 +573,6 @@ export class ToolsManager {
         this.filterIndexEntries();
     }
     
-    addIndexEntry() {
-        const input = document.getElementById('new-entry-input');
-        const name = input.value.trim();
-        
-        if (name && !this.allNoteNames.has(name)) {
-            this.allNoteNames.add(name);
-            this.updateIndexDisplay();
-            input.value = '';
-            
-            // Check if this name exists in patches and report
-            const usageLocations = this.findNoteNameUsage(name);
-            if (usageLocations.length > 0) {
-                this.logToDebugConsole(`Added "${name}" to index (found ${usageLocations.length} usage${usageLocations.length !== 1 ? 's' : ''})`, 'success');
-                Utils.showNotification(`Added "${name}" - found ${usageLocations.length} usage${usageLocations.length !== 1 ? 's' : ''}`, 'success');
-            } else {
-                this.logToDebugConsole(`Added "${name}" to index (not currently used in any patches)`, 'info');
-                Utils.showNotification(`Added "${name}" to index`, 'success');
-            }
-        } else if (this.allNoteNames.has(name)) {
-            this.logToDebugConsole(`"${name}" already exists in index`, 'warn');
-            Utils.showNotification(`"${name}" already exists in index`, 'warning');
-        } else {
-            this.logToDebugConsole('Please enter a valid note name', 'error');
-            Utils.showNotification('Please enter a valid note name', 'error');
-        }
-    }
     
     updateToolsSort() {
         const sortSelect = document.getElementById('tools-sort-select');
@@ -688,6 +701,134 @@ export class ToolsManager {
                 passed ? 'success' : 'error'
             );
         });
+    }
+    
+    handleFileSelection(files) {
+        const fileList = document.getElementById('file-upload-list');
+        const uploadBtn = document.getElementById('upload-files-btn');
+        
+        if (!fileList || !uploadBtn) return;
+        
+        // Clear previous list
+        fileList.innerHTML = '';
+        
+        if (files.length === 0) {
+            uploadBtn.style.display = 'none';
+            return;
+        }
+        
+        // Store files in instance variable
+        this.selectedFiles = Array.from(files);
+        
+        // Display selected files
+        this.selectedFiles.forEach((file, index) => {
+            const fileItem = document.createElement('div');
+            fileItem.className = 'file-upload-item';
+            
+            const fileName = document.createElement('span');
+            fileName.className = 'file-upload-item-name';
+            fileName.textContent = file.name;
+            
+            const fileSize = document.createElement('span');
+            fileSize.className = 'file-upload-item-size';
+            fileSize.textContent = this.formatFileSize(file.size);
+            
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'file-upload-item-remove';
+            removeBtn.textContent = 'Remove';
+            removeBtn.onclick = () => this.removeFile(index);
+            
+            fileItem.appendChild(fileName);
+            fileItem.appendChild(fileSize);
+            fileItem.appendChild(removeBtn);
+            fileList.appendChild(fileItem);
+        });
+        
+        uploadBtn.style.display = 'inline-block';
+    }
+    
+    formatFileSize(bytes) {
+        if (bytes < 1024) return bytes + ' B';
+        if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + ' KB';
+        return (bytes / (1024 * 1024)).toFixed(1) + ' MB';
+    }
+    
+    removeFile(index) {
+        this.selectedFiles.splice(index, 1);
+        const fileInput = document.getElementById('file-upload-input');
+        if (fileInput) {
+            // Create a new FileList without the removed file
+            const dt = new DataTransfer();
+            this.selectedFiles.forEach(file => dt.items.add(file));
+            fileInput.files = dt.files;
+        }
+        this.handleFileSelection(this.selectedFiles);
+    }
+    
+    async uploadFiles() {
+        if (!this.selectedFiles || this.selectedFiles.length === 0) {
+            Utils.showNotification('No files selected', 'warning');
+            return;
+        }
+        
+        const uploadBtn = document.getElementById('upload-files-btn');
+        if (uploadBtn) {
+            uploadBtn.disabled = true;
+            uploadBtn.textContent = 'Uploading...';
+        }
+        
+        try {
+            const formData = new FormData();
+            this.selectedFiles.forEach((file, index) => {
+                formData.append(`file${index}`, file);
+            });
+            
+            const response = await fetch('/api/upload_files', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                Utils.showNotification(result.message, 'success');
+                this.logToDebugConsole(`Uploaded ${result.uploaded_files.length} file(s)`, 'success');
+                
+                if (result.errors && result.errors.length > 0) {
+                    result.errors.forEach(error => {
+                        this.logToDebugConsole(`Error: ${error}`, 'error');
+                    });
+                }
+                
+                // Clear file selection
+                this.selectedFiles = [];
+                const fileInput = document.getElementById('file-upload-input');
+                if (fileInput) fileInput.value = '';
+                this.handleFileSelection([]);
+                
+                // Refresh catalog if catalog manager is available
+                if (window.catalogManager) {
+                    window.catalogManager.loadCatalogData();
+                }
+                
+                // Reload manufacturers list
+                if (window.manufacturerManager) {
+                    window.manufacturerManager.loadManufacturers();
+                }
+            } else {
+                Utils.showNotification('Upload failed', 'error');
+                this.logToDebugConsole(`Upload failed: ${result.message}`, 'error');
+            }
+        } catch (error) {
+            console.error('Upload error:', error);
+            Utils.showNotification('Upload failed: ' + error.message, 'error');
+            this.logToDebugConsole(`Upload error: ${error.message}`, 'error');
+        } finally {
+            if (uploadBtn) {
+                uploadBtn.disabled = false;
+                uploadBtn.textContent = 'Upload Selected Files';
+            }
+        }
     }
 }
 

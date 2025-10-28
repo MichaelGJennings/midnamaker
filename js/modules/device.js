@@ -15,13 +15,52 @@ export class DeviceManager {
     }
     
     setupEventListeners() {
-        // Device save button
+        // Device save button (main click action)
         const saveBtn = document.getElementById('save-device-btn');
         if (saveBtn) {
             saveBtn.addEventListener('click', () => {
                 this.saveDevice();
             });
         }
+        
+        // Split button dropdown toggle
+        const dropdownBtn = document.getElementById('save-device-dropdown-btn');
+        const dropdownMenu = document.getElementById('save-device-menu');
+        if (dropdownBtn && dropdownMenu) {
+            dropdownBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const isVisible = dropdownMenu.style.display === 'block';
+                dropdownMenu.style.display = isVisible ? 'none' : 'block';
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!dropdownBtn.contains(e.target) && !dropdownMenu.contains(e.target)) {
+                    dropdownMenu.style.display = 'none';
+                }
+            });
+        }
+        
+        // Save only action
+        const saveOnlyBtn = document.getElementById('save-device-only');
+        if (saveOnlyBtn) {
+            saveOnlyBtn.addEventListener('click', () => {
+                if (dropdownMenu) dropdownMenu.style.display = 'none';
+                this.saveDevice();
+            });
+        }
+        
+        // Download action (no save required)
+        const saveDownloadBtn = document.getElementById('save-device-download');
+        if (saveDownloadBtn) {
+            saveDownloadBtn.addEventListener('click', () => {
+                if (dropdownMenu) dropdownMenu.style.display = 'none';
+                this.showDownloadModal();
+            });
+        }
+        
+        // Setup download modal
+        this.setupDownloadModal();
         
         // Device validate button
         const validateBtn = document.getElementById('validate-device-btn');
@@ -356,6 +395,139 @@ export class DeviceManager {
         // Save the entire MIDNAM DOM structure
         this.logToDebugConsole('Saving device changes to file', 'info');
         await this.saveMidnamStructure();
+    }
+    
+    setupDownloadModal() {
+        const modal = document.getElementById('download-modal');
+        const closeBtn = document.getElementById('download-modal-close');
+        const cancelBtn = document.getElementById('download-modal-cancel');
+        
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                modal.style.display = 'none';
+            });
+        }
+        
+        if (cancelBtn) {
+            cancelBtn.addEventListener('click', () => {
+                modal.style.display = 'none';
+            });
+        }
+        
+        // Close on overlay click
+        if (modal) {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.style.display = 'none';
+                }
+            });
+        }
+    }
+    
+    showDownloadModal() {
+        if (!appState.selectedDevice) {
+            Utils.showNotification('No device selected', 'warning');
+            return;
+        }
+        
+        const modal = document.getElementById('download-modal');
+        const linksContainer = document.getElementById('download-links');
+        
+        if (!modal || !linksContainer) return;
+        
+        // Clear previous links
+        linksContainer.innerHTML = '';
+        
+        const deviceId = appState.selectedDevice.id;
+        const filePath = appState.selectedDevice.file_path;
+        const manufacturer = deviceId.split('|')[0];
+        const deviceName = deviceId.split('|')[1] || 'Unknown Device';
+        
+        // Debug logging
+        console.log('Download Modal - Device ID:', deviceId);
+        console.log('Download Modal - File Path:', filePath);
+        console.log('Download Modal - Manufacturer:', manufacturer);
+        console.log('Download Modal - Device Name:', deviceName);
+        
+        // Validate file path
+        if (!filePath) {
+            Utils.showNotification('Error: No file path available for this device', 'error');
+            console.error('Missing file_path in selectedDevice:', appState.selectedDevice);
+            return;
+        }
+        
+        // Create download links
+        const midnamFilename = filePath.split('/').pop();
+        const middevFilename = `${manufacturer.replace(' ', '_')}.middev`;
+        
+        console.log('Download Modal - MIDNAM filename:', midnamFilename);
+        console.log('Download Modal - MIDDEV filename:', middevFilename);
+        
+        // MIDNAM file link
+        const midnamUrl = `/api/download/midnam/${encodeURIComponent(deviceId)}?file=${encodeURIComponent(filePath)}`;
+        linksContainer.appendChild(this.createDownloadLinkItem(
+            midnamFilename,
+            'Device patch names and note mappings',
+            midnamUrl
+        ));
+        
+        // MIDDEV file link
+        const middevUrl = `/api/download/middev/${encodeURIComponent(manufacturer)}`;
+        linksContainer.appendChild(this.createDownloadLinkItem(
+            middevFilename,
+            'Device metadata and MIDI capabilities',
+            middevUrl
+        ));
+        
+        // Separator
+        const separator = document.createElement('div');
+        separator.className = 'download-separator';
+        separator.textContent = '— or download both in one file —';
+        linksContainer.appendChild(separator);
+        
+        // ZIP file link
+        const zipUrl = `/api/download/zip/${encodeURIComponent(deviceId)}?file=${encodeURIComponent(filePath)}`;
+        const zipFilename = `${manufacturer.replace(' ', '_')}_${deviceName.replace(' ', '_')}.zip`;
+        const zipItem = this.createDownloadLinkItem(
+            zipFilename,
+            'Both files in a single archive',
+            zipUrl
+        );
+        zipItem.classList.add('download-zip-item');
+        linksContainer.appendChild(zipItem);
+        
+        // Show modal
+        modal.style.display = 'block';
+    }
+    
+    createDownloadLinkItem(filename, description, url) {
+        const item = document.createElement('div');
+        item.className = 'download-link-item';
+        
+        const info = document.createElement('div');
+        info.className = 'download-link-info';
+        
+        const name = document.createElement('div');
+        name.className = 'download-link-name';
+        name.textContent = filename;
+        
+        const desc = document.createElement('div');
+        desc.className = 'download-link-description';
+        desc.textContent = description;
+        
+        info.appendChild(name);
+        info.appendChild(desc);
+        
+        const link = document.createElement('a');
+        link.className = 'download-link-button';
+        link.href = url;
+        link.download = filename;
+        link.textContent = 'Download';
+        
+        item.appendChild(info);
+        item.appendChild(link);
+        
+        return item;
     }
     
     async saveMidnamStructure() {

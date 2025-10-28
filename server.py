@@ -39,6 +39,12 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
             self.serve_midnam_catalog()
         elif path_without_query.startswith('/analyze_file/'):
             self.analyze_midnam_file()
+        elif path_without_query.startswith('/api/download/midnam/'):
+            self.download_midnam()
+        elif path_without_query.startswith('/api/download/middev/'):
+            self.download_middev()
+        elif path_without_query.startswith('/api/download/zip/'):
+            self.download_zip()
         else:
             super().do_GET()
     
@@ -61,6 +67,8 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
             self.merge_midnam_files()
         elif self.path == '/delete_file':
             self.delete_midnam_file()
+        elif self.path == '/api/upload_files':
+            self.upload_files()
         else:
             self.send_error(404)
     
@@ -1561,7 +1569,7 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
             
             # Add Author element
             author = ET.SubElement(middev_root, 'Author')
-            author.text = f'Created by MIDNAM Maker on {datetime.now().strftime("%Y-%m-%d")}'
+            author.text = f'Created by Midnamaker on {datetime.now().strftime("%Y-%m-%d")}'
             
             # Add default device
             device_type = ET.SubElement(middev_root, 'MIDIDeviceType', {
@@ -1628,7 +1636,7 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
             
             # Add Author element
             midnam_author = ET.SubElement(midnam_root, 'Author')
-            midnam_author.text = f'Created by MIDNAM Maker on {datetime.now().strftime("%Y-%m-%d")}'
+            midnam_author.text = f'Created by Midnamaker on {datetime.now().strftime("%Y-%m-%d")}'
             
             # Add MasterDeviceNames
             master_device = ET.SubElement(midnam_root, 'MasterDeviceNames')
@@ -1738,7 +1746,7 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                 
                 # Add Author element
                 author = ET.SubElement(root, 'Author')
-                author.text = f'Created by MIDNAM Maker on {datetime.now().strftime("%Y-%m-%d")}'
+                author.text = f'Created by Midnamaker on {datetime.now().strftime("%Y-%m-%d")}'
                 
                 tree = ET.ElementTree(root)
             else:
@@ -1850,7 +1858,7 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                 
                 # Add Author element
                 midnam_author = ET.SubElement(midnam_root, 'Author')
-                midnam_author.text = f'Created by MIDNAM Maker on {datetime.now().strftime("%Y-%m-%d")}'
+                midnam_author.text = f'Created by Midnamaker on {datetime.now().strftime("%Y-%m-%d")}'
                 
                 # Add MasterDeviceNames
                 master_device = ET.SubElement(midnam_root, 'MasterDeviceNames')
@@ -1943,6 +1951,308 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                 self.wfile.write(b'{"success": true, "message": "No cache to clear"}')
         except Exception as e:
             self.send_error(500, f"Error clearing cache: {str(e)}")
+    
+    def upload_files(self):
+        """Handle file uploads for .midnam and .middev files"""
+        try:
+            import cgi
+            import io
+            
+            # Parse multipart form data
+            content_type = self.headers.get('Content-Type', '')
+            if not content_type.startswith('multipart/form-data'):
+                self.send_error(400, "Content-Type must be multipart/form-data")
+                return
+            
+            # Get boundary from content type
+            boundary = content_type.split('boundary=')[1]
+            content_length = int(self.headers['Content-Length'])
+            
+            # Read the multipart data
+            body = self.rfile.read(content_length)
+            
+            # Parse multipart data manually
+            uploaded_files = []
+            errors = []
+            
+            # Split by boundary
+            parts = body.split(f'--{boundary}'.encode())
+            
+            for part in parts:
+                if not part or part == b'--\r\n' or part == b'--':
+                    continue
+                
+                # Extract headers and content
+                try:
+                    header_end = part.find(b'\r\n\r\n')
+                    if header_end == -1:
+                        continue
+                    
+                    headers = part[:header_end].decode('utf-8', errors='ignore')
+                    content = part[header_end + 4:]
+                    
+                    # Remove trailing CRLF
+                    if content.endswith(b'\r\n'):
+                        content = content[:-2]
+                    
+                    # Extract filename from headers
+                    filename = None
+                    for line in headers.split('\r\n'):
+                        if 'filename=' in line:
+                            # Extract filename
+                            start = line.find('filename="') + 10
+                            end = line.find('"', start)
+                            filename = line[start:end]
+                            break
+                    
+                    if not filename:
+                        continue
+                    
+                    # Validate file type
+                    if not (filename.endswith('.midnam') or filename.endswith('.middev')):
+                        errors.append(f"Invalid file type: {filename} (only .midnam and .middev files are allowed)")
+                        continue
+                    
+                    # Save file to patchfiles directory
+                    file_path = os.path.join('patchfiles', filename)
+                    
+                    # Check if file already exists
+                    if os.path.exists(file_path):
+                        errors.append(f"File already exists: {filename}")
+                        continue
+                    
+                    # Write file
+                    with open(file_path, 'wb') as f:
+                        f.write(content)
+                    
+                    uploaded_files.append({
+                        'filename': filename,
+                        'path': file_path,
+                        'size': len(content)
+                    })
+                    
+                    print(f"[upload_files] Uploaded: {file_path} ({len(content)} bytes)")
+                    
+                except Exception as e:
+                    errors.append(f"Error processing file: {str(e)}")
+                    continue
+            
+            # Clear cache after upload
+            cache_file = 'midnam_catalog_cache.json'
+            if os.path.exists(cache_file):
+                os.remove(cache_file)
+            
+            # Send response
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps({
+                'success': True,
+                'uploaded_files': uploaded_files,
+                'errors': errors,
+                'message': f'Uploaded {len(uploaded_files)} file(s)' + (f' with {len(errors)} error(s)' if errors else '')
+            }).encode())
+            
+        except Exception as e:
+            print(f"[upload_files] Error: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            self.send_error(500, f"Error uploading files: {str(e)}")
+    
+    def download_midnam(self):
+        """Download a .midnam file for the current device"""
+        try:
+            import urllib.parse
+            
+            # Parse URL to separate path and query parameters
+            parsed_url = urlparse(self.path)
+            
+            # Extract device ID from path (remove /api/download/midnam/ prefix)
+            device_id = parsed_url.path.replace('/api/download/midnam/', '')
+            device_id = urllib.parse.unquote(device_id)
+            
+            # Parse query parameters for file path
+            query_params = parse_qs(parsed_url.query)
+            file_path = query_params.get('file', [None])[0]
+            
+            if file_path:
+                file_path = urllib.parse.unquote(file_path)
+                print(f"[download_midnam] Device ID: {device_id}, File path from query: {file_path}")
+            else:
+                # Find file from device ID
+                print(f"[download_midnam] No file parameter, looking up device: {device_id}")
+                manufacturers_data = self.get_manufacturers_data()
+                device_data = None
+                
+                for manufacturer, devices in manufacturers_data.items():
+                    for device in devices:
+                        if device['id'] == device_id:
+                            device_data = device
+                            file_path = device['file_path']
+                            break
+                    if device_data:
+                        break
+                
+                if not file_path:
+                    print(f"[download_midnam] Device not found: {device_id}")
+                    self.send_error(404, f"Device not found: {device_id}")
+                    return
+            
+            # Check if file exists
+            if not os.path.exists(file_path):
+                print(f"[download_midnam] File not found: {file_path}")
+                self.send_error(404, f"File not found: {file_path}")
+                return
+            
+            # Read file
+            with open(file_path, 'rb') as f:
+                content = f.read()
+            
+            # Get filename
+            filename = os.path.basename(file_path)
+            
+            print(f"[download_midnam] Sending file: {filename} ({len(content)} bytes)")
+            
+            # Send file
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/xml')
+            self.send_header('Content-Disposition', f'attachment; filename="{filename}"')
+            self.send_header('Content-Length', str(len(content)))
+            self.end_headers()
+            self.wfile.write(content)
+            
+            print(f"[download_midnam] Successfully downloaded: {file_path}")
+            
+        except Exception as e:
+            print(f"[download_midnam] Error: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            self.send_error(500, f"Error downloading file: {str(e)}")
+    
+    def download_middev(self):
+        """Download a .middev file for a manufacturer"""
+        try:
+            import urllib.parse
+            
+            # Extract manufacturer from URL
+            manufacturer = self.path.replace('/api/download/middev/', '')
+            manufacturer = urllib.parse.unquote(manufacturer)
+            
+            # Find .middev file
+            filename = manufacturer.replace(' ', '_') + '.middev'
+            file_path = os.path.join('patchfiles', filename)
+            
+            if not os.path.exists(file_path):
+                self.send_error(404, f"File not found: {filename}")
+                return
+            
+            # Read file
+            with open(file_path, 'rb') as f:
+                content = f.read()
+            
+            # Send file
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/xml')
+            self.send_header('Content-Disposition', f'attachment; filename="{filename}"')
+            self.send_header('Content-Length', str(len(content)))
+            self.end_headers()
+            self.wfile.write(content)
+            
+            print(f"[download_middev] Downloaded: {file_path}")
+            
+        except Exception as e:
+            print(f"[download_middev] Error: {str(e)}")
+            self.send_error(500, f"Error downloading file: {str(e)}")
+    
+    def download_zip(self):
+        """Download a zip file containing both .midnam and .middev files"""
+        try:
+            import urllib.parse
+            import zipfile
+            import io
+            
+            # Parse URL to separate path and query parameters
+            parsed_url = urlparse(self.path)
+            
+            # Extract device ID from path (remove /api/download/zip/ prefix)
+            device_id = parsed_url.path.replace('/api/download/zip/', '')
+            device_id = urllib.parse.unquote(device_id)
+            
+            # Parse query parameters for file path
+            query_params = parse_qs(parsed_url.query)
+            midnam_file_path = query_params.get('file', [None])[0]
+            
+            if midnam_file_path:
+                midnam_file_path = urllib.parse.unquote(midnam_file_path)
+                print(f"[download_zip] Device ID: {device_id}, File path from query: {midnam_file_path}")
+            else:
+                # Find file from device ID
+                print(f"[download_zip] No file parameter, looking up device: {device_id}")
+                manufacturers_data = self.get_manufacturers_data()
+                device_data = None
+                
+                for manufacturer, devices in manufacturers_data.items():
+                    for device in devices:
+                        if device['id'] == device_id:
+                            device_data = device
+                            midnam_file_path = device['file_path']
+                            break
+                    if device_data:
+                        break
+                
+                if not midnam_file_path:
+                    print(f"[download_zip] Device not found: {device_id}")
+                    self.send_error(404, f"Device not found: {device_id}")
+                    return
+            
+            # Check if midnam file exists
+            if not os.path.exists(midnam_file_path):
+                print(f"[download_zip] MIDNAM file not found: {midnam_file_path}")
+                self.send_error(404, f"File not found: {midnam_file_path}")
+                return
+            
+            # Extract manufacturer from device ID
+            manufacturer = device_id.split('|')[0]
+            middev_filename = manufacturer.replace(' ', '_') + '.middev'
+            middev_file_path = os.path.join('patchfiles', middev_filename)
+            
+            # Create zip file in memory
+            zip_buffer = io.BytesIO()
+            with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+                # Add .midnam file
+                midnam_filename = os.path.basename(midnam_file_path)
+                with open(midnam_file_path, 'rb') as f:
+                    zip_file.writestr(midnam_filename, f.read())
+                
+                # Add .middev file if it exists
+                if os.path.exists(middev_file_path):
+                    with open(middev_file_path, 'rb') as f:
+                        zip_file.writestr(middev_filename, f.read())
+            
+            # Get zip content
+            zip_content = zip_buffer.getvalue()
+            
+            # Generate zip filename
+            device_name = device_id.split('|')[1] if '|' in device_id else 'device'
+            safe_device_name = device_name.replace(' ', '_').replace('/', '_')
+            zip_filename = f"{manufacturer.replace(' ', '_')}_{safe_device_name}.zip"
+            
+            # Send zip file
+            print(f"[download_zip] Sending zip: {zip_filename} ({len(zip_content)} bytes)")
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/zip')
+            self.send_header('Content-Disposition', f'attachment; filename="{zip_filename}"')
+            self.send_header('Content-Length', str(len(zip_content)))
+            self.end_headers()
+            self.wfile.write(zip_content)
+            
+            print(f"[download_zip] Successfully downloaded zip: {zip_filename}")
+            
+        except Exception as e:
+            print(f"[download_zip] Error: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            self.send_error(500, f"Error downloading zip: {str(e)}")
 
 if __name__ == "__main__":
     PORT = int(os.environ.get('PORT', 8000))

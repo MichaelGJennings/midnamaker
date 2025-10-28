@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE MIDINameDocument PUBLIC "-//MIDI Manufacturers Association//DTD MIDINameDocument 1.0//EN" "http://www.midi.org/dtds/MIDINameDocument10.dtd">
+
+<MIDINameDocument>
+	<Author>Created by Midnamaker on 2025-10-27</Author>
+	<MasterDeviceNames>
+		<Manufacturer>ART</Manufacturer>
+		<Model>Multiverb III</Model>
+		<CustomDeviceMode Name="Default">
+			<ChannelNameSetAssignments>
+				<ChannelNameSetAssign Channel="1" NameSet="Default Patches"/>
+			</ChannelNameSetAssignments>
+		</CustomDeviceMode>
+		<ChannelNameSet Name="Default Patches">
+			<AvailableForChannels>
+				<AvailableChannel Channel="1" Available="true"/>
+			</AvailableForChannels>
+			<PatchBank Name="Patches">
+				<PatchNameList>
+					<Patch Name="Notre Dame" Number="001" ProgramChange="0"/>
+					<Patch Name="Abbey Road Rm. #2" Number="002" ProgramChange="1"/>
+					<Patch Name="Vocal Chamber" Number="003" ProgramChange="2"/>
+					<Patch Name="Glistening Plate" Number="004" ProgramChange="3"/>
+					<Patch Name="Carnegie Hall" Number="005" ProgramChange="4"/>
+					<Patch Name="Watertank Drums" Number="006" ProgramChange="5"/>
+					<Patch Name="Vocal Closet" Number="007" ProgramChange="6"/>
+					<Patch Name="Studio Drum Room" Number="008" ProgramChange="7"/>
+					<Patch Name="Cluster Bomb Gate" Number="009" ProgramChange="8"/>
+					<Patch Name="Machine Gun Snare" Number="010" ProgramChange="9"/>
+					<Patch Name="Auto Sampler" Number="011" ProgramChange="10"/>
+					<Patch Name="Sampler + Reverb" Number="012" ProgramChange="11"/>
+					<Patch Name="Sampled Fifth" Number="013" ProgramChange="12"/>
+					<Patch Name="Ping-Pong All Night" Number="014" ProgramChange="13"/>
+					<Patch Name="Week-Long Echoes" Number="015" ProgramChange="14"/>
+					<Patch Name="Gated Reverb #1" Number="016" ProgramChange="15"/>
+					<Patch Name="Gated Reverb #2" Number="017" ProgramChange="16"/>
+					<Patch Name="Vocal Choruser" Number="018" ProgramChange="17"/>
+					<Patch Name="Night Chorus" Number="019" ProgramChange="18"/>
+					<Patch Name="Raining Chorus" Number="020" ProgramChange="19"/>
+					<Patch Name="Shimmering Flange" Number="021" ProgramChange="20"/>
+					<Patch Name="Dream Flange" Number="022" ProgramChange="21"/>
+					<Patch Name="Wonder Chorus" Number="023" ProgramChange="22"/>
+					<Patch Name="Dream Believer" Number="024" ProgramChange="23"/>
+					<Patch Name="PTR Shift 5th Up" Number="025" ProgramChange="24"/>
+					<Patch Name="Micro Chorus PTR" Number="026" ProgramChange="25"/>
+					<Patch Name="Brite 12-String" Number="027" ProgramChange="26"/>
+					<Patch Name="Mellow 12-String" Number="028" ProgramChange="27"/>
+					<Patch Name="Macro Chorus PTR" Number="029" ProgramChange="28"/>
+					<Patch Name="Vocal Imager" Number="030" ProgramChange="29"/>
+					<Patch Name="Gate Rev + Reverb" Number="031" ProgramChange="30"/>
+					<Patch Name="Rev + Vocal Delay" Number="032" ProgramChange="31"/>
+					<Patch Name="Rev + Vocal Echo" Number="033" ProgramChange="32"/>
+					<Patch Name="Reverse Reverb + Delay" Number="034" ProgramChange="33"/>
+					<Patch Name="Reverse Reverb" Number="035" ProgramChange="34"/>
+					<Patch Name="Stereo Chorus A" Number="036" ProgramChange="35"/>
+					<Patch Name="Stereo Chorus B" Number="037" ProgramChange="36"/>
+					<Patch Name="Stereo Flange A" Number="038" ProgramChange="37"/>
+					<Patch Name="Stereo Flange B" Number="039" ProgramChange="38"/>
+					<Patch Name="Chorus + Reverb" Number="040" ProgramChange="39"/>
+					<Patch Name="Tape Echo" Number="041" ProgramChange="40"/>
+					<Patch Name="Stereo Echorec" Number="042" ProgramChange="41"/>
+					<Patch Name="Vibrato Chorus" Number="043" ProgramChange="42"/>
+					<Patch Name="Delayed Vibrato" Number="044" ProgramChange="43"/>
+					<Patch Name="Tremelo Flange" Number="045" ProgramChange="44"/>
+					<Patch Name="Symphonic" Number="046" ProgramChange="45"/>
+					<Patch Name="Choir" Number="047" ProgramChange="46"/>
+					<Patch Name="Twin Voices" Number="048" ProgramChange="47"/>
+					<Patch Name="Soft Slap Echo" Number="049" ProgramChange="48"/>
+					<Patch Name="Stereo Phase" Number="050" ProgramChange="49"/>
+					<Patch Name="Flange &amp; Rev A" Number="051" ProgramChange="50"/>
+					<Patch Name="Flange &amp; Rev B" Number="052" ProgramChange="51"/>
+					<Patch Name="Gated Flange + Rev" Number="053" ProgramChange="52"/>
+					<Patch Name="Delay + Reverb" Number="054" ProgramChange="53"/>
+					<Patch Name="Tap Delay + Reverb" Number="055" ProgramChange="54"/>
+					<Patch Name="Chorus + Gate Rev" Number="056" ProgramChange="55"/>
+					<Patch Name="Stereo Delay + Chorus" Number="057" ProgramChange="56"/>
+					<Patch Name="Death Flange" Number="058" ProgramChange="57"/>
+					<Patch Name="Barber Pole Flange" Number="059" ProgramChange="58"/>
+					<Patch Name="Space Shift" Number="060" ProgramChange="59"/>
+					<Patch Name="Bass Octave" Number="061" ProgramChange="60"/>
+					<Patch Name="Arpeggiated Flange" Number="062" ProgramChange="61"/>
+					<Patch Name="Rotating Leslie" Number="063" ProgramChange="62"/>
+					<Patch Name="Concert Leslie" Number="064" ProgramChange="63"/>
+					<Patch Name="Echoing Chorus" Number="065" ProgramChange="64"/>
+					<Patch Name="Varipitch Chorus" Number="066" ProgramChange="65"/>
+					<Patch Name="Chorus Vibrato" Number="067" ProgramChange="66"/>
+					<Patch Name="Cathedral Reverb" Number="068" ProgramChange="67"/>
+					<Patch Name="Concert Reverb" Number="069" ProgramChange="68"/>
+					<Patch Name="Studio Plate Reverb" Number="070" ProgramChange="69"/>
+					<Patch Name="Church Hall Reverb" Number="071" ProgramChange="70"/>
+					<Patch Name="Studio Plate Gate" Number="072" ProgramChange="71"/>
+					<Patch Name="Thunder Snare" Number="073" ProgramChange="72"/>
+					<Patch Name="Warehouse Snare" Number="074" ProgramChange="73"/>
+					<Patch Name="Snare in Shower" Number="075" ProgramChange="74"/>
+					<Patch Name="Strato Killer" Number="076" ProgramChange="75"/>
+					<Patch Name="Stereo Metal Guitar" Number="077" ProgramChange="76"/>
+					<Patch Name="Guitar Dream" Number="078" ProgramChange="77"/>
+					<Patch Name="Silky Strat" Number="079" ProgramChange="78"/>
+					<Patch Name="Thrash Flange" Number="080" ProgramChange="79"/>
+					<Patch Name="Blues Man Guitar" Number="081" ProgramChange="80"/>
+					<Patch Name="Ice Guitar" Number="082" ProgramChange="81"/>
+					<Patch Name="60's Rock" Number="083" ProgramChange="82"/>
+					<Patch Name="Buried Vocal" Number="084" ProgramChange="83"/>
+					<Patch Name="Early Reflections &amp; Flange" Number="085" ProgramChange="84"/>
+					<Patch Name="Early Reflections &amp; Delay" Number="086" ProgramChange="85"/>
+					<Patch Name="Predelayed Reverb" Number="087" ProgramChange="86"/>
+					<Patch Name="Predelayed Gate" Number="088" ProgramChange="87"/>
+					<Patch Name="Echoverb" Number="089" ProgramChange="88"/>
+					<Patch Name="Panning Delay" Number="090" ProgramChange="89"/>
+					<Patch Name="Imaged Chorus" Number="091" ProgramChange="90"/>
+					<Patch Name="Imaged Flange" Number="092" ProgramChange="91"/>
+					<Patch Name="Panning Choir" Number="093" ProgramChange="92"/>
+					<Patch Name="Dry Sweep Slow" Number="094" ProgramChange="93"/>
+					<Patch Name="Dry Sweep Fast" Number="095" ProgramChange="94"/>
+					<Patch Name="Reverb, Delay &amp; Pan" Number="096" ProgramChange="95"/>
+					<Patch Name="Imaged Reverb A" Number="097" ProgramChange="96"/>
+					<Patch Name="Imaged Reverb B" Number="098" ProgramChange="97"/>
+					<Patch Name="Ping Pong Delay" Number="099" ProgramChange="98"/>
+					<Patch Name="No Effect" Number="100" ProgramChange="99"/>
+					<Patch Name="Multi-Tap Pan" Number="101" ProgramChange="100"/>
+					<Patch Name="Reverb, Multi-Tap &amp; Ping-Pong" Number="102" ProgramChange="101"/>
+					<Patch Name="MIDI Sampler" Number="103" ProgramChange="102"/>
+					<Patch Name="Sampler-Manual" Number="104" ProgramChange="103"/>
+					<Patch Name="'Verbed Sample 2" Number="105" ProgramChange="104"/>
+					<Patch Name="Manual Sample Repeat" Number="106" ProgramChange="105"/>
+					<Patch Name="Gate Reverb Ping-Pong" Number="107" ProgramChange="106"/>
+					<Patch Name="2 Second Delay" Number="108" ProgramChange="107"/>
+					<Patch Name="Syncopated Mono" Number="109" ProgramChange="108"/>
+					<Patch Name="Synced Stereo" Number="110" ProgramChange="109"/>
+				</PatchNameList>
+			</PatchBank>
+		</ChannelNameSet>
+	</MasterDeviceNames>
+</MIDINameDocument>

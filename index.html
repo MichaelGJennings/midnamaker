@@ -92,7 +92,14 @@
         <div class="device-header">
             <h2 id="device-title">Select a Device</h2>
             <div class="device-actions">
-                <button class="btn btn-primary" id="save-device-btn" disabled>Saved</button>
+                <div class="split-button-group">
+                    <button class="btn btn-primary split-button-main" id="save-device-btn" disabled>Saved</button>
+                    <button class="btn btn-primary split-button-dropdown" id="save-device-dropdown-btn">▼</button>
+                    <div class="split-button-menu" id="save-device-menu" style="display: none;">
+                        <button class="menu-item" id="save-device-only">Save Changes</button>
+                        <button class="menu-item" id="save-device-download">Download Files</button>
+                    </div>
+                </div>
                 <button class="btn btn-secondary" id="validate-device-btn" disabled>Validate</button>
             </div>
         </div>
@@ -107,7 +114,14 @@
         <div class="patch-header">
             <h2 id="patch-title">Patch Editor</h2>
             <div class="patch-actions">
-                <button class="btn btn-primary" id="save-patch-btn" disabled>Saved</button>
+                <div class="split-button-group">
+                    <button class="btn btn-primary split-button-main" id="save-patch-btn" disabled>Saved</button>
+                    <button class="btn btn-primary split-button-dropdown" id="save-patch-dropdown-btn">▼</button>
+                    <div class="split-button-menu" id="save-patch-menu" style="display: none;">
+                        <button class="menu-item" id="save-patch-only">Save Changes</button>
+                        <button class="menu-item" id="save-patch-download">Download Files</button>
+                    </div>
+                </div>
             </div>
         </div>
         
@@ -134,16 +148,54 @@
 
     <!-- Tools Tab -->
     <div class="tab-content" id="tools-tab">
-        <div class="tools-header">
-            <h2>Tools</h2>
-            <div class="debug-actions">
-                <button class="btn btn-secondary" id="clear-console-btn">Clear Console</button>
-                <button class="btn btn-warning" id="test-midi-btn">Test MIDI</button>
-            </div>
-        </div>
-        
         <div class="tools-content" id="tools-content">
-            <div class="debug-console" id="debug-console"></div>
+            <!-- File Upload Section -->
+            <div class="tool-section">
+                <h3>Upload Files</h3>
+                <p class="tool-description">
+                    Upload .midnam and .middev files to add them to the catalog. 
+                    This is useful if you're running the app in a hosted environment or want to import files from elsewhere.
+                </p>
+                <div class="upload-area">
+                    <input type="file" id="file-upload-input" accept=".midnam,.middev" multiple style="display: none;">
+                    <button class="btn btn-primary" id="file-upload-btn">
+                        <span>📁</span> Choose Files to Upload
+                    </button>
+                    <div id="file-upload-list" class="file-upload-list"></div>
+                    <button class="btn btn-success" id="upload-files-btn" style="display: none;">Upload Selected Files</button>
+                </div>
+            </div>
+            
+            <!-- Installation Instructions Section -->
+            <div class="tool-section">
+                <h3>Installation Instructions</h3>
+                <p class="tool-description">
+                    After downloading your .midnam and .middev files, you'll need to install them in your DAW.
+                    <strong>The installation process varies by operating system and DAW environment.</strong>
+                </p>
+                <div class="install-info">
+                    <p>Common installation locations:</p>
+                    <ul>
+                        <li><strong>macOS:</strong> <code>~/Library/Audio/MIDI Devices/</code></li>
+                        <li><strong>Windows:</strong> <code>C:\ProgramData\Avid\Audio\MIDIDevices\</code> or DAW-specific directories</li>
+                        <li><strong>Linux:</strong> Varies by DAW (check your DAW documentation)</li>
+                    </ul>
+                    <p class="install-note">
+                        <strong>Note:</strong> For specific installation instructions, please search for 
+                        "<em>[Your DAW Name] MIDNAM installation</em>" online, as the exact process depends on 
+                        your specific software and operating system configuration.
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Debug Console Section -->
+            <div class="tool-section">
+                <div class="debug-console-header">
+                    <h3>Debug Console</h3>
+                    <button class="btn btn-tiny btn-secondary" id="clear-console-btn">Clear</button>
+                </div>
+                <div class="debug-console" id="debug-console"></div>
+            </div>
         </div>
     </div>
 
@@ -179,6 +231,31 @@
             </div>
             <div class="modal-footer">
                 <button class="btn btn-secondary" id="disambiguation-cancel">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Download Modal -->
+    <div id="download-modal" class="modal-overlay" style="display: none;">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Download Files</h3>
+                <button class="modal-close" id="download-modal-close">&times;</button>
+            </div>
+            <div class="modal-body" id="download-modal-body">
+                <p class="download-instructions">
+                    Click the links below to download your files. After downloading, you'll need to install them in your DAW.
+                </p>
+                <p class="install-note-small">
+                    <strong>Note:</strong> Installation locations vary by operating system and DAW. 
+                    See the <strong>Tools</strong> tab for more information about installation.
+                </p>
+                <div id="download-links" class="download-links">
+                    <!-- Links will be populated dynamically -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" id="download-modal-cancel">Close</button>
             </div>
         </div>
     </div>
