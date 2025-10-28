@@ -1561,7 +1561,7 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
             
             # Add Author element
             author = ET.SubElement(middev_root, 'Author')
-            author.text = f'Created by MIDNAM Maker on {datetime.now().strftime("%Y-%m-%d")}'
+            author.text = f'Created by Midnamaker on {datetime.now().strftime("%Y-%m-%d")}'
             
             # Add default device
             device_type = ET.SubElement(middev_root, 'MIDIDeviceType', {
@@ -1628,7 +1628,7 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
             
             # Add Author element
             midnam_author = ET.SubElement(midnam_root, 'Author')
-            midnam_author.text = f'Created by MIDNAM Maker on {datetime.now().strftime("%Y-%m-%d")}'
+            midnam_author.text = f'Created by Midnamaker on {datetime.now().strftime("%Y-%m-%d")}'
             
             # Add MasterDeviceNames
             master_device = ET.SubElement(midnam_root, 'MasterDeviceNames')
@@ -1738,7 +1738,7 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                 
                 # Add Author element
                 author = ET.SubElement(root, 'Author')
-                author.text = f'Created by MIDNAM Maker on {datetime.now().strftime("%Y-%m-%d")}'
+                author.text = f'Created by Midnamaker on {datetime.now().strftime("%Y-%m-%d")}'
                 
                 tree = ET.ElementTree(root)
             else:
@@ -1850,7 +1850,7 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                 
                 # Add Author element
                 midnam_author = ET.SubElement(midnam_root, 'Author')
-                midnam_author.text = f'Created by MIDNAM Maker on {datetime.now().strftime("%Y-%m-%d")}'
+                midnam_author.text = f'Created by Midnamaker on {datetime.now().strftime("%Y-%m-%d")}'
                 
                 # Add MasterDeviceNames
                 master_device = ET.SubElement(midnam_root, 'MasterDeviceNames')
