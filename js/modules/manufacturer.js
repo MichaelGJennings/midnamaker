@@ -279,8 +279,18 @@ export class ManufacturerManager {
             
             const deviceData = await response.json();
             
-            // Store device data
-            appState.selectedDevice = { id: deviceId, name: model, manufacturer };
+            // Ensure deviceData has file_path
+            if (!deviceData.file_path) {
+                deviceData.file_path = deviceInfo.file_path;
+            }
+            
+            // Store device data with file path
+            appState.selectedDevice = { 
+                id: deviceId, 
+                name: model, 
+                manufacturer,
+                file_path: deviceInfo.file_path || deviceData.file_path
+            };
             appState.currentMidnam = deviceData;
             
             // Transform device data for frontend

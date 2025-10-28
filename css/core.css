@@ -204,3 +204,166 @@ body {
     background: #e0a800 !important;
     border-color: #d39e00 !important;
 }
+
+/* Split Button Styles */
+.split-button-group {
+    position: relative;
+    display: inline-flex;
+    align-items: stretch;
+}
+
+.split-button-main {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+    border-right: 1px solid rgba(255, 255, 255, 0.3);
+}
+
+.split-button-dropdown {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+    padding: 0.75rem 0.75rem;
+    min-width: auto;
+    font-size: 0.8rem;
+}
+
+.split-button-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 0.25rem;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+    z-index: 1000;
+    min-width: 200px;
+}
+
+.split-button-menu .menu-item {
+    display: block;
+    width: 100%;
+    padding: 0.75rem 1rem;
+    text-align: left;
+    border: none;
+    background: white;
+    cursor: pointer;
+    transition: background 0.2s;
+    font-size: 0.95rem;
+}
+
+.split-button-menu .menu-item:first-child {
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+}
+
+.split-button-menu .menu-item:last-child {
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+}
+
+.split-button-menu .menu-item:hover {
+    background: #f8f9fa;
+}
+
+.split-button-menu .menu-item:not(:last-child) {
+    border-bottom: 1px solid #eee;
+}
+
+.btn-warning {
+    background: #ffc107;
+    color: #000;
+}
+
+.btn-warning:hover {
+    background: #e0a800;
+}
+
+/* Download Modal Styles */
+.download-instructions {
+    margin-bottom: 1rem;
+    font-size: 1rem;
+    color: #495057;
+}
+
+.install-note-small {
+    margin-bottom: 1.5rem;
+    padding: 0.75rem;
+    background: #fff3cd;
+    border: 1px solid #ffc107;
+    border-radius: 4px;
+    color: #856404;
+    font-size: 0.9rem;
+}
+
+.download-links {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.download-link-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.download-link-item:hover {
+    background: #e9ecef;
+    border-color: #3498db;
+}
+
+.download-link-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.download-link-name {
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 1rem;
+}
+
+.download-link-description {
+    color: #6c757d;
+    font-size: 0.875rem;
+}
+
+.download-link-button {
+    padding: 0.5rem 1.5rem;
+    background: #3498db;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 500;
+    text-decoration: none;
+    transition: background 0.2s;
+    white-space: nowrap;
+}
+
+.download-link-button:hover {
+    background: #2980b9;
+}
+
+.download-separator {
+    text-align: center;
+    margin: 1rem 0;
+    color: #6c757d;
+    font-style: italic;
+}
+
+.download-zip-item {
+    background: #e7f3ff;
+    border-color: #3498db;
+}
+
+.download-zip-item .download-link-name {
+    color: #2980b9;
+}

@@ -270,6 +270,14 @@ export class AppState {
                 btn.textContent = 'Save Changes';
                 btn.classList.add('btn-warning');
             }
+            
+            // Also enable the dropdown button
+            const dropdownBtnId = btnId.replace('-btn', '-dropdown-btn');
+            const dropdownBtn = document.getElementById(dropdownBtnId);
+            if (dropdownBtn) {
+                dropdownBtn.disabled = false;
+                dropdownBtn.classList.add('btn-warning');
+            }
         });
         
         // Reset validation state on Device tab
@@ -289,6 +297,14 @@ export class AppState {
                 btn.textContent = 'Saved';
                 btn.classList.remove('btn-warning');
                 btn.disabled = true;
+            }
+            
+            // Keep the dropdown button enabled but remove warning state
+            const dropdownBtnId = btnId.replace('-btn', '-dropdown-btn');
+            const dropdownBtn = document.getElementById(dropdownBtnId);
+            if (dropdownBtn) {
+                dropdownBtn.disabled = false; // Keep enabled for download access
+                dropdownBtn.classList.remove('btn-warning');
             }
         });
         
