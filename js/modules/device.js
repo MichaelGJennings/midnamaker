@@ -7,6 +7,140 @@ export class DeviceManager {
     constructor() {
         this.validationState = 'unvalidated'; // Track validation state: unvalidated, validated, invalid
         this.editingPatchListIndex = null; // Track which patch list is being edited
+        this.editingControlListIndex = null; // Track which control list is being edited
+        
+        // MIDI Controller defaults map (from MIDI.midnam)
+        this.midiControllerDefaults = {
+            0: "Bank Select",
+            1: "Modulation Wheel or Lever",
+            2: "Breath Controller",
+            3: "Undefined",
+            4: "Foot Controller",
+            5: "Portamento Time",
+            6: "Data Entry MSB",
+            7: "Channel Volume",
+            8: "Balance",
+            9: "Undefined",
+            10: "Pan",
+            11: "Expression Controller",
+            12: "Effect Control 1",
+            13: "Effect Control 2",
+            14: "Undefined",
+            15: "Undefined",
+            16: "General Purpose Controller 1",
+            17: "General Purpose Controller 2",
+            18: "General Purpose Controller 3",
+            19: "General Purpose Controller 4",
+            20: "Undefined",
+            21: "Undefined",
+            22: "Undefined",
+            23: "Undefined",
+            24: "Undefined",
+            25: "Undefined",
+            26: "Undefined",
+            27: "Undefined",
+            28: "Undefined",
+            29: "Undefined",
+            30: "Undefined",
+            31: "Undefined",
+            32: "LSB for Control 0 (Bank Select) (Fine)",
+            33: "LSB for Control 1 (Modulation Wheel or Lever) (Fine)",
+            34: "LSB for Control 2 (Breath Controller) (Fine)",
+            35: "LSB for Control 3 (Undefined) (Fine)",
+            36: "LSB for Control 4 (Foot Controller) (Fine)",
+            37: "LSB for Control 5 (Portamento Time) (Fine)",
+            38: "LSB for Control 6 (Data Entry) (Fine)",
+            39: "LSB for Control 7 (Channel Volume) (Fine)",
+            40: "LSB for Control 8 (Balance) (Fine)",
+            41: "LSB for Control 9 (Undefined) (Fine)",
+            42: "LSB for Control 10 (Pan) (Fine)",
+            43: "LSB for Control 11 (Expression Controller) (Fine)",
+            44: "LSB for Control 12 (Effect control 1) (Fine)",
+            45: "LSB for Control 13 (Effect control 2) (Fine)",
+            46: "LSB for Control 14 (Undefined) (Fine)",
+            47: "LSB for Control 15 (Undefined) (Fine)",
+            48: "LSB for Control 16 (General Purpose Controller 1) (Fine)",
+            49: "LSB for Control 17 (General Purpose Controller 2) (Fine)",
+            50: "LSB for Control 18 (General Purpose Controller 3) (Fine)",
+            51: "LSB for Control 19 (General Purpose Controller 4) (Fine)",
+            52: "LSB for Control 20 (Undefined) (Fine)",
+            53: "LSB for Control 21 (Undefined) (Fine)",
+            54: "LSB for Control 22 (Undefined) (Fine)",
+            55: "LSB for Control 23 (Undefined) (Fine)",
+            56: "LSB for Control 24 (Undefined) (Fine)",
+            57: "LSB for Control 25 (Undefined) (Fine)",
+            58: "LSB for Control 26 (Undefined) (Fine)",
+            59: "LSB for Control 27 (Undefined) (Fine)",
+            60: "LSB for Control 28 (Undefined) (Fine)",
+            61: "LSB for Control 29 (Undefined) (Fine)",
+            62: "LSB for Control 30 (Undefined) (Fine)",
+            63: "LSB for Control 31 (Undefined) (Fine)",
+            64: "Damper Pedal on/off (Sustain) ≤63 off, ≥64 on",
+            65: "Portamento On/Off ≤63 off, ≥64 on",
+            66: "Sostenuto On/Off ≤63 off, ≥64 on",
+            67: "Soft Pedal On/Off ≤63 off, ≥64 on",
+            68: "Legato Footswitch ≤63 Normal, ≥64 Legato",
+            69: "Hold 2 ≤63 off, ≥64 on",
+            70: "Sound Controller 1 (default: Sound Variation) (Fine)",
+            71: "Sound Controller 2 (default: Timbre/Harmonic Intens.) (Fine)",
+            72: "Sound Controller 3 (default: Release Time) (Fine)",
+            73: "Sound Controller 4 (default: Attack Time) (Fine)",
+            74: "Sound Controller 5 (default: Brightness) (Fine)",
+            75: "Sound Controller 6 (default: Decay Time) (Fine)",
+            76: "Sound Controller 7 (default: Vibrato Rate) (Fine)",
+            77: "Sound Controller 8 (default: Vibrato Depth) (Fine)",
+            78: "Sound Controller 9 (default: Vibrato Delay) (Fine)",
+            79: "Sound Controller 10 (default undefined) (Fine)",
+            80: "General Purpose Controller 5 (Fine)",
+            81: "General Purpose Controller 6 (Fine)",
+            82: "General Purpose Controller 7 (Fine)",
+            83: "General Purpose Controller 8 (Fine)",
+            84: "Portamento Control (Fine)",
+            85: "(Undefined)",
+            86: "(Undefined)",
+            87: "(Undefined)",
+            88: "High Resolution Velocity Prefix (Velocity LSB)",
+            89: "(Undefined)",
+            90: "(Undefined)",
+            91: "Effects 1 Depth (default: Reverb Send Level)",
+            92: "Effects 2 Depth",
+            93: "Effects 3 Depth (default: Chorus Send Level)",
+            94: "Effects 4 Depth",
+            95: "Effects 5 Depth",
+            96: "Data Increment (Data Entry +1)",
+            97: "Data Decrement (Data Entry -1)",
+            98: "Non-Registered Parameter Number LSB",
+            99: "Non-Registered Parameter Number MSB",
+            100: "Registered Parameter Number LSB",
+            101: "Registered Parameter Number MSB",
+            102: "(Undefined)",
+            103: "(Undefined)",
+            104: "(Undefined)",
+            105: "(Undefined)",
+            106: "(Undefined)",
+            107: "(Undefined)",
+            108: "(Undefined)",
+            109: "(Undefined)",
+            110: "(Undefined)",
+            111: "(Undefined)",
+            112: "(Undefined)",
+            113: "(Undefined)",
+            114: "(Undefined)",
+            115: "(Undefined)",
+            116: "(Undefined)",
+            117: "(Undefined)",
+            118: "(Undefined)",
+            119: "(Undefined)",
+            120: "[Channel Mode Message] All Sound Off",
+            121: "[Channel Mode Message] Reset All Controllers",
+            122: "[Channel Mode Message] Local Control On/Off 0 off, 127 on",
+            123: "[Channel Mode Message] All Notes Off",
+            124: "[Channel Mode Message] Omni Mode Off (+ all notes off)",
+            125: "[Channel Mode Message] Omni Mode On (+ all notes off)",
+            126: "[Channel Mode Message] Mono Mode On (+ poly off, + all notes off)",
+            127: "[Channel Mode Message] Poly Mode On (+ mono off, +all notes off) 0"
+        };
+        
         this.init();
     }
     
@@ -158,7 +292,7 @@ export class DeviceManager {
                 </div>
                 
                 ${this.generatePatchListHTML(midnam.patchList || [])}
-                ${this.generateControlChangeHTML(midnam.controlChange || [])}
+                ${this.generateControlParameterAssignmentsHTML(midnam.control_lists || [], midnam.activeControlListName)}
             </div>
         `;
     }
@@ -170,9 +304,9 @@ export class DeviceManager {
         
         return `
             <div class="structure-section">
-                <div style="display: flex; align-items: center; gap: 10px;">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
                     <h4>Patch Banks (${patchLists.length})</h4>
-                    <button class="btn btn-sm btn-primary" onclick="deviceManager.addPatchBank()" title="Add new patch bank">+</button>
+                    <button class="btn btn-small btn-primary" onclick="deviceManager.addPatchBank()" title="Add new patch bank">+</button>
                 </div>
                 ${patchLists.map((patchList, index) => {
                     // Check if this patch list has MIDI commands
@@ -191,20 +325,8 @@ export class DeviceManager {
                                            onchange="deviceManager.updateBankName(${index}, this.value)"
                                            style="display: inline-block; width: auto; min-width: 200px; margin-right: 10px;">
                                 ` : Utils.escapeHtml(patchList.name || `Patch Bank ${index + 1}`)}
-                                ${hasMidiCommands ? `
-                                    <span class="midi-commands-info" title="${this.formatMidiCommandsTooltip(patchList.midi_commands)}">
-                                        (CC ${patchList.midi_commands.map(cmd => cmd.control).join(', ')})
-                                    </span>
-                                ` : ''}
                             </div>
                             <div class="element-actions">
-                                ${hasMidiCommands ? `
-                                    <button class="btn btn-small btn-secondary" 
-                                            onclick="event.stopPropagation(); deviceManager.sendBankSelectMidi(${index})" 
-                                            title="Send MIDI commands to select this bank">
-                                        Select Bank
-                                    </button>
-                                ` : ''}
                                 <button class="btn btn-small btn-primary" onclick="event.stopPropagation(); deviceManager.editPatchList(${index})">${this.editingPatchListIndex === index ? 'Done' : 'Edit'}</button>
                                 <button class="btn btn-small btn-danger" onclick="event.stopPropagation(); deviceManager.deletePatchList(${index})">Delete</button>
                             </div>
@@ -212,10 +334,15 @@ export class DeviceManager {
                         <div class="element-content collapsible-content">
                             ${hasMidiCommands ? `
                                 <div class="bank-midi-commands">
-                                    <strong>MIDI Commands to Select Bank:</strong>
+                                    <strong>Bank Select MIDI Command:</strong>
                                     ${patchList.midi_commands.map(cmd => `
                                         <span class="midi-command-item">CC${cmd.control}=${cmd.value}</span>
                                     `).join(' ')}
+                                    <button class="btn btn-small btn-secondary" 
+                                            onclick="event.stopPropagation(); deviceManager.sendBankSelectMidi(${index})" 
+                                            title="Issue MIDI Bank Select">
+                                        Test Bank Select
+                                    </button>
                                 </div>
                             ` : ''}
                             ${this.editingPatchListIndex === index ? 
@@ -317,29 +444,100 @@ export class DeviceManager {
         `;
     }
     
-    generateControlChangeHTML(controlChanges) {
-        if (!controlChanges || controlChanges.length === 0) {
-            return '<div class="structure-section"><h4>No Control Changes Found</h4></div>';
+    generateControlParameterAssignmentsHTML(controlLists, activeControlListName) {
+        if (!controlLists) controlLists = [];
+        
+        const hasLists = controlLists.length > 0;
+        
+        // Find the selected list index, with fallback logic
+        let selectedListIndex = -1;
+        if (activeControlListName && hasLists) {
+            selectedListIndex = controlLists.findIndex(list => list.name === activeControlListName);
+            
+            // If the referenced list doesn't exist, fall back to the first list and fix the reference
+            if (selectedListIndex === -1) {
+                selectedListIndex = 0;
+                // Update the active control list name to the first available list
+                if (appState.currentMidnam) {
+                    appState.currentMidnam.activeControlListName = controlLists[0].name;
+                    appState.markAsChanged();
+                    console.warn(`[Device] Referenced control list "${activeControlListName}" not found. Falling back to "${controlLists[0].name}"`);
+                }
+            }
+        } else if (hasLists) {
+            // No active name specified, use first list
+            selectedListIndex = 0;
+            if (appState.currentMidnam) {
+                appState.currentMidnam.activeControlListName = controlLists[0].name;
+            }
         }
         
+        const selectedList = selectedListIndex >= 0 ? controlLists[selectedListIndex] : null;
+        
         return `
-            <div class="structure-section">
-                <h4>Control Changes (${controlChanges.length})</h4>
-                ${controlChanges.map((controlChange, index) => `
-                    <div class="structure-element">
-                        <div class="element-header">
-                            <div class="element-name">${Utils.escapeHtml(controlChange.name || `Control Change ${index + 1}`)}</div>
-                            <div class="element-actions">
-                                <button class="btn btn-small btn-primary" onclick="deviceManager.editControlChange(${index})">Edit</button>
-                                <button class="btn btn-small btn-danger" onclick="deviceManager.deleteControlChange(${index})">Delete</button>
+            <div class="structure-section control-parameter-assignments">
+                <div class="section-header-with-controls">
+                    <h4>Control Parameter Assignments</h4>
+                    <div class="control-list-controls">
+                        ${hasLists ? `
+                            <select class="control-list-selector" onchange="deviceManager.selectControlList(this.value)">
+                                ${controlLists.map((list, index) => `
+                                    <option value="${index}" ${index === selectedListIndex ? 'selected' : ''}>
+                                        ${Utils.escapeHtml(list.name || `Control List ${index + 1}`)}
+                                    </option>
+                                `).join('')}
+                            </select>
+                        ` : ''}
+                        <div class="control-list-add-dropdown">
+                            <button class="btn btn-small btn-primary" onclick="deviceManager.toggleControlListMenu()">+</button>
+                            <div class="control-list-menu" id="control-list-menu" style="display: none;">
+                                <button class="menu-item" onclick="deviceManager.createNewControlList()">New List</button>
+                                <button class="menu-item ${!hasLists ? 'disabled' : ''}" 
+                                        onclick="deviceManager.duplicateControlList()"
+                                        ${!hasLists ? 'disabled' : ''}>Duplicate</button>
                             </div>
                         </div>
-                        <div class="element-content">
-                            <p>Controller: ${controlChange.controller || 'Unknown'}</p>
-                            <p>Value: ${controlChange.value || 'Unknown'}</p>
-                        </div>
                     </div>
-                `).join('')}
+                </div>
+                <div class="section-description" id="control-assignments-description">
+                    <p>If this device is set to use certain MIDI continuous controllers to control or automate specific patch parameters (i.e. filter cutoff), assign them helpful names that can be presented in a DAW, if supported.</p>
+                    <p>If there are multiple controller sets specified here, the currently displayed controller set will be used for the current set of patch banks.</p>
+                </div>
+                ${selectedList ? `
+                    <div class="control-list-content">
+                        <div class="control-list-info">
+                            ${this.editingControlListIndex === selectedListIndex ? `
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <input type="text" 
+                                           class="control-list-name-input"
+                                           value="${Utils.escapeHtml(selectedList.name)}"
+                                           onchange="deviceManager.updateControlListName(${selectedListIndex}, this.value)"
+                                           style="font-weight: 600; padding: 0.375rem 0.5rem; border: 1px solid #ced4da; border-radius: 4px; font-size: 0.9rem;">
+                                    <span> - ${selectedList.controls.length} controller(s)</span>
+                                </div>
+                            ` : `
+                                <p><strong>${Utils.escapeHtml(selectedList.name)}</strong> - ${selectedList.controls.length} controller(s)</p>
+                            `}
+                            <button class="btn btn-small btn-primary" onclick="deviceManager.editControlList(${selectedListIndex})">${this.editingControlListIndex === selectedListIndex ? 'Done' : 'Edit'}</button>
+                        </div>
+                        ${this.editingControlListIndex === selectedListIndex ? 
+                            this.renderControlListEditTable(selectedList, selectedListIndex) :
+                            `<div class="control-list-items">
+                                ${selectedList.controls.map(control => {
+                                    const defaultName = this.midiControllerDefaults[control.number] || 'Unknown';
+                                    const tooltipText = `CC${control.number}: ${defaultName}`;
+                                    return `
+                                        <div class="control-item" title="${Utils.escapeHtml(tooltipText)}">
+                                            <span class="control-number">CC${control.number}</span>
+                                            <span class="control-type">${control.type}</span>
+                                            <span class="control-name">${Utils.escapeHtml(control.name)}</span>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>`
+                        }
+                    </div>
+                ` : '<div class="empty-state">No control lists defined. Click + to create one.</div>'}
             </div>
         `;
     }
@@ -726,11 +924,32 @@ export class DeviceManager {
             appState.currentMidnam.patchList = [];
         }
         
-        // Create new bank with a default patch
+        // Find the highest Control 32 value across all banks
+        let highestCC32 = -1;
+        for (const bank of appState.currentMidnam.patchList) {
+            if (bank.midi_commands) {
+                for (const cmd of bank.midi_commands) {
+                    if (cmd.control === '32' || cmd.control === 32) {
+                        const value = parseInt(cmd.value);
+                        if (!isNaN(value) && value > highestCC32) {
+                            highestCC32 = value;
+                        }
+                    }
+                }
+            }
+        }
+        
+        // Calculate new CC32 value (increment from highest, default to 0 if none found)
+        const newCC32Value = highestCC32 >= 0 ? highestCC32 + 1 : 0;
+        
+        // Create new bank with a default patch and default MIDI commands
         const newBankIndex = appState.currentMidnam.patchList.length;
         const newBank = {
             name: `New Bank ${newBankIndex + 1}`,
-            midi_commands: [],
+            midi_commands: [
+                { type: 'ControlChange', control: '0', value: '0' },
+                { type: 'ControlChange', control: '32', value: newCC32Value.toString() }
+            ],
             patch: [{
                 name: 'Default Patch',
                 Number: '0',
@@ -848,19 +1067,398 @@ export class DeviceManager {
             });
     }
     
-    editControlChange(index) {
-        // Implementation for editing control change
-        Utils.showNotification('Control change editing will be implemented', 'info');
+    // Control List management methods
+    toggleControlListMenu() {
+        const menu = document.getElementById('control-list-menu');
+        if (menu) {
+            menu.style.display = menu.style.display === 'none' ? 'block' : 'none';
+        }
     }
     
-    deleteControlChange(index) {
-        modal.confirm('Are you sure you want to delete this control change?', 'Delete Control Change')
-            .then(confirmed => {
-                if (confirmed) {
-                    // Delete control change logic
-                    Utils.showNotification('Control change deleted', 'success');
+    selectControlList(index) {
+        if (!appState.currentMidnam || !appState.currentMidnam.control_lists) return;
+        
+        const selectedList = appState.currentMidnam.control_lists[index];
+        if (selectedList) {
+            appState.currentMidnam.activeControlListName = selectedList.name;
+            // Mark as changed since we're changing which control list is active
+            appState.markAsChanged();
+            // Re-render to show the selected list
+            this.renderDeviceConfiguration();
+        }
+    }
+    
+    createNewControlList() {
+        if (!appState.currentMidnam) return;
+        
+        // Hide the menu
+        const menu = document.getElementById('control-list-menu');
+        if (menu) menu.style.display = 'none';
+        
+        // Initialize control_lists if it doesn't exist
+        if (!appState.currentMidnam.control_lists) {
+            appState.currentMidnam.control_lists = [];
+        }
+        
+        // Create new list with default controllers
+        const newList = {
+            name: 'Controls',
+            controls: [
+                { type: '7bit', number: 1, name: 'Modulation Wheel or Lever' },
+                { type: '7bit', number: 7, name: 'Channel Volume' },
+                { type: '7bit', number: 10, name: 'Pan' },
+                { type: '7bit', number: 11, name: 'Expression Controller' },
+                { type: '7bit', number: 64, name: 'Damper Pedal on/off (Sustain) ≤63 off, ≥64 on' }
+            ]
+        };
+        
+        // Add the new list
+        appState.currentMidnam.control_lists.push(newList);
+        appState.currentMidnam.activeControlListName = newList.name;
+        
+        // Mark as changed
+        appState.markAsChanged();
+        
+        // Re-render
+        this.renderDeviceConfiguration();
+        
+        Utils.showNotification('New control list created', 'success');
+    }
+    
+    duplicateControlList() {
+        if (!appState.currentMidnam || !appState.currentMidnam.control_lists || appState.currentMidnam.control_lists.length === 0) {
+            return;
+        }
+        
+        // Hide the menu
+        const menu = document.getElementById('control-list-menu');
+        if (menu) menu.style.display = 'none';
+        
+        // Find the currently active list
+        const activeListName = appState.currentMidnam.activeControlListName;
+        const activeList = appState.currentMidnam.control_lists.find(list => list.name === activeListName) || 
+                          appState.currentMidnam.control_lists[0];
+        
+        // Create a duplicate with a unique name
+        let baseName = activeList.name;
+        let counter = 1;
+        let newName = `${baseName} ${counter}`;
+        
+        // Find a unique name
+        while (appState.currentMidnam.control_lists.some(list => list.name === newName)) {
+            counter++;
+            newName = `${baseName} ${counter}`;
+        }
+        
+        // Create the duplicate
+        const duplicateList = {
+            name: newName,
+            controls: activeList.controls.map(control => ({ ...control })) // Deep copy
+        };
+        
+        // Add the duplicate
+        appState.currentMidnam.control_lists.push(duplicateList);
+        appState.currentMidnam.activeControlListName = duplicateList.name;
+        
+        // Mark as changed
+        appState.markAsChanged();
+        
+        // Re-render
+        this.renderDeviceConfiguration();
+        
+        Utils.showNotification(`Duplicated to "${newName}"`, 'success');
+    }
+    
+    // Control list editing methods
+    editControlList(index) {
+        // Toggle edit mode for this control list
+        if (this.editingControlListIndex === index) {
+            // Exit edit mode
+            this.editingControlListIndex = null;
+        } else {
+            // Enter edit mode
+            this.editingControlListIndex = index;
+        }
+        
+        // Re-render the device configuration to show/hide edit mode
+        this.renderDeviceConfiguration();
+    }
+    
+    updateControlListName(listIndex, newName) {
+        const controlList = appState.currentMidnam?.control_lists?.[listIndex];
+        if (!controlList) return;
+        
+        const trimmedName = newName.trim();
+        if (!trimmedName) {
+            Utils.showNotification('Control list name cannot be empty', 'warning');
+            this.renderDeviceConfiguration();
+            return;
+        }
+        
+        // Store the old name to check if this is the active list
+        const oldName = controlList.name;
+        
+        // Update the control list name
+        controlList.name = trimmedName;
+        
+        // If this was the active control list, update the activeControlListName reference
+        if (appState.currentMidnam.activeControlListName === oldName) {
+            appState.currentMidnam.activeControlListName = trimmedName;
+        }
+        
+        // Mark as changed
+        appState.markAsChanged();
+        
+        // Re-render to show updated name
+        this.renderDeviceConfiguration();
+    }
+    
+    renderControlListEditTable(controlList, listIndex) {
+        const controls = controlList.controls || [];
+        
+        if (controls.length === 0) {
+            return '<div class="empty-state">No controls in this list. Add controls using the + button.</div>';
+        }
+        
+        return `
+            <div class="control-edit-table-container">
+                <table class="control-edit-table">
+                    <thead>
+                        <tr>
+                            <th class="type-column">Type</th>
+                            <th>CC#</th>
+                            <th>Name</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="control-edit-tbody-${listIndex}">
+                        ${controls.map((control, index) => {
+                            const defaultName = this.midiControllerDefaults[control.number] || 'Unknown';
+                            const tooltipText = `CC${control.number}: ${defaultName}`;
+                            
+                            return `
+                                <tr data-control-index="${index}" title="${Utils.escapeHtml(tooltipText)}">
+                                    <td class="type-column">
+                                        <select class="control-type-select"
+                                                data-list-index="${listIndex}"
+                                                data-control-index="${index}"
+                                                tabindex="-1"
+                                                onchange="deviceManager.updateControlInList(${listIndex}, ${index}, 'type', this.value)">
+                                            <option value="7bit" ${control.type === '7bit' ? 'selected' : ''}>7bit</option>
+                                            <option value="14bit" ${control.type === '14bit' ? 'selected' : ''}>14bit</option>
+                                            <option value="RPN" ${control.type === 'RPN' ? 'selected' : ''}>RPN</option>
+                                            <option value="NRPN" ${control.type === 'NRPN' ? 'selected' : ''}>NRPN</option>
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <input type="number" 
+                                               class="control-number-input"
+                                               data-list-index="${listIndex}"
+                                               data-control-index="${index}"
+                                               tabindex="0"
+                                               value="${control.number}"
+                                               min="0"
+                                               max="127"
+                                               onkeydown="deviceManager.handleControlEditKeydown(event, ${listIndex}, ${index}, 'number')"
+                                               onchange="deviceManager.updateControlInList(${listIndex}, ${index}, 'number', this.value)">
+                                    </td>
+                                    <td>
+                                        <input type="text" 
+                                               class="control-name-input-edit"
+                                               data-list-index="${listIndex}"
+                                               data-control-index="${index}"
+                                               tabindex="0"
+                                               value="${Utils.escapeHtml(control.name)}"
+                                               onkeydown="deviceManager.handleControlEditKeydown(event, ${listIndex}, ${index}, 'name')"
+                                               onchange="deviceManager.updateControlInList(${listIndex}, ${index}, 'name', this.value)">
+                                    </td>
+                                    <td class="control-edit-actions">
+                                        <button class="btn btn-sm btn-outline-primary" 
+                                                tabindex="0"
+                                                data-list-index="${listIndex}"
+                                                data-control-index="${index}"
+                                                onkeydown="deviceManager.handleControlEditKeydown(event, ${listIndex}, ${index}, 'insert')"
+                                                onclick="deviceManager.insertControlInList(${listIndex}, ${index})"
+                                                title="Insert control after this one">
+                                            +I
+                                        </button>
+                                        <button class="btn btn-sm btn-danger" 
+                                                tabindex="-1"
+                                                onclick="deviceManager.deleteControlInList(${listIndex}, ${index})"
+                                                title="Delete this control">
+                                            ×
+                                        </button>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+    
+    updateControlInList(listIndex, controlIndex, field, value) {
+        const controlList = appState.currentMidnam?.control_lists?.[listIndex];
+        if (!controlList || !controlList.controls || !controlList.controls[controlIndex]) return;
+        
+        const control = controlList.controls[controlIndex];
+        
+        if (field === 'number') {
+            const numValue = parseInt(value);
+            if (isNaN(numValue) || numValue < 0 || numValue > 127) {
+                Utils.showNotification('Controller number must be between 0 and 127', 'warning');
+                return;
+            }
+            control[field] = numValue;
+            
+            // Update the tooltip by re-rendering
+            this.renderDeviceConfiguration();
+        } else {
+            control[field] = value;
+        }
+        
+        // Mark as changed
+        appState.markAsChanged();
+    }
+    
+    handleControlEditKeydown(event, listIndex, controlIndex, field) {
+        // Handle Enter key on name field - jump to Insert button
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            if (field === 'name') {
+                this.focusControlEditField(listIndex, controlIndex, 'insert');
+            } else if (field === 'insert') {
+                // Insert and focus new row
+                this.insertControlInList(listIndex, controlIndex);
+            }
+            return;
+        }
+        
+        if (event.key !== 'Tab') return;
+        
+        event.preventDefault();
+        
+        const tbody = document.getElementById(`control-edit-tbody-${listIndex}`);
+        if (!tbody) return;
+        
+        const rows = tbody.querySelectorAll('tr');
+        const currentRow = rows[controlIndex];
+        if (!currentRow) return;
+        
+        // Define field order (type is excluded from tab sequence)
+        const fields = ['number', 'name', 'insert'];
+        const currentFieldIndex = fields.indexOf(field);
+        
+        if (event.shiftKey) {
+            // Shift-Tab: go to previous field or previous row
+            if (currentFieldIndex === 0) {
+                // First field, go to last field of previous row
+                if (controlIndex > 0) {
+                    const prevRow = rows[controlIndex - 1];
+                    const insertBtn = prevRow.querySelector('button[tabindex="0"]');
+                    if (insertBtn) insertBtn.focus();
                 }
-            });
+            } else {
+                // Go to previous field in same row
+                const prevField = fields[currentFieldIndex - 1];
+                this.focusControlEditField(listIndex, controlIndex, prevField);
+            }
+        } else {
+            // Tab: go to next field or next row
+            if (currentFieldIndex === fields.length - 1) {
+                // Last field, go to first field of next row
+                if (controlIndex < rows.length - 1) {
+                    this.focusControlEditField(listIndex, controlIndex + 1, 'number');
+                }
+            } else {
+                // Go to next field in same row
+                const nextField = fields[currentFieldIndex + 1];
+                this.focusControlEditField(listIndex, controlIndex, nextField);
+            }
+        }
+    }
+    
+    focusControlEditField(listIndex, controlIndex, field) {
+        const tbody = document.getElementById(`control-edit-tbody-${listIndex}`);
+        if (!tbody) return;
+        
+        const row = tbody.querySelector(`tr[data-control-index="${controlIndex}"]`);
+        if (!row) return;
+        
+        let element;
+        if (field === 'number') {
+            element = row.querySelector('.control-number-input');
+        } else if (field === 'type') {
+            element = row.querySelector('.control-type-select');
+        } else if (field === 'name') {
+            element = row.querySelector('.control-name-input-edit');
+        } else if (field === 'insert') {
+            element = row.querySelector('button[tabindex="0"]');
+        }
+        
+        if (element) {
+            element.focus();
+            if (element.tagName === 'INPUT') {
+                element.select();
+            }
+        }
+    }
+    
+    insertControlInList(listIndex, controlIndex) {
+        const controlList = appState.currentMidnam?.control_lists?.[listIndex];
+        if (!controlList || !controlList.controls) return;
+        
+        const controls = controlList.controls;
+        
+        // Insert after the current row
+        const insertPosition = controlIndex + 1;
+        
+        // Find an unused controller number (start from 1)
+        let newControlNumber = 1;
+        const usedNumbers = new Set(controls.map(c => c.number));
+        while (usedNumbers.has(newControlNumber) && newControlNumber <= 127) {
+            newControlNumber++;
+        }
+        
+        // Get default name for this controller number
+        const defaultName = this.midiControllerDefaults[newControlNumber] || 'Undefined';
+        
+        // Create new control
+        const newControl = {
+            type: '7bit',
+            number: newControlNumber,
+            name: defaultName
+        };
+        
+        // Insert at position (after current row)
+        controls.splice(insertPosition, 0, newControl);
+        
+        appState.markAsChanged();
+        this.renderDeviceConfiguration();
+        
+        // Focus and select the name field of the new control
+        setTimeout(() => {
+            this.focusControlEditField(listIndex, insertPosition, 'name');
+        }, 0);
+    }
+    
+    deleteControlInList(listIndex, controlIndex) {
+        const controlList = appState.currentMidnam?.control_lists?.[listIndex];
+        if (!controlList || !controlList.controls) return;
+        
+        const controls = controlList.controls;
+        
+        if (controls.length === 1) {
+            Utils.showNotification('Cannot delete the last control', 'warning');
+            return;
+        }
+        
+        // Remove control
+        controls.splice(controlIndex, 1);
+        
+        appState.markAsChanged();
+        this.renderDeviceConfiguration();
     }
     
     // Method to refresh device data
@@ -887,12 +1485,49 @@ export class DeviceManager {
     // Patch list editing methods
     renderPatchListEditTable(patchList, listIndex) {
         const patches = patchList.patch || [];
+        const midiCommands = patchList.midi_commands || [];
+        
+        // MIDI Commands section
+        const midiCommandsHTML = `
+            <div class="midi-commands-editor">
+                <div class="midi-commands-header">
+                    <h5>Bank Select Controls</h5>
+                    <button class="btn btn-sm btn-primary" onclick="deviceManager.addMidiCommand(${listIndex})" title="Add MIDI Command">+</button>
+                </div>
+                ${midiCommands.length === 0 ? '<p class="empty-state">No MIDI commands defined for this bank</p>' : `
+                    <div class="midi-commands-list">
+                        ${midiCommands.map((cmd, cmdIndex) => `
+                            <div class="midi-command-item-edit">
+                                <label>Control:</label>
+                                <input type="number" 
+                                       class="midi-control-input"
+                                       value="${cmd.control || 0}"
+                                       min="0"
+                                       max="127"
+                                       onchange="deviceManager.updateMidiCommand(${listIndex}, ${cmdIndex}, 'control', this.value)">
+                                <label>Value:</label>
+                                <input type="number" 
+                                       class="midi-value-input"
+                                       value="${cmd.value || 0}"
+                                       min="0"
+                                       max="127"
+                                       onchange="deviceManager.updateMidiCommand(${listIndex}, ${cmdIndex}, 'value', this.value)">
+                                <button class="btn btn-sm btn-danger" 
+                                        onclick="deviceManager.deleteMidiCommand(${listIndex}, ${cmdIndex})"
+                                        title="Delete MIDI Command">×</button>
+                            </div>
+                        `).join('')}
+                    </div>
+                `}
+            </div>
+        `;
         
         if (patches.length === 0) {
-            return '<div class="empty-state">No patches in this bank. Add patches using the patch editor.</div>';
+            return midiCommandsHTML + '<div class="empty-state">No patches in this bank. Add patches using the patch editor.</div>';
         }
         
         return `
+            ${midiCommandsHTML}
             <div class="patch-edit-table-container">
                 <table class="patch-edit-table">
                     <thead>
@@ -991,6 +1626,83 @@ export class DeviceManager {
         
         // Mark as changed
         appState.markAsChanged();
+    }
+    
+    // MIDI Command editing methods
+    addMidiCommand(listIndex) {
+        const patchList = appState.currentMidnam?.patchList?.[listIndex];
+        if (!patchList) return;
+        
+        if (!patchList.midi_commands) {
+            patchList.midi_commands = [];
+        }
+        
+        // Add a new MIDI command with default values
+        patchList.midi_commands.push({
+            type: 'ControlChange',
+            control: 0,
+            value: 0
+        });
+        
+        // Mark as changed
+        appState.markAsChanged();
+        
+        // Re-render
+        this.renderDeviceConfiguration();
+        
+        // Ensure the patch bank stays expanded after render
+        setTimeout(() => {
+            const element = document.querySelector(`[data-index="${listIndex}"] .collapsible-content`);
+            if (element) {
+                element.style.display = 'block';
+                const parent = element.closest('.collapsible');
+                if (parent) {
+                    parent.classList.add('expanded');
+                }
+            }
+        }, 0);
+    }
+    
+    updateMidiCommand(listIndex, cmdIndex, field, value) {
+        const patchList = appState.currentMidnam?.patchList?.[listIndex];
+        if (!patchList || !patchList.midi_commands || !patchList.midi_commands[cmdIndex]) return;
+        
+        const numValue = parseInt(value);
+        if (isNaN(numValue) || numValue < 0 || numValue > 127) {
+            Utils.showNotification('Value must be between 0 and 127', 'warning');
+            return;
+        }
+        
+        patchList.midi_commands[cmdIndex][field] = numValue.toString();
+        
+        // Mark as changed
+        appState.markAsChanged();
+    }
+    
+    deleteMidiCommand(listIndex, cmdIndex) {
+        const patchList = appState.currentMidnam?.patchList?.[listIndex];
+        if (!patchList || !patchList.midi_commands) return;
+        
+        // Remove the MIDI command
+        patchList.midi_commands.splice(cmdIndex, 1);
+        
+        // Mark as changed
+        appState.markAsChanged();
+        
+        // Re-render
+        this.renderDeviceConfiguration();
+        
+        // Ensure the patch bank stays expanded after render
+        setTimeout(() => {
+            const element = document.querySelector(`[data-index="${listIndex}"] .collapsible-content`);
+            if (element) {
+                element.style.display = 'block';
+                const parent = element.closest('.collapsible');
+                if (parent) {
+                    parent.classList.add('expanded');
+                }
+            }
+        }, 0);
     }
     
     updatePatchInList(listIndex, patchIndex, field, value) {

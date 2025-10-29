@@ -242,8 +242,10 @@ export class ManufacturerManager {
             const manufacturersData = await manufacturerResponse.json();
             const devices = manufacturersData.manufacturers[manufacturer] || [];
             
-            // Find all devices with matching ID
-            const matchingDevices = devices.filter(d => d.id === deviceId);
+            // Find all devices with matching ID, but exclude .middev files (we can only open .midnam files)
+            const matchingDevices = devices.filter(d => {
+                return d.id === deviceId && d.file_path && d.file_path.endsWith('.midnam');
+            });
             
             if (matchingDevices.length > 1) {
                 // Multiple files - show disambiguation dialog
@@ -256,9 +258,12 @@ export class ManufacturerManager {
                 // Single file - load directly
                 await this.loadDeviceFile(matchingDevices[0], deviceId, manufacturer, model);
             } else {
-                // No match found
-                Utils.showNotification(`Device "${model}" not found`, 'warning');
-                console.warn(`Device not found: ${deviceId}`);
+                // No match found - device exists in middev but has no midnam file
+                // Offer to create one
+                const shouldCreate = await this.offerToCreateMidnam(manufacturer, model);
+                if (shouldCreate) {
+                    await this.createAndLoadMidnam(manufacturer, model, deviceId);
+                }
             }
             
         } catch (error) {
@@ -311,6 +316,120 @@ export class ManufacturerManager {
         } catch (error) {
             console.error('Error loading device file:', error);
             Utils.showNotification('Failed to load device', 'error');
+        }
+    }
+    
+    async offerToCreateMidnam(manufacturer, model) {
+        // Get modal component
+        let modal = window.modal;
+        if (!modal) {
+            try {
+                const modalModule = await import('../components/modal.js');
+                modal = modalModule.modal;
+            } catch (error) {
+                console.error('Failed to load modal:', error);
+                // Fall back to confirm dialog
+                return confirm(`${model} does not have a MIDI Name Document. Create one?`);
+            }
+        }
+        
+        const confirmed = await modal.confirm(
+            `<strong>${Utils.escapeHtml(model)}</strong> does not have a MIDI Name Document.<br><br>Would you like to create one?`,
+            'Create MIDI Name Document',
+            {
+                confirmText: 'Create',
+                cancelText: 'Cancel'
+            }
+        );
+        
+        return confirmed;
+    }
+    
+    async createAndLoadMidnam(manufacturer, model, deviceId) {
+        try {
+            // Call the API to create the midnam file
+            const response = await fetch('/api/middev/add-device', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    manufacturer: manufacturer,
+                    model: model
+                })
+            });
+            
+            if (!response.ok) {
+                let errorMessage = 'Failed to create MIDI Name Document';
+                try {
+                    const errorData = await response.json();
+                    errorMessage = errorData.error || errorData.message || errorMessage;
+                } catch (e) {
+                    // If we can't parse the error response, use the status text
+                    errorMessage = response.statusText || errorMessage;
+                }
+                throw new Error(errorMessage);
+            }
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                Utils.showNotification(`Created MIDI Name Document for ${model}`, 'success');
+                
+                // Refresh the catalog to include the new device
+                if (window.middevManager) {
+                    await window.middevManager.clearCatalogCache();
+                }
+                
+                // Small delay to ensure file is written
+                await new Promise(resolve => setTimeout(resolve, 200));
+                
+                // Fetch the newly created device
+                const deviceResponse = await fetch(`/api/device/${encodeURIComponent(deviceId)}?file=${encodeURIComponent(result.midnam_path)}`);
+                
+                if (!deviceResponse.ok) {
+                    throw new Error('Failed to load newly created device');
+                }
+                
+                const deviceData = await deviceResponse.json();
+                
+                // Ensure deviceData has file_path
+                if (!deviceData.file_path) {
+                    deviceData.file_path = result.midnam_path;
+                }
+                
+                // Store device data
+                appState.selectedDevice = { 
+                    id: deviceId, 
+                    name: model, 
+                    manufacturer,
+                    file_path: result.midnam_path
+                };
+                appState.currentMidnam = deviceData;
+                
+                // Transform device data for frontend
+                await this.transformDeviceData(deviceData);
+                
+                // Switch to device tab
+                if (window.tabManager) {
+                    window.tabManager.switchTab('device');
+                }
+                
+                // Render device configuration
+                if (window.deviceManager && window.deviceManager.renderDeviceConfiguration) {
+                    window.deviceManager.renderDeviceConfiguration();
+                }
+                
+                // Refresh the manufacturer list to show the new device
+                await this.refreshManufacturerList();
+                
+            } else {
+                throw new Error(result.message || 'Failed to create MIDI Name Document');
+            }
+            
+        } catch (error) {
+            console.error('Error creating MIDI Name Document:', error);
+            Utils.showNotification(`Failed to create MIDI Name Document: ${error.message}`, 'error');
         }
     }
     
@@ -388,13 +507,14 @@ export class ManufacturerManager {
             }));
         }
         
-        // Extract note lists from XML
+        // Extract note lists and control name lists from XML
         if (deviceData.raw_xml) {
             try {
                 const parser = new DOMParser();
                 const xmlDoc = parser.parseFromString(deviceData.raw_xml, 'text/xml');
-                const noteLists = xmlDoc.querySelectorAll('NoteNameList');
                 
+                // Parse Note Lists
+                const noteLists = xmlDoc.querySelectorAll('NoteNameList');
                 deviceData.note_lists = Array.from(noteLists).map(noteList => {
                     const name = noteList.getAttribute('Name');
                     const notes = Array.from(noteList.querySelectorAll('Note')).map(note => ({
@@ -404,9 +524,31 @@ export class ManufacturerManager {
                     
                     return { name, notes };
                 });
+                
+                // Parse Control Name Lists
+                const controlLists = xmlDoc.querySelectorAll('ControlNameList');
+                deviceData.control_lists = Array.from(controlLists).map(controlList => {
+                    const name = controlList.getAttribute('Name');
+                    const controls = Array.from(controlList.querySelectorAll('Control')).map(control => ({
+                        type: control.getAttribute('Type') || '7bit',
+                        number: parseInt(control.getAttribute('Number')),
+                        name: control.getAttribute('Name')
+                    }));
+                    
+                    return { name, controls };
+                });
+                
+                // Parse which ControlNameList is used by ChannelNameSet
+                const channelNameSets = xmlDoc.querySelectorAll('ChannelNameSet');
+                if (channelNameSets.length > 0) {
+                    const firstChannelNameSet = channelNameSets[0];
+                    const usesControlList = firstChannelNameSet.querySelector('UsesControlNameList');
+                    deviceData.activeControlListName = usesControlList ? usesControlList.getAttribute('Name') : null;
+                }
             } catch (xmlError) {
-                console.warn('Failed to parse XML for note lists:', xmlError);
+                console.warn('Failed to parse XML for note/control lists:', xmlError);
                 deviceData.note_lists = [];
+                deviceData.control_lists = [];
             }
         }
         
