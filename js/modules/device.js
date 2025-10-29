@@ -7,6 +7,7 @@ export class DeviceManager {
     constructor() {
         this.validationState = 'unvalidated'; // Track validation state: unvalidated, validated, invalid
         this.editingPatchListIndex = null; // Track which patch list is being edited
+        this.editingControlListIndex = null; // Track which control list is being edited
         
         // MIDI Controller defaults map (from MIDI.midnam)
         this.midiControllerDefaults = {
@@ -505,21 +506,36 @@ export class DeviceManager {
                 ${selectedList ? `
                     <div class="control-list-content">
                         <div class="control-list-info">
-                            <p><strong>${Utils.escapeHtml(selectedList.name)}</strong> - ${selectedList.controls.length} controller(s)</p>
+                            ${this.editingControlListIndex === selectedListIndex ? `
+                                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                    <input type="text" 
+                                           class="control-list-name-input"
+                                           value="${Utils.escapeHtml(selectedList.name)}"
+                                           onchange="deviceManager.updateControlListName(${selectedListIndex}, this.value)"
+                                           style="font-weight: 600; padding: 0.375rem 0.5rem; border: 1px solid #ced4da; border-radius: 4px; font-size: 0.9rem;">
+                                    <span> - ${selectedList.controls.length} controller(s)</span>
+                                </div>
+                            ` : `
+                                <p><strong>${Utils.escapeHtml(selectedList.name)}</strong> - ${selectedList.controls.length} controller(s)</p>
+                            `}
+                            <button class="btn btn-small btn-primary" onclick="deviceManager.editControlList(${selectedListIndex})">${this.editingControlListIndex === selectedListIndex ? 'Done' : 'Edit'}</button>
                         </div>
-                        <div class="control-list-items">
-                            ${selectedList.controls.map(control => {
-                                const defaultName = this.midiControllerDefaults[control.number] || 'Unknown';
-                                const tooltipText = `CC${control.number}: ${defaultName}`;
-                                return `
-                                    <div class="control-item" title="${Utils.escapeHtml(tooltipText)}">
-                                        <span class="control-number">CC${control.number}</span>
-                                        <span class="control-type">${control.type}</span>
-                                        <span class="control-name">${Utils.escapeHtml(control.name)}</span>
-                                    </div>
-                                `;
-                            }).join('')}
-                        </div>
+                        ${this.editingControlListIndex === selectedListIndex ? 
+                            this.renderControlListEditTable(selectedList, selectedListIndex) :
+                            `<div class="control-list-items">
+                                ${selectedList.controls.map(control => {
+                                    const defaultName = this.midiControllerDefaults[control.number] || 'Unknown';
+                                    const tooltipText = `CC${control.number}: ${defaultName}`;
+                                    return `
+                                        <div class="control-item" title="${Utils.escapeHtml(tooltipText)}">
+                                            <span class="control-number">CC${control.number}</span>
+                                            <span class="control-type">${control.type}</span>
+                                            <span class="control-name">${Utils.escapeHtml(control.name)}</span>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>`
+                        }
                     </div>
                 ` : '<div class="empty-state">No control lists defined. Click + to create one.</div>'}
             </div>
@@ -1151,6 +1167,298 @@ export class DeviceManager {
         this.renderDeviceConfiguration();
         
         Utils.showNotification(`Duplicated to "${newName}"`, 'success');
+    }
+    
+    // Control list editing methods
+    editControlList(index) {
+        // Toggle edit mode for this control list
+        if (this.editingControlListIndex === index) {
+            // Exit edit mode
+            this.editingControlListIndex = null;
+        } else {
+            // Enter edit mode
+            this.editingControlListIndex = index;
+        }
+        
+        // Re-render the device configuration to show/hide edit mode
+        this.renderDeviceConfiguration();
+    }
+    
+    updateControlListName(listIndex, newName) {
+        const controlList = appState.currentMidnam?.control_lists?.[listIndex];
+        if (!controlList) return;
+        
+        const trimmedName = newName.trim();
+        if (!trimmedName) {
+            Utils.showNotification('Control list name cannot be empty', 'warning');
+            this.renderDeviceConfiguration();
+            return;
+        }
+        
+        // Store the old name to check if this is the active list
+        const oldName = controlList.name;
+        
+        // Update the control list name
+        controlList.name = trimmedName;
+        
+        // If this was the active control list, update the activeControlListName reference
+        if (appState.currentMidnam.activeControlListName === oldName) {
+            appState.currentMidnam.activeControlListName = trimmedName;
+        }
+        
+        // Mark as changed
+        appState.markAsChanged();
+        
+        // Re-render to show updated name
+        this.renderDeviceConfiguration();
+    }
+    
+    renderControlListEditTable(controlList, listIndex) {
+        const controls = controlList.controls || [];
+        
+        if (controls.length === 0) {
+            return '<div class="empty-state">No controls in this list. Add controls using the + button.</div>';
+        }
+        
+        return `
+            <div class="control-edit-table-container">
+                <table class="control-edit-table">
+                    <thead>
+                        <tr>
+                            <th class="type-column">Type</th>
+                            <th>CC#</th>
+                            <th>Name</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="control-edit-tbody-${listIndex}">
+                        ${controls.map((control, index) => {
+                            const defaultName = this.midiControllerDefaults[control.number] || 'Unknown';
+                            const tooltipText = `CC${control.number}: ${defaultName}`;
+                            
+                            return `
+                                <tr data-control-index="${index}" title="${Utils.escapeHtml(tooltipText)}">
+                                    <td class="type-column">
+                                        <select class="control-type-select"
+                                                data-list-index="${listIndex}"
+                                                data-control-index="${index}"
+                                                tabindex="-1"
+                                                onchange="deviceManager.updateControlInList(${listIndex}, ${index}, 'type', this.value)">
+                                            <option value="7bit" ${control.type === '7bit' ? 'selected' : ''}>7bit</option>
+                                            <option value="14bit" ${control.type === '14bit' ? 'selected' : ''}>14bit</option>
+                                            <option value="RPN" ${control.type === 'RPN' ? 'selected' : ''}>RPN</option>
+                                            <option value="NRPN" ${control.type === 'NRPN' ? 'selected' : ''}>NRPN</option>
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <input type="number" 
+                                               class="control-number-input"
+                                               data-list-index="${listIndex}"
+                                               data-control-index="${index}"
+                                               tabindex="0"
+                                               value="${control.number}"
+                                               min="0"
+                                               max="127"
+                                               onkeydown="deviceManager.handleControlEditKeydown(event, ${listIndex}, ${index}, 'number')"
+                                               onchange="deviceManager.updateControlInList(${listIndex}, ${index}, 'number', this.value)">
+                                    </td>
+                                    <td>
+                                        <input type="text" 
+                                               class="control-name-input-edit"
+                                               data-list-index="${listIndex}"
+                                               data-control-index="${index}"
+                                               tabindex="0"
+                                               value="${Utils.escapeHtml(control.name)}"
+                                               onkeydown="deviceManager.handleControlEditKeydown(event, ${listIndex}, ${index}, 'name')"
+                                               onchange="deviceManager.updateControlInList(${listIndex}, ${index}, 'name', this.value)">
+                                    </td>
+                                    <td class="control-edit-actions">
+                                        <button class="btn btn-sm btn-outline-primary" 
+                                                tabindex="0"
+                                                data-list-index="${listIndex}"
+                                                data-control-index="${index}"
+                                                onkeydown="deviceManager.handleControlEditKeydown(event, ${listIndex}, ${index}, 'insert')"
+                                                onclick="deviceManager.insertControlInList(${listIndex}, ${index})"
+                                                title="Insert control after this one">
+                                            +I
+                                        </button>
+                                        <button class="btn btn-sm btn-danger" 
+                                                tabindex="-1"
+                                                onclick="deviceManager.deleteControlInList(${listIndex}, ${index})"
+                                                title="Delete this control">
+                                            ×
+                                        </button>
+                                    </td>
+                                </tr>
+                            `;
+                        }).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+    }
+    
+    updateControlInList(listIndex, controlIndex, field, value) {
+        const controlList = appState.currentMidnam?.control_lists?.[listIndex];
+        if (!controlList || !controlList.controls || !controlList.controls[controlIndex]) return;
+        
+        const control = controlList.controls[controlIndex];
+        
+        if (field === 'number') {
+            const numValue = parseInt(value);
+            if (isNaN(numValue) || numValue < 0 || numValue > 127) {
+                Utils.showNotification('Controller number must be between 0 and 127', 'warning');
+                return;
+            }
+            control[field] = numValue;
+            
+            // Update the tooltip by re-rendering
+            this.renderDeviceConfiguration();
+        } else {
+            control[field] = value;
+        }
+        
+        // Mark as changed
+        appState.markAsChanged();
+    }
+    
+    handleControlEditKeydown(event, listIndex, controlIndex, field) {
+        // Handle Enter key on name field - jump to Insert button
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            if (field === 'name') {
+                this.focusControlEditField(listIndex, controlIndex, 'insert');
+            } else if (field === 'insert') {
+                // Insert and focus new row
+                this.insertControlInList(listIndex, controlIndex);
+            }
+            return;
+        }
+        
+        if (event.key !== 'Tab') return;
+        
+        event.preventDefault();
+        
+        const tbody = document.getElementById(`control-edit-tbody-${listIndex}`);
+        if (!tbody) return;
+        
+        const rows = tbody.querySelectorAll('tr');
+        const currentRow = rows[controlIndex];
+        if (!currentRow) return;
+        
+        // Define field order (type is excluded from tab sequence)
+        const fields = ['number', 'name', 'insert'];
+        const currentFieldIndex = fields.indexOf(field);
+        
+        if (event.shiftKey) {
+            // Shift-Tab: go to previous field or previous row
+            if (currentFieldIndex === 0) {
+                // First field, go to last field of previous row
+                if (controlIndex > 0) {
+                    const prevRow = rows[controlIndex - 1];
+                    const insertBtn = prevRow.querySelector('button[tabindex="0"]');
+                    if (insertBtn) insertBtn.focus();
+                }
+            } else {
+                // Go to previous field in same row
+                const prevField = fields[currentFieldIndex - 1];
+                this.focusControlEditField(listIndex, controlIndex, prevField);
+            }
+        } else {
+            // Tab: go to next field or next row
+            if (currentFieldIndex === fields.length - 1) {
+                // Last field, go to first field of next row
+                if (controlIndex < rows.length - 1) {
+                    this.focusControlEditField(listIndex, controlIndex + 1, 'number');
+                }
+            } else {
+                // Go to next field in same row
+                const nextField = fields[currentFieldIndex + 1];
+                this.focusControlEditField(listIndex, controlIndex, nextField);
+            }
+        }
+    }
+    
+    focusControlEditField(listIndex, controlIndex, field) {
+        const tbody = document.getElementById(`control-edit-tbody-${listIndex}`);
+        if (!tbody) return;
+        
+        const row = tbody.querySelector(`tr[data-control-index="${controlIndex}"]`);
+        if (!row) return;
+        
+        let element;
+        if (field === 'number') {
+            element = row.querySelector('.control-number-input');
+        } else if (field === 'type') {
+            element = row.querySelector('.control-type-select');
+        } else if (field === 'name') {
+            element = row.querySelector('.control-name-input-edit');
+        } else if (field === 'insert') {
+            element = row.querySelector('button[tabindex="0"]');
+        }
+        
+        if (element) {
+            element.focus();
+            if (element.tagName === 'INPUT') {
+                element.select();
+            }
+        }
+    }
+    
+    insertControlInList(listIndex, controlIndex) {
+        const controlList = appState.currentMidnam?.control_lists?.[listIndex];
+        if (!controlList || !controlList.controls) return;
+        
+        const controls = controlList.controls;
+        
+        // Insert after the current row
+        const insertPosition = controlIndex + 1;
+        
+        // Find an unused controller number (start from 1)
+        let newControlNumber = 1;
+        const usedNumbers = new Set(controls.map(c => c.number));
+        while (usedNumbers.has(newControlNumber) && newControlNumber <= 127) {
+            newControlNumber++;
+        }
+        
+        // Get default name for this controller number
+        const defaultName = this.midiControllerDefaults[newControlNumber] || 'Undefined';
+        
+        // Create new control
+        const newControl = {
+            type: '7bit',
+            number: newControlNumber,
+            name: defaultName
+        };
+        
+        // Insert at position (after current row)
+        controls.splice(insertPosition, 0, newControl);
+        
+        appState.markAsChanged();
+        this.renderDeviceConfiguration();
+        
+        // Focus and select the name field of the new control
+        setTimeout(() => {
+            this.focusControlEditField(listIndex, insertPosition, 'name');
+        }, 0);
+    }
+    
+    deleteControlInList(listIndex, controlIndex) {
+        const controlList = appState.currentMidnam?.control_lists?.[listIndex];
+        if (!controlList || !controlList.controls) return;
+        
+        const controls = controlList.controls;
+        
+        if (controls.length === 1) {
+            Utils.showNotification('Cannot delete the last control', 'warning');
+            return;
+        }
+        
+        // Remove control
+        controls.splice(controlIndex, 1);
+        
+        appState.markAsChanged();
+        this.renderDeviceConfiguration();
     }
     
     // Method to refresh device data

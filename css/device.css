@@ -912,6 +912,9 @@
     background: #e3f2fd;
     border-left: 3px solid #1976d2;
     border-radius: 4px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .control-list-info p {
@@ -969,4 +972,90 @@
     flex: 1;
     color: #495057;
     font-weight: 500;
+}
+
+/* Control Edit Table */
+.control-edit-table-container {
+    margin-top: 1rem;
+    overflow-x: auto;
+}
+
+.control-edit-table {
+    width: 100%;
+    border-collapse: collapse;
+    background: white;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.control-edit-table thead {
+    background: #f8f9fa;
+    border-bottom: 2px solid #dee2e6;
+}
+
+.control-edit-table th {
+    padding: 0.75rem;
+    text-align: left;
+    font-weight: 600;
+    color: #495057;
+    font-size: 0.9rem;
+}
+
+.control-edit-table th.type-column {
+    width: 70px;
+    padding: 0.5rem;
+}
+
+.control-edit-table tbody tr {
+    border-bottom: 1px solid #e9ecef;
+    transition: background-color 0.2s;
+}
+
+.control-edit-table tbody tr:hover {
+    background: #f8f9fa;
+}
+
+.control-edit-table td {
+    padding: 0.5rem 0.75rem;
+}
+
+.control-number-input {
+    width: 80px;
+    padding: 0.375rem 0.5rem;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 0.9rem;
+}
+
+.control-type-select {
+    width: 70px;
+    padding: 0.25rem 0.25rem;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 0.85rem;
+    background: white;
+}
+
+.control-edit-table .type-column {
+    width: 70px;
+    padding: 0.25rem 0.5rem;
+}
+
+.control-name-input-edit {
+    width: 100%;
+    padding: 0.375rem 0.5rem;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 0.9rem;
+}
+
+.control-edit-actions {
+    text-align: right;
+    white-space: nowrap;
+}
+
+.control-edit-actions button {
+    margin-left: 0.25rem;
 }
