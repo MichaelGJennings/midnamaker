@@ -336,6 +336,26 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                                 if 'name' in midnam_bank:
                                     patch_bank.set('Name', midnam_bank['name'])
                                 
+                                # Update MIDI commands for this bank
+                                if 'midi_commands' in midnam_bank:
+                                    # Remove existing MIDICommands
+                                    existing_midi_commands = patch_bank.find('MIDICommands')
+                                    if existing_midi_commands is not None:
+                                        patch_bank.remove(existing_midi_commands)
+                                    
+                                    # Add new MIDICommands if there are any
+                                    if midnam_bank['midi_commands']:
+                                        midi_commands_elem = ET.Element('MIDICommands')
+                                        # Insert MIDICommands before PatchNameList
+                                        patch_name_list_index = list(patch_bank).index(patch_bank.find('PatchNameList')) if patch_bank.find('PatchNameList') is not None else 0
+                                        patch_bank.insert(patch_name_list_index, midi_commands_elem)
+                                        
+                                        for cmd in midnam_bank['midi_commands']:
+                                            if cmd.get('type') == 'ControlChange':
+                                                cc_elem = ET.SubElement(midi_commands_elem, 'ControlChange')
+                                                cc_elem.set('Control', str(cmd.get('control', '0')))
+                                                cc_elem.set('Value', str(cmd.get('value', '0')))
+                                
                                 # Update patches in this bank
                                 if 'patch' in midnam_bank:
                                     patch_name_list = patch_bank.find('PatchNameList')
@@ -359,6 +379,15 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                                 new_patch_bank = ET.SubElement(channel_name_set, 'PatchBank')
                                 new_patch_bank.set('Name', midnam_bank.get('name', f'New Bank {bank_index + 1}'))
                                 
+                                # Add MIDI commands if present
+                                if 'midi_commands' in midnam_bank and midnam_bank['midi_commands']:
+                                    midi_commands_elem = ET.SubElement(new_patch_bank, 'MIDICommands')
+                                    for cmd in midnam_bank['midi_commands']:
+                                        if cmd.get('type') == 'ControlChange':
+                                            cc_elem = ET.SubElement(midi_commands_elem, 'ControlChange')
+                                            cc_elem.set('Control', str(cmd.get('control', '0')))
+                                            cc_elem.set('Value', str(cmd.get('value', '0')))
+                                
                                 # Add PatchNameList
                                 patch_name_list = ET.SubElement(new_patch_bank, 'PatchNameList')
                                 
@@ -371,6 +400,79 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                                         patch_elem.set('ProgramChange', str(patch_data.get('programChange', '')))
                                 
                                 print(f"[save_midnam_structure] Created new bank: {midnam_bank.get('name', f'New Bank {bank_index + 1}')}")
+            
+            # Update NoteNameLists
+            for master_device in root.findall('.//MasterDeviceNames'):
+                if 'note_lists' in midnam:
+                    # Remove existing NoteNameLists
+                    existing_note_lists = master_device.findall('NoteNameList')
+                    for note_list in existing_note_lists:
+                        master_device.remove(note_list)
+                    
+                    # Add new NoteNameLists
+                    for note_list_data in midnam['note_lists']:
+                        note_list_elem = ET.Element('NoteNameList')
+                        note_list_elem.set('Name', note_list_data.get('name', 'Notes'))
+                        
+                        # Add Note elements
+                        if 'notes' in note_list_data:
+                            for note in note_list_data['notes']:
+                                note_elem = ET.SubElement(note_list_elem, 'Note')
+                                note_elem.set('Number', str(note.get('number', 0)))
+                                note_elem.set('Name', note.get('name', ''))
+                        
+                        # Append to master device (before ControlNameLists if they exist)
+                        master_device.append(note_list_elem)
+                        print(f"[save_midnam_structure] Saved NoteNameList: {note_list_data.get('name', 'Notes')}")
+            
+            # Update ControlNameLists
+            for master_device in root.findall('.//MasterDeviceNames'):
+                # Update or create ControlNameLists
+                if 'control_lists' in midnam:
+                    # Remove existing ControlNameLists
+                    existing_control_lists = master_device.findall('ControlNameList')
+                    for control_list in existing_control_lists:
+                        master_device.remove(control_list)
+                    
+                    # Add new ControlNameLists
+                    for control_list_data in midnam['control_lists']:
+                        control_list_elem = ET.Element('ControlNameList')
+                        control_list_elem.set('Name', control_list_data.get('name', 'Controls'))
+                        
+                        # Add Control elements
+                        if 'controls' in control_list_data:
+                            for control in control_list_data['controls']:
+                                control_elem = ET.SubElement(control_list_elem, 'Control')
+                                control_elem.set('Type', control.get('type', '7bit'))
+                                control_elem.set('Number', str(control.get('number', 0)))
+                                control_elem.set('Name', control.get('name', ''))
+                        
+                        # Append to master device (at the end)
+                        master_device.append(control_list_elem)
+                        print(f"[save_midnam_structure] Saved ControlNameList: {control_list_data.get('name', 'Controls')}")
+                
+                # Update UsesControlNameList in ChannelNameSets (independent of control_lists changes)
+                if 'activeControlListName' in midnam and midnam['activeControlListName']:
+                    for channel_name_set in master_device.findall('.//ChannelNameSet'):
+                        # Remove existing UsesControlNameList
+                        existing_uses = channel_name_set.find('UsesControlNameList')
+                        if existing_uses is not None:
+                            channel_name_set.remove(existing_uses)
+                        
+                        # Add new UsesControlNameList (insert after AvailableForChannels)
+                        uses_control_elem = ET.Element('UsesControlNameList')
+                        uses_control_elem.set('Name', midnam['activeControlListName'])
+                        
+                        # Find the position to insert (after AvailableForChannels)
+                        available_for_channels = channel_name_set.find('AvailableForChannels')
+                        if available_for_channels is not None:
+                            insert_index = list(channel_name_set).index(available_for_channels) + 1
+                            channel_name_set.insert(insert_index, uses_control_elem)
+                        else:
+                            # If no AvailableForChannels, insert at beginning
+                            channel_name_set.insert(0, uses_control_elem)
+                        
+                        print(f"[save_midnam_structure] Set active ControlNameList: {midnam['activeControlListName']}")
             
             # Create backup
             backup_name = f'{file_path}.backup.{datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}'
@@ -1755,95 +1857,94 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                 root = tree.getroot()
             
             # Check if device already exists
+            device_already_exists = False
+            backup_name = None
             for device_type in root.findall('MIDIDeviceType'):
                 existing_model = device_type.get('Model', '')
                 if existing_model == model:
-                    self.send_response(400)
-                    self.send_header('Content-Type', 'application/json')
-                    self.end_headers()
-                    self.wfile.write(json.dumps({
-                        'error': f'Device "{model}" already exists in {filename}'
-                    }).encode())
-                    return
+                    device_already_exists = True
+                    print(f"[add_device_to_middev] Device '{model}' already exists in {filename}, will create .midnam only")
+                    break
             
-            # Create new MIDIDeviceType element with default attributes
-            device_type = ET.Element('MIDIDeviceType', {
-                'Manufacturer': manufacturer,
-                'Model': model,
-                'SupportsGeneralMIDI': 'false',
-                'SupportsMMC': 'false',
-                'IsSampler': 'false',
-                'IsDrumMachine': 'false',
-                'IsMixer': 'false',
-                'IsEffectUnit': 'false'
-            })
-            
-            # Add default DeviceID element
-            device_id = ET.SubElement(device_type, 'DeviceID', {
-                'Min': '1',
-                'Max': '16',
-                'Default': '1',
-                'Base': '1'
-            })
-            
-            # Add default Receives element
-            receives = ET.SubElement(device_type, 'Receives', {
-                'MaxChannels': '16',
-                'MTC': 'false',
-                'Clock': 'false',
-                'Notes': 'true',
-                'ProgramChanges': 'true',
-                'BankSelectMSB': 'false',
-                'BankSelectLSB': 'false',
-                'PanDisruptsStereo': 'false'
-            })
-            
-            # Add default Transmits element
-            transmits = ET.SubElement(device_type, 'Transmits', {
-                'MaxChannels': '1',
-                'MTC': 'false',
-                'Clock': 'false',
-                'Notes': 'true',
-                'ProgramChanges': 'true',
-                'BankSelectMSB': 'false',
-                'BankSelectLSB': 'false'
-            })
-            
-            # Append new device to root
-            root.append(device_type)
-            
-            # Create backup before modifying (only if file already existed)
-            backup_name = None
-            if os.path.exists(file_path):
-                backup_name = f'{file_path}.backup.{datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}'
-                shutil.copy(file_path, backup_name)
-            
-            # Write updated XML
-            xml_str = ET.tostring(root, encoding='unicode', method='xml')
-            
-            # Pretty print the XML
-            dom = minidom.parseString(xml_str)
-            pretty_xml = dom.toprettyxml(indent='\t', encoding=None)
-            
-            # Remove extra blank lines
-            lines = [line for line in pretty_xml.split('\n') if line.strip()]
-            pretty_xml = '\n'.join(lines[1:])  # Skip the XML declaration from minidom
-            
-            # Add proper declaration and doctype
-            xml_declaration = '<?xml version="1.0" encoding="UTF-8"?>\n'
-            doctype = '<!DOCTYPE MIDIDeviceTypes PUBLIC "-//MIDI Manufacturers Association//DTD MIDIDeviceTypes 0.3//EN" "http://www.sonosphere.com/dtds/MIDIDeviceTypes.dtd">\n\n'
-            full_xml = xml_declaration + doctype + pretty_xml
-            
-            # Write to file
-            with open(file_path, 'w', encoding='utf-8') as f:
-                f.write(full_xml)
-            
-            if backup_name:
-                print(f"[add_device_to_middev] Updated {file_path}, created backup: {backup_name}")
-            else:
-                print(f"[add_device_to_middev] Created new .middev file: {file_path}")
-            
-            print(f"[add_device_to_middev] Added device '{model}' to {file_path}")
+            # Only add device to middev if it doesn't already exist
+            if not device_already_exists:
+                # Create new MIDIDeviceType element with default attributes
+                device_type = ET.Element('MIDIDeviceType', {
+                    'Manufacturer': manufacturer,
+                    'Model': model,
+                    'SupportsGeneralMIDI': 'false',
+                    'SupportsMMC': 'false',
+                    'IsSampler': 'false',
+                    'IsDrumMachine': 'false',
+                    'IsMixer': 'false',
+                    'IsEffectUnit': 'false'
+                })
+                
+                # Add default DeviceID element
+                device_id = ET.SubElement(device_type, 'DeviceID', {
+                    'Min': '1',
+                    'Max': '16',
+                    'Default': '1',
+                    'Base': '1'
+                })
+                
+                # Add default Receives element
+                receives = ET.SubElement(device_type, 'Receives', {
+                    'MaxChannels': '16',
+                    'MTC': 'false',
+                    'Clock': 'false',
+                    'Notes': 'true',
+                    'ProgramChanges': 'true',
+                    'BankSelectMSB': 'false',
+                    'BankSelectLSB': 'false',
+                    'PanDisruptsStereo': 'false'
+                })
+                
+                # Add default Transmits element
+                transmits = ET.SubElement(device_type, 'Transmits', {
+                    'MaxChannels': '1',
+                    'MTC': 'false',
+                    'Clock': 'false',
+                    'Notes': 'true',
+                    'ProgramChanges': 'true',
+                    'BankSelectMSB': 'false',
+                    'BankSelectLSB': 'false'
+                })
+                
+                # Append new device to root
+                root.append(device_type)
+                
+                # Create backup before modifying (only if file already existed)
+                if os.path.exists(file_path):
+                    backup_name = f'{file_path}.backup.{datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}'
+                    shutil.copy(file_path, backup_name)
+                
+                # Write updated XML
+                xml_str = ET.tostring(root, encoding='unicode', method='xml')
+                
+                # Pretty print the XML
+                dom = minidom.parseString(xml_str)
+                pretty_xml = dom.toprettyxml(indent='\t', encoding=None)
+                
+                # Remove extra blank lines
+                lines = [line for line in pretty_xml.split('\n') if line.strip()]
+                pretty_xml = '\n'.join(lines[1:])  # Skip the XML declaration from minidom
+                
+                # Add proper declaration and doctype
+                xml_declaration = '<?xml version="1.0" encoding="UTF-8"?>\n'
+                doctype = '<!DOCTYPE MIDIDeviceTypes PUBLIC "-//MIDI Manufacturers Association//DTD MIDIDeviceTypes 0.3//EN" "http://www.sonosphere.com/dtds/MIDIDeviceTypes.dtd">\n\n'
+                full_xml = xml_declaration + doctype + pretty_xml
+                
+                # Write to file
+                with open(file_path, 'w', encoding='utf-8') as f:
+                    f.write(full_xml)
+                
+                if backup_name:
+                    print(f"[add_device_to_middev] Updated {file_path}, created backup: {backup_name}")
+                else:
+                    print(f"[add_device_to_middev] Created new .middev file: {file_path}")
+                
+                print(f"[add_device_to_middev] Added device '{model}' to {file_path}")
             
             # Create corresponding .midnam file
             midnam_filename = f"{manufacturer.replace(' ', '_')}_{model.replace(' ', '_')}.midnam"
@@ -1873,22 +1974,35 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                 custom_mode = ET.SubElement(master_device, 'CustomDeviceMode', {'Name': 'Default'})
                 channel_name_set_assigns = ET.SubElement(custom_mode, 'ChannelNameSetAssignments')
                 
-                # Add a channel name set assign for channel 1
-                channel_assign = ET.SubElement(channel_name_set_assigns, 'ChannelNameSetAssign', {
-                    'Channel': '1',
-                    'NameSet': 'Default Patches'
-                })
+                # Add channel name set assignments for all 16 channels
+                for channel in range(1, 17):
+                    channel_assign = ET.SubElement(channel_name_set_assigns, 'ChannelNameSetAssign', {
+                        'Channel': str(channel),
+                        'NameSet': 'Default Patches'
+                    })
                 
                 # Add ChannelNameSet with default patch bank
                 channel_name_set = ET.SubElement(master_device, 'ChannelNameSet', {'Name': 'Default Patches'})
                 available_for_channels = ET.SubElement(channel_name_set, 'AvailableForChannels')
-                available_channel = ET.SubElement(available_for_channels, 'AvailableChannel', {
-                    'Channel': '1',
-                    'Available': 'true'
-                })
                 
-                # Add PatchBank with one default patch
+                # Add available channels for all 16 channels
+                for channel in range(1, 17):
+                    available_channel = ET.SubElement(available_for_channels, 'AvailableChannel', {
+                        'Channel': str(channel),
+                        'Available': 'true'
+                    })
+                
+                # Add UsesControlNameList
+                uses_control_name_list = ET.SubElement(channel_name_set, 'UsesControlNameList', {'Name': 'MIDI Continuous Controllers'})
+                
+                # Add PatchBank with MIDI commands and one default patch
                 patch_bank = ET.SubElement(channel_name_set, 'PatchBank', {'Name': 'Patches'})
+                
+                # Add MIDICommands block with default ControlChange commands
+                midi_commands = ET.SubElement(patch_bank, 'MIDICommands')
+                ET.SubElement(midi_commands, 'ControlChange', {'Control': '0', 'Value': '0'})
+                ET.SubElement(midi_commands, 'ControlChange', {'Control': '32', 'Value': '0'})
+                
                 patch_list = ET.SubElement(patch_bank, 'PatchNameList')
                 
                 # Add one default patch
@@ -1897,6 +2011,79 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                     'Name': 'Default Patch',
                     'ProgramChange': '0'
                 })
+                
+                # Add ControlNameList with MIDI Continuous Controllers
+                control_name_list = ET.SubElement(master_device, 'ControlNameList', {'Name': 'MIDI Continuous Controllers'})
+                
+                # Add all standard MIDI Continuous Controllers (0-127)
+                midi_controls = [
+                    (1, "Modulation Wheel or Lever"),
+                    (2, "Breath Controller"),
+                    (3, "Undefined"),
+                    (4, "Foot Controller"),
+                    (5, "Portamento Time"),
+                    (6, "Data Entry MSB"),
+                    (7, "Channel Volume"),
+                    (8, "Balance"),
+                    (9, "Undefined"),
+                    (10, "Pan"),
+                    (11, "Expression Controller"),
+                    (12, "Effect Control 1"),
+                    (13, "Effect Control 2"),
+                    (16, "General Purpose Controller 1"),
+                    (17, "General Purpose Controller 2"),
+                    (18, "General Purpose Controller 3"),
+                    (19, "General Purpose Controller 4"),
+                    (33, "LSB for Control 1 (Modulation Wheel or Lever) (Fine)"),
+                    (34, "LSB for Control 2 (Breath Controller) (Fine)"),
+                    (35, "LSB for Control 3 (Undefined) (Fine)"),
+                    (36, "LSB for Control 4 (Foot Controller) (Fine)"),
+                    (37, "LSB for Control 5 (Portamento Time) (Fine)"),
+                    (38, "LSB for Control 6 (Data Entry) (Fine)"),
+                    (39, "LSB for Control 7 (Channel Volume) (Fine)"),
+                    (40, "LSB for Control 8 (Balance) (Fine)"),
+                    (41, "LSB for Control 9 (Undefined) (Fine)"),
+                    (42, "LSB for Control 10 (Pan) (Fine)"),
+                    (43, "LSB for Control 11 (Expression Controller) (Fine)"),
+                    (44, "LSB for Control 12 (Effect control 1) (Fine)"),
+                    (45, "LSB for Control 13 (Effect control 2) (Fine)"),
+                    (64, "Damper Pedal on/off (Sustain) ≤63 off, ≥64 on"),
+                    (65, "Portamento On/Off ≤63 off, ≥64 on"),
+                    (66, "Sostenuto On/Off ≤63 off, ≥64 on"),
+                    (67, "Soft Pedal On/Off ≤63 off, ≥64 on"),
+                    (68, "Legato Footswitch ≤63 Normal, ≥64 Legato"),
+                    (69, "Hold 2 ≤63 off, ≥64 on"),
+                    (70, "Sound Controller 1 (default: Sound Variation) (Fine)"),
+                    (71, "Sound Controller 2 (default: Timbre/Harmonic Intens.) (Fine)"),
+                    (72, "Sound Controller 3 (default: Release Time) (Fine)"),
+                    (73, "Sound Controller 4 (default: Attack Time) (Fine)"),
+                    (74, "Sound Controller 5 (default: Brightness) (Fine)"),
+                    (75, "Sound Controller 6 (default: Decay Time) (Fine)"),
+                    (76, "Sound Controller 7 (default: Vibrato Rate) (Fine)"),
+                    (77, "Sound Controller 8 (default: Vibrato Depth) (Fine)"),
+                    (78, "Sound Controller 9 (default: Vibrato Delay) (Fine)"),
+                    (79, "Sound Controller 10 (default undefined) (Fine)"),
+                    (80, "General Purpose Controller 5 (Fine)"),
+                    (81, "General Purpose Controller 6 (Fine)"),
+                    (82, "General Purpose Controller 7 (Fine)"),
+                    (83, "General Purpose Controller 8 (Fine)"),
+                    (84, "Portamento Control (Fine)"),
+                    (88, "High Resolution Velocity Prefix (Velocity LSB)"),
+                    (91, "Effects 1 Depth (default: Reverb Send Level)"),
+                    (92, "Effects 2 Depth"),
+                    (93, "Effects 3 Depth (default: Chorus Send Level)"),
+                    (94, "Effects 4 Depth"),
+                    (95, "Effects 5 Depth"),
+                    (96, "Data Increment (Data Entry +1)"),
+                    (97, "Data Decrement (Data Entry -1)"),
+                ]
+                
+                for number, name in midi_controls:
+                    ET.SubElement(control_name_list, 'Control', {
+                        'Type': '7bit',
+                        'Number': str(number),
+                        'Name': name
+                    })
                 
                 # Pretty print and save .midnam file
                 midnam_xml_str = ET.tostring(midnam_root, encoding='unicode', method='xml')
@@ -1917,6 +2104,13 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
             self.end_headers()
+            
+            # Create appropriate message based on whether device was added or already existed
+            if device_already_exists:
+                message = f'Created MIDI Name Document for {model}'
+            else:
+                message = f'Added {model} to {manufacturer}'
+            
             self.wfile.write(json.dumps({
                 'success': True,
                 'middev_path': file_path,
@@ -1924,7 +2118,8 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                 'manufacturer': manufacturer,
                 'model': model,
                 'backup': backup_name,
-                'message': f'Added {model} to {manufacturer}'
+                'message': message,
+                'device_already_existed': device_already_exists
             }).encode())
             
         except ET.ParseError as e:

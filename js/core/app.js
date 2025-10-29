@@ -423,13 +423,14 @@ export class App {
                 }));
             }
             
-            // Extract note lists from the raw XML
+            // Extract note lists and control name lists from the raw XML
             if (deviceData.raw_xml) {
                 try {
                     const parser = new DOMParser();
                     const xmlDoc = parser.parseFromString(deviceData.raw_xml, 'text/xml');
-                    const noteLists = xmlDoc.querySelectorAll('NoteNameList');
                     
+                    // Parse Note Lists
+                    const noteLists = xmlDoc.querySelectorAll('NoteNameList');
                     deviceData.note_lists = Array.from(noteLists).map(noteList => {
                         const name = noteList.getAttribute('Name');
                         const notes = Array.from(noteList.querySelectorAll('Note')).map(note => ({
@@ -442,9 +443,31 @@ export class App {
                             notes: notes
                         };
                     });
+                    
+                    // Parse Control Name Lists
+                    const controlLists = xmlDoc.querySelectorAll('ControlNameList');
+                    deviceData.control_lists = Array.from(controlLists).map(controlList => {
+                        const name = controlList.getAttribute('Name');
+                        const controls = Array.from(controlList.querySelectorAll('Control')).map(control => ({
+                            type: control.getAttribute('Type') || '7bit',
+                            number: parseInt(control.getAttribute('Number')),
+                            name: control.getAttribute('Name')
+                        }));
+                        
+                        return { name, controls };
+                    });
+                    
+                    // Parse which ControlNameList is used by ChannelNameSet
+                    const channelNameSets = xmlDoc.querySelectorAll('ChannelNameSet');
+                    if (channelNameSets.length > 0) {
+                        const firstChannelNameSet = channelNameSets[0];
+                        const usesControlList = firstChannelNameSet.querySelector('UsesControlNameList');
+                        deviceData.activeControlListName = usesControlList ? usesControlList.getAttribute('Name') : null;
+                    }
                 } catch (xmlError) {
-                    console.warn('Failed to parse XML for note lists:', xmlError);
+                    console.warn('Failed to parse XML for note/control lists:', xmlError);
                     deviceData.note_lists = [];
+                    deviceData.control_lists = [];
                 }
             }
             
