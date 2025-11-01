@@ -492,10 +492,43 @@ export class ManufacturerManager {
     }
     
     async transformDeviceData(deviceData) {
+        // Store custom device modes and channel name sets
+        deviceData.customDeviceModes = deviceData.custom_device_modes || [];
+        deviceData.channelNameSets = deviceData.channel_name_sets || [];
+        
         // Transform API response to match frontend structure
-        if (deviceData.patch_banks) {
+        // Convert hierarchical structure to patchList format with metadata
+        deviceData.patchList = [];
+        
+        if (deviceData.channel_name_sets && deviceData.channel_name_sets.length > 0) {
+            // Organize by ChannelNameSet
+            for (const nameSet of deviceData.channel_name_sets) {
+                if (nameSet.patch_banks) {
+                    for (const bank of nameSet.patch_banks) {
+                        // Add metadata about which NameSet this bank belongs to
+                        const patchListEntry = {
+                            name: bank.name,
+                            channelNameSet: nameSet.name,
+                            availableChannels: nameSet.available_channels,
+                            midi_commands: bank.midi_commands || [],
+                            patch: bank.patches ? bank.patches.map(p => ({
+                                name: p.name,
+                                Number: p.Number || '0',
+                                programChange: p.programChange !== undefined ? parseInt(p.programChange) : 0,
+                                usesNoteList: p.note_list_name,
+                                note_list_name: p.note_list_name
+                            })) : []
+                        };
+                        deviceData.patchList.push(patchListEntry);
+                    }
+                }
+            }
+        } else if (deviceData.patch_banks) {
+            // Fallback to flat structure for backward compatibility
             deviceData.patchList = deviceData.patch_banks.map(bank => ({
                 name: bank.name,
+                channelNameSet: null, // No NameSet association
+                availableChannels: [],
                 midi_commands: bank.midi_commands || [],
                 patch: bank.patches ? bank.patches.map(p => ({
                     name: p.name,

@@ -269,6 +269,56 @@ export class DeviceManager {
         this.setupCollapsiblePatchBanks();
     }
     
+    formatChannelAvailability(availableChannels) {
+        // Format channel availability as ranges
+        if (!availableChannels || availableChannels.length === 0) {
+            return '(All Channels)';
+        }
+        
+        // Get list of available channels (where available === true)
+        const available = availableChannels
+            .filter(ch => ch.available)
+            .map(ch => parseInt(ch.channel))
+            .sort((a, b) => a - b);
+        
+        if (available.length === 0) {
+            return '(No Channels)';
+        }
+        
+        if (available.length === 16) {
+            return '(All Channels)';
+        }
+        
+        // Create ranges
+        const ranges = [];
+        let start = available[0];
+        let end = available[0];
+        
+        for (let i = 1; i < available.length; i++) {
+            if (available[i] === end + 1) {
+                end = available[i];
+            } else {
+                if (start === end) {
+                    ranges.push(`${start}`);
+                } else {
+                    ranges.push(`${start}-${end}`);
+                }
+                start = available[i];
+                end = available[i];
+            }
+        }
+        
+        // Add final range
+        if (start === end) {
+            ranges.push(`${start}`);
+        } else {
+            ranges.push(`${start}-${end}`);
+        }
+        
+        const prefix = ranges.length === 1 ? 'Channel' : 'Channels';
+        return `(${prefix} ${ranges.join(', ')})`;
+    }
+    
     generateDeviceStructureHTML(midnam) {
         return `
             <div class="structure-editor">
@@ -292,6 +342,7 @@ export class DeviceManager {
                 </div>
                 
                 ${this.generatePatchListHTML(midnam.patchList || [])}
+                ${this.generateNameSetsHTML(midnam.channelNameSets || [], midnam.patchList || [])}
                 ${this.generateControlParameterAssignmentsHTML(midnam.control_lists || [], midnam.activeControlListName)}
             </div>
         `;
@@ -312,6 +363,15 @@ export class DeviceManager {
                     // Check if this patch list has MIDI commands
                     const hasMidiCommands = patchList.midi_commands && patchList.midi_commands.length > 0;
                     
+                    // Format channel availability for display
+                    const channelAvailability = patchList.availableChannels ? 
+                        this.formatChannelAvailability(patchList.availableChannels) : '';
+                    
+                    // Get all available NameSets for dropdown
+                    const nameSetOptions = (appState.currentMidnam?.channelNameSets || [])
+                        .map(ns => `<option value="${Utils.escapeHtml(ns.name)}" ${ns.name === patchList.channelNameSet ? 'selected' : ''}>${Utils.escapeHtml(ns.name)}</option>`)
+                        .join('');
+                    
                     return `
                     <div class="structure-element collapsible" data-index="${index}">
                         <div class="element-header collapsible-header" onclick="deviceManager.togglePatchBank(${index})">
@@ -325,6 +385,19 @@ export class DeviceManager {
                                            onchange="deviceManager.updateBankName(${index}, this.value)"
                                            style="display: inline-block; width: auto; min-width: 200px; margin-right: 10px;">
                                 ` : Utils.escapeHtml(patchList.name || `Patch Bank ${index + 1}`)}
+                                ${patchList.channelNameSet ? (this.editingPatchListIndex === index ? `
+                                    <span class="nameset-selector" style="margin-left: 10px; font-size: 0.9em;">
+                                        <label>NameSet:</label>
+                                        <select onchange="deviceManager.movePatchBankToNameSet(${index}, this.value)" onclick="event.stopPropagation()">
+                                            ${nameSetOptions}
+                                        </select>
+                                        <span style="color: #666; margin-left: 5px;">${channelAvailability}</span>
+                                    </span>
+                                ` : `
+                                    <span class="nameset-label" style="margin-left: 10px; font-size: 0.9em; color: #666;">
+                                        Part of NameSet: <strong>${Utils.escapeHtml(patchList.channelNameSet)}</strong> ${channelAvailability}
+                                    </span>
+                                `) : ''}
                             </div>
                             <div class="element-actions">
                                 <button class="btn btn-small btn-primary" onclick="event.stopPropagation(); deviceManager.editPatchList(${index})">${this.editingPatchListIndex === index ? 'Done' : 'Edit'}</button>
@@ -369,6 +442,73 @@ export class DeviceManager {
                                     ` : ''}
                                 `
                             }
+                        </div>
+                    </div>
+                    `;
+                }).join('')}
+            </div>
+        `;
+    }
+    
+    generateNameSetsHTML(channelNameSets, patchList) {
+        if (!channelNameSets || channelNameSets.length === 0) {
+            return '';  // No NameSets section if there are no NameSets
+        }
+        
+        return `
+            <div class="structure-section">
+                <div style="display: flex; align-items: center; justify-content: space-between;">
+                    <h4>NameSets (${channelNameSets.length})</h4>
+                    <button class="btn btn-small btn-primary" onclick="deviceManager.addNameSet()" title="Add new NameSet">+</button>
+                </div>
+                <p class="section-description">
+                    If the patch banks this device presents are dependent on MIDI channel, define a new NameSet here.
+                    You can associate MIDI channels and Patch Banks with NameSets, thereby associating Patch Banks with MIDI channels.
+                </p>
+                ${channelNameSets.map((nameSet, index) => {
+                    // Get list of patch banks in this NameSet
+                    const banksInNameSet = patchList.filter(bank => bank.channelNameSet === nameSet.name);
+                    const channelAvailability = this.formatChannelAvailability(nameSet.available_channels);
+                    
+                    return `
+                    <div class="nameset-card" data-nameset-index="${index}">
+                        <div class="nameset-header">
+                            <div class="nameset-name">
+                                <strong>${Utils.escapeHtml(nameSet.name)}</strong>
+                                <span class="channel-availability">${channelAvailability}</span>
+                            </div>
+                            <div class="nameset-actions">
+                                <button class="btn btn-small btn-primary" onclick="deviceManager.editNameSet(${index})" title="Edit NameSet">Edit</button>
+                                <button class="btn btn-small btn-secondary" onclick="deviceManager.duplicateNameSet(${index})" title="Duplicate NameSet">Duplicate</button>
+                                <button class="btn btn-small btn-danger" onclick="deviceManager.deleteNameSet(${index})" title="Delete NameSet">Delete</button>
+                            </div>
+                        </div>
+                        <div class="nameset-banks">
+                            <label>Patch Banks in this NameSet:</label>
+                            ${banksInNameSet.length > 0 ? `
+                                <ul class="bank-list">
+                                    ${banksInNameSet.map(bank => `<li>${Utils.escapeHtml(bank.name)}</li>`).join('')}
+                                </ul>
+                            ` : '<em>No patch banks</em>'}
+                        </div>
+                        <div class="channel-editor" id="channel-editor-${index}" style="display: none;">
+                            <label><strong>Channel Availability:</strong></label>
+                            <div class="channel-grid">
+                                ${Array.from({length: 16}, (_, i) => {
+                                    const channelNum = i + 1;
+                                    const channelData = nameSet.available_channels.find(ch => parseInt(ch.channel) === channelNum);
+                                    const isAvailable = channelData ? channelData.available : false;
+                                    return `
+                                        <div class="channel-checkbox">
+                                            <input type="checkbox" 
+                                                   id="channel-${index}-${channelNum}" 
+                                                   ${isAvailable ? 'checked' : ''}
+                                                   onchange="deviceManager.updateChannelAvailability(${index}, ${channelNum}, this.checked)">
+                                            <label for="channel-${index}-${channelNum}">${channelNum}</label>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
                         </div>
                     </div>
                     `;
@@ -1626,6 +1766,189 @@ export class DeviceManager {
         
         // Mark as changed
         appState.markAsChanged();
+    }
+    
+    movePatchBankToNameSet(listIndex, newNameSet) {
+        const patchList = appState.currentMidnam?.patchList?.[listIndex];
+        if (!patchList) return;
+        
+        const oldNameSet = patchList.channelNameSet;
+        if (oldNameSet === newNameSet) return;
+        
+        // Find the new NameSet in the channelNameSets array
+        const nameSetData = appState.currentMidnam.channelNameSets.find(ns => ns.name === newNameSet);
+        if (!nameSetData) {
+            Utils.showNotification('Target NameSet not found', 'error');
+            return;
+        }
+        
+        // Update the patch bank's NameSet association and channel availability
+        patchList.channelNameSet = newNameSet;
+        patchList.availableChannels = nameSetData.available_channels;
+        
+        // Mark as changed
+        appState.markAsChanged();
+        
+        // Re-render to update the display
+        this.renderDeviceConfiguration();
+        
+        // Log the move
+        this.logToDebugConsole(`Moved patch bank "${patchList.name}" from NameSet "${oldNameSet}" to "${newNameSet}"`, 'info');
+        Utils.showNotification(`Patch bank moved to NameSet "${newNameSet}"`, 'success');
+    }
+    
+    // NameSet management methods
+    editNameSet(index) {
+        // Toggle the channel editor visibility
+        const editor = document.getElementById(`channel-editor-${index}`);
+        if (editor) {
+            if (editor.style.display === 'none') {
+                editor.style.display = 'block';
+            } else {
+                editor.style.display = 'none';
+            }
+        }
+    }
+    
+    updateChannelAvailability(nameSetIndex, channelNum, isAvailable) {
+        const nameSet = appState.currentMidnam?.channelNameSets?.[nameSetIndex];
+        if (!nameSet) return;
+        
+        // Find or create the channel entry
+        let channelData = nameSet.available_channels.find(ch => parseInt(ch.channel) === channelNum);
+        if (channelData) {
+            channelData.available = isAvailable;
+        } else {
+            // Add new channel entry
+            nameSet.available_channels.push({
+                channel: String(channelNum),
+                available: isAvailable
+            });
+        }
+        
+        // Update all patch banks that use this NameSet
+        const patchBanks = appState.currentMidnam.patchList.filter(bank => bank.channelNameSet === nameSet.name);
+        patchBanks.forEach(bank => {
+            bank.availableChannels = nameSet.available_channels;
+        });
+        
+        // Mark as changed
+        appState.markAsChanged();
+        
+        // Re-render to update the display
+        this.renderDeviceConfiguration();
+        
+        this.logToDebugConsole(`Updated channel ${channelNum} availability for NameSet "${nameSet.name}" to ${isAvailable}`, 'info');
+    }
+    
+    addNameSet() {
+        if (!appState.currentMidnam) return;
+        
+        // Ensure channelNameSets array exists
+        if (!appState.currentMidnam.channelNameSets) {
+            appState.currentMidnam.channelNameSets = [];
+        }
+        
+        // Generate unique name
+        let nameCounter = appState.currentMidnam.channelNameSets.length + 1;
+        let newName = `Name Set ${nameCounter}`;
+        while (appState.currentMidnam.channelNameSets.find(ns => ns.name === newName)) {
+            nameCounter++;
+            newName = `Name Set ${nameCounter}`;
+        }
+        
+        // Create new NameSet with all channels available by default
+        const newNameSet = {
+            name: newName,
+            available_channels: Array.from({length: 16}, (_, i) => ({
+                channel: String(i + 1),
+                available: true
+            })),
+            patch_banks: []
+        };
+        
+        appState.currentMidnam.channelNameSets.push(newNameSet);
+        
+        // Mark as changed
+        appState.markAsChanged();
+        
+        // Re-render
+        this.renderDeviceConfiguration();
+        
+        this.logToDebugConsole(`Added new NameSet "${newName}"`, 'info');
+        Utils.showNotification(`NameSet "${newName}" added`, 'success');
+    }
+    
+    duplicateNameSet(index) {
+        const nameSet = appState.currentMidnam?.channelNameSets?.[index];
+        if (!nameSet) return;
+        
+        // Generate unique name
+        let nameCounter = 1;
+        let newName = `${nameSet.name} Copy ${nameCounter}`;
+        while (appState.currentMidnam.channelNameSets.find(ns => ns.name === newName)) {
+            nameCounter++;
+            newName = `${nameSet.name} Copy ${nameCounter}`;
+        }
+        
+        // Create duplicate with deep copy of available channels
+        const duplicate = {
+            name: newName,
+            available_channels: nameSet.available_channels.map(ch => ({...ch})),
+            patch_banks: []  // Don't copy patch banks
+        };
+        
+        appState.currentMidnam.channelNameSets.push(duplicate);
+        
+        // Mark as changed
+        appState.markAsChanged();
+        
+        // Re-render
+        this.renderDeviceConfiguration();
+        
+        this.logToDebugConsole(`Duplicated NameSet "${nameSet.name}" as "${newName}"`, 'info');
+        Utils.showNotification(`NameSet duplicated as "${newName}"`, 'success');
+    }
+    
+    async deleteNameSet(index) {
+        const nameSet = appState.currentMidnam?.channelNameSets?.[index];
+        if (!nameSet) return;
+        
+        // Check if any patch banks use this NameSet
+        const banksInNameSet = appState.currentMidnam.patchList.filter(bank => bank.channelNameSet === nameSet.name);
+        
+        if (banksInNameSet.length > 0) {
+            const bankNames = banksInNameSet.map(b => b.name).join('", "');
+            Utils.showNotification(
+                `Cannot delete NameSet: Choose a different NameSet for the following Patch Banks before deleting: "${bankNames}"`,
+                'error'
+            );
+            this.logToDebugConsole(
+                `Cannot delete NameSet "${nameSet.name}" - used by ${banksInNameSet.length} patch bank(s)`,
+                'error'
+            );
+            return;
+        }
+        
+        // Confirm deletion
+        const confirmed = await modal.confirm(
+            `Are you sure you want to delete NameSet "${nameSet.name}"?`,
+            'Delete NameSet'
+        );
+        
+        if (!confirmed) return;
+        
+        // Remove from array
+        appState.currentMidnam.channelNameSets.splice(index, 1);
+        
+        // Mark as changed
+        appState.markAsChanged();
+        
+        // Re-render
+        this.renderDeviceConfiguration();
+        
+        this.logToDebugConsole(`Deleted NameSet "${nameSet.name}"`, 'info');
+        Utils.showNotification(`NameSet "${nameSet.name}" deleted`, 'success');
     }
     
     // MIDI Command editing methods

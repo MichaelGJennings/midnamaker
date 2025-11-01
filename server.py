@@ -267,6 +267,82 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
         except Exception as e:
             self.send_error(500, f"Error saving patch: {str(e)}")
     
+    def _update_patch_bank(self, patch_bank_elem, frontend_bank):
+        """Helper method to update an existing PatchBank element"""
+        import xml.etree.ElementTree as ET
+        
+        # Update bank name
+        if 'name' in frontend_bank:
+            patch_bank_elem.set('Name', frontend_bank['name'])
+        
+        # Update MIDI commands
+        if 'midi_commands' in frontend_bank:
+            # Remove existing MIDICommands
+            existing_midi_commands = patch_bank_elem.find('MIDICommands')
+            if existing_midi_commands is not None:
+                patch_bank_elem.remove(existing_midi_commands)
+            
+            # Add new MIDICommands if there are any
+            if frontend_bank['midi_commands']:
+                midi_commands_elem = ET.Element('MIDICommands')
+                # Insert MIDICommands before PatchNameList
+                patch_name_list = patch_bank_elem.find('PatchNameList')
+                if patch_name_list is not None:
+                    patch_name_list_index = list(patch_bank_elem).index(patch_name_list)
+                    patch_bank_elem.insert(patch_name_list_index, midi_commands_elem)
+                else:
+                    patch_bank_elem.insert(0, midi_commands_elem)
+                
+                for cmd in frontend_bank['midi_commands']:
+                    if cmd.get('type') == 'ControlChange':
+                        cc_elem = ET.SubElement(midi_commands_elem, 'ControlChange')
+                        cc_elem.set('Control', str(cmd.get('control', '0')))
+                        cc_elem.set('Value', str(cmd.get('value', '0')))
+        
+        # Update patches
+        if 'patch' in frontend_bank:
+            patch_name_list = patch_bank_elem.find('PatchNameList')
+            if patch_name_list is not None:
+                # Clear existing patches
+                patch_name_list.clear()
+                
+                # Add updated patches
+                for patch_data in frontend_bank['patch']:
+                    patch_elem = ET.SubElement(patch_name_list, 'Patch')
+                    patch_elem.set('Name', patch_data.get('name', ''))
+                    patch_elem.set('Number', str(patch_data.get('Number', '')))
+                    patch_elem.set('ProgramChange', str(patch_data.get('programChange', '')))
+    
+    def _create_patch_bank(self, parent_elem, frontend_bank):
+        """Helper method to create a new PatchBank element"""
+        import xml.etree.ElementTree as ET
+        
+        # Create new PatchBank element
+        new_patch_bank = ET.SubElement(parent_elem, 'PatchBank')
+        new_patch_bank.set('Name', frontend_bank.get('name', 'New Bank'))
+        
+        # Add MIDI commands if present
+        if 'midi_commands' in frontend_bank and frontend_bank['midi_commands']:
+            midi_commands_elem = ET.SubElement(new_patch_bank, 'MIDICommands')
+            for cmd in frontend_bank['midi_commands']:
+                if cmd.get('type') == 'ControlChange':
+                    cc_elem = ET.SubElement(midi_commands_elem, 'ControlChange')
+                    cc_elem.set('Control', str(cmd.get('control', '0')))
+                    cc_elem.set('Value', str(cmd.get('value', '0')))
+        
+        # Add PatchNameList
+        patch_name_list = ET.SubElement(new_patch_bank, 'PatchNameList')
+        
+        # Add patches
+        if 'patch' in frontend_bank:
+            for patch_data in frontend_bank['patch']:
+                patch_elem = ET.SubElement(patch_name_list, 'Patch')
+                patch_elem.set('Name', patch_data.get('name', ''))
+                patch_elem.set('Number', str(patch_data.get('Number', '')))
+                patch_elem.set('ProgramChange', str(patch_data.get('programChange', '')))
+        
+        return new_patch_bank
+    
     def save_midnam_structure(self):
         """Save the entire MIDNAM structure from frontend"""
         try:
@@ -308,98 +384,75 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                     break
             
             # Update the XML with changes from midnam structure
-            # Find all patch banks and update patch lists
+            # Handle hierarchical ChannelNameSet structure
             for master_device in root.findall('.//MasterDeviceNames'):
-                for channel_name_set in master_device.findall('.//ChannelNameSet'):
-                    patch_banks = channel_name_set.findall('.//PatchBank')
+                # First update ChannelNameSets' AvailableForChannels
+                if 'channelNameSets' in midnam:
+                    for channel_name_set in master_device.findall('.//ChannelNameSet'):
+                        name_set_name = channel_name_set.get('Name')
+                        
+                        # Find corresponding NameSet in frontend data
+                        frontend_name_set = next((ns for ns in midnam['channelNameSets'] if ns.get('name') == name_set_name), None)
+                        
+                        if frontend_name_set and 'available_channels' in frontend_name_set:
+                            # Update AvailableForChannels
+                            available_for_channels = channel_name_set.find('AvailableForChannels')
+                            if available_for_channels is not None:
+                                # Clear existing channels
+                                available_for_channels.clear()
+                                
+                                # Add updated channels
+                                for ch in frontend_name_set['available_channels']:
+                                    channel_elem = ET.SubElement(available_for_channels, 'AvailableChannel')
+                                    channel_elem.set('Channel', str(ch.get('channel', '1')))
+                                    channel_elem.set('Available', 'true' if ch.get('available') else 'false')
+                                
+                                print(f"[save_midnam_structure] Updated AvailableForChannels for NameSet: {name_set_name}")
+                
+                # Now handle patch banks - organize by ChannelNameSet
+                if 'patchList' in midnam and 'channelNameSets' in midnam:
+                    # Group patch banks by their ChannelNameSet
+                    banks_by_nameset = {}
+                    for bank in midnam['patchList']:
+                        name_set = bank.get('channelNameSet')
+                        if name_set:
+                            if name_set not in banks_by_nameset:
+                                banks_by_nameset[name_set] = []
+                            banks_by_nameset[name_set].append(bank)
                     
-                    # Match banks by index position (order matters)
-                    if 'patchList' in midnam:
-                        # Remove banks that no longer exist in frontend
-                        if len(midnam['patchList']) < len(patch_banks):
-                            # Remove extra banks from the end
-                            for bank_index in range(len(midnam['patchList']), len(patch_banks)):
-                                bank_to_remove = patch_banks[bank_index]
-                                bank_name = bank_to_remove.get('Name', f'Bank {bank_index + 1}')
-                                channel_name_set.remove(bank_to_remove)
-                                print(f"[save_midnam_structure] Removed bank: {bank_name}")
+                    # Update each ChannelNameSet's patch banks
+                    for channel_name_set in master_device.findall('.//ChannelNameSet'):
+                        name_set_name = channel_name_set.get('Name')
+                        frontend_banks = banks_by_nameset.get(name_set_name, [])
+                        existing_banks = channel_name_set.findall('./PatchBank')  # Direct children only
+                        
+                        # Remove banks that no longer exist in this NameSet
+                        for existing_bank in existing_banks:
+                            bank_name = existing_bank.get('Name')
+                            # Check if this bank still exists in frontend for this NameSet
+                            if not any(fb.get('name') == bank_name for fb in frontend_banks):
+                                channel_name_set.remove(existing_bank)
+                                print(f"[save_midnam_structure] Removed bank '{bank_name}' from NameSet '{name_set_name}'")
+                        
+                        # Update or add banks for this NameSet
+                        for frontend_bank in frontend_banks:
+                            bank_name = frontend_bank.get('name')
                             
-                            # Refresh the list after removal
-                            patch_banks = channel_name_set.findall('.//PatchBank')
-                        
-                        # Update existing banks
-                        for bank_index, patch_bank in enumerate(patch_banks):
-                            if bank_index < len(midnam['patchList']):
-                                midnam_bank = midnam['patchList'][bank_index]
-                                
-                                # Update bank name if it has changed
-                                if 'name' in midnam_bank:
-                                    patch_bank.set('Name', midnam_bank['name'])
-                                
-                                # Update MIDI commands for this bank
-                                if 'midi_commands' in midnam_bank:
-                                    # Remove existing MIDICommands
-                                    existing_midi_commands = patch_bank.find('MIDICommands')
-                                    if existing_midi_commands is not None:
-                                        patch_bank.remove(existing_midi_commands)
-                                    
-                                    # Add new MIDICommands if there are any
-                                    if midnam_bank['midi_commands']:
-                                        midi_commands_elem = ET.Element('MIDICommands')
-                                        # Insert MIDICommands before PatchNameList
-                                        patch_name_list_index = list(patch_bank).index(patch_bank.find('PatchNameList')) if patch_bank.find('PatchNameList') is not None else 0
-                                        patch_bank.insert(patch_name_list_index, midi_commands_elem)
-                                        
-                                        for cmd in midnam_bank['midi_commands']:
-                                            if cmd.get('type') == 'ControlChange':
-                                                cc_elem = ET.SubElement(midi_commands_elem, 'ControlChange')
-                                                cc_elem.set('Control', str(cmd.get('control', '0')))
-                                                cc_elem.set('Value', str(cmd.get('value', '0')))
-                                
-                                # Update patches in this bank
-                                if 'patch' in midnam_bank:
-                                    patch_name_list = patch_bank.find('PatchNameList')
-                                    if patch_name_list is not None:
-                                        # Clear existing patches
-                                        patch_name_list.clear()
-                                        
-                                        # Add updated patches
-                                        for patch_data in midnam_bank['patch']:
-                                            patch_elem = ET.SubElement(patch_name_list, 'Patch')
-                                            patch_elem.set('Name', patch_data.get('name', ''))
-                                            patch_elem.set('Number', str(patch_data.get('Number', '')))
-                                            patch_elem.set('ProgramChange', str(patch_data.get('programChange', '')))
-                        
-                        # Add new banks if frontend has more than XML
-                        if len(midnam['patchList']) > len(patch_banks):
-                            for bank_index in range(len(patch_banks), len(midnam['patchList'])):
-                                midnam_bank = midnam['patchList'][bank_index]
-                                
-                                # Create new PatchBank element
-                                new_patch_bank = ET.SubElement(channel_name_set, 'PatchBank')
-                                new_patch_bank.set('Name', midnam_bank.get('name', f'New Bank {bank_index + 1}'))
-                                
-                                # Add MIDI commands if present
-                                if 'midi_commands' in midnam_bank and midnam_bank['midi_commands']:
-                                    midi_commands_elem = ET.SubElement(new_patch_bank, 'MIDICommands')
-                                    for cmd in midnam_bank['midi_commands']:
-                                        if cmd.get('type') == 'ControlChange':
-                                            cc_elem = ET.SubElement(midi_commands_elem, 'ControlChange')
-                                            cc_elem.set('Control', str(cmd.get('control', '0')))
-                                            cc_elem.set('Value', str(cmd.get('value', '0')))
-                                
-                                # Add PatchNameList
-                                patch_name_list = ET.SubElement(new_patch_bank, 'PatchNameList')
-                                
-                                # Add patches
-                                if 'patch' in midnam_bank:
-                                    for patch_data in midnam_bank['patch']:
-                                        patch_elem = ET.SubElement(patch_name_list, 'Patch')
-                                        patch_elem.set('Name', patch_data.get('name', ''))
-                                        patch_elem.set('Number', str(patch_data.get('Number', '')))
-                                        patch_elem.set('ProgramChange', str(patch_data.get('programChange', '')))
-                                
-                                print(f"[save_midnam_structure] Created new bank: {midnam_bank.get('name', f'New Bank {bank_index + 1}')}")
+                            # Find existing bank by name
+                            existing_bank = None
+                            for bank in channel_name_set.findall('./PatchBank'):
+                                if bank.get('Name') == bank_name:
+                                    existing_bank = bank
+                                    break
+                            
+                            if existing_bank:
+                                # Update existing bank
+                                self._update_patch_bank(existing_bank, frontend_bank)
+                                print(f"[save_midnam_structure] Updated bank '{bank_name}' in NameSet '{name_set_name}'")
+                            else:
+                                # Create new bank
+                                new_bank = self._create_patch_bank(channel_name_set, frontend_bank)
+                                print(f"[save_midnam_structure] Created new bank '{bank_name}' in NameSet '{name_set_name}'")
             
             # Update NoteNameLists
             for master_device in root.findall('.//MasterDeviceNames'):
@@ -800,70 +853,41 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                 'raw_xml': midnam_content
             }
             
-            # Try to extract patch banks and patches
-            banks = root_elem.findall('.//PatchBank')
-            patches = root_elem.findall('.//Patch')
+            # Extract CustomDeviceModes with full hierarchy
             note_lists = root_elem.findall('.//NoteNameList')
+            patches = root_elem.findall('.//Patch')
             
-            device_details['patch_banks'] = []
-            for bank in banks:
-                bank_name = bank.get('Name', 'Unnamed Bank')
-                bank_patches = bank.findall('.//Patch')
+            # Extract CustomDeviceModes (there can be multiple)
+            device_details['custom_device_modes'] = []
+            custom_modes = root_elem.findall('.//CustomDeviceMode')
+            
+            for mode in custom_modes:
+                mode_name = mode.get('Name', 'Default Mode')
                 
-                # Extract MIDI commands for this bank
-                midi_commands = []
-                midi_commands_elem = bank.find('.//MIDICommands')
-                if midi_commands_elem is not None:
-                    for control_change in midi_commands_elem.findall('.//ControlChange'):
-                        control = control_change.get('Control', '')
-                        value = control_change.get('Value', '')
-                        midi_commands.append({
-                            'type': 'ControlChange',
-                            'control': control,
-                            'value': value
-                        })
-                
-                patches_data = []
-                for patch in bank_patches:
-                    patch_name = patch.get('Name', 'Unnamed')
-                    patch_number = patch.get('Number', '0')
-                    program_change = patch.get('ProgramChange', '0')
-                    
-                    # Find the note name list used by this patch
-                    uses_note_list = patch.find('.//UsesNoteNameList')
-                    note_list_name = uses_note_list.get('Name', '') if uses_note_list is not None else ''
-                    
-                    patches_data.append({
-                        'name': patch_name,
-                        'Number': patch_number,
-                        'programChange': program_change,
-                        'note_list_name': note_list_name
+                # Extract ChannelNameSetAssignments for this mode
+                channel_assignments = []
+                for assignment in mode.findall('.//ChannelNameSetAssign'):
+                    channel_assignments.append({
+                        'channel': assignment.get('Channel', ''),
+                        'name_set': assignment.get('NameSet', '')
                     })
                 
-                device_details['patch_banks'].append({
-                    'name': bank_name,
-                    'patch_count': len(bank_patches),
-                    'patches': patches_data,
-                    'midi_commands': midi_commands
+                device_details['custom_device_modes'].append({
+                    'name': mode_name,
+                    'channel_assignments': channel_assignments
                 })
             
-            device_details['total_patches'] = len(patches)
-            device_details['total_note_lists'] = len(note_lists)
-            
-            # Extract ChannelNameSetAssignments (channel assignments)
-            device_details['channel_name_set_assignments'] = []
-            channel_assignments = root_elem.findall('.//ChannelNameSetAssign')
-            for assignment in channel_assignments:
-                channel = assignment.get('Channel', '')
-                name_set = assignment.get('NameSet', '')
-                device_details['channel_name_set_assignments'].append({
-                    'channel': channel,
-                    'name_set': name_set
+            # If no CustomDeviceModes found, create a default one
+            if not device_details['custom_device_modes']:
+                device_details['custom_device_modes'].append({
+                    'name': 'Default Mode',
+                    'channel_assignments': []
                 })
-
-            # Extract ChannelNameSets (the actual name sets)
+            
+            # Extract ChannelNameSets with their PatchBanks
             device_details['channel_name_sets'] = []
             channel_name_sets = root_elem.findall('.//ChannelNameSet')
+            
             for name_set in channel_name_sets:
                 name_set_name = name_set.get('Name', 'Unnamed Name Set')
                 
@@ -877,10 +901,63 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                         'available': available.lower() == 'true'
                     })
                 
+                # Extract PatchBanks from this ChannelNameSet
+                patch_banks = []
+                for bank in name_set.findall('./PatchBank'):  # Use ./ to get direct children only
+                    bank_name = bank.get('Name', 'Unnamed Bank')
+                    bank_patches = bank.findall('.//Patch')
+                    
+                    # Extract MIDI commands for this bank
+                    midi_commands = []
+                    midi_commands_elem = bank.find('./MIDICommands')
+                    if midi_commands_elem is not None:
+                        for control_change in midi_commands_elem.findall('.//ControlChange'):
+                            control = control_change.get('Control', '')
+                            value = control_change.get('Value', '')
+                            midi_commands.append({
+                                'type': 'ControlChange',
+                                'control': control,
+                                'value': value
+                            })
+                    
+                    # Extract patches
+                    patches_data = []
+                    for patch in bank_patches:
+                        patch_name = patch.get('Name', 'Unnamed')
+                        patch_number = patch.get('Number', '0')
+                        program_change = patch.get('ProgramChange', '0')
+                        
+                        # Find the note name list used by this patch
+                        uses_note_list = patch.find('.//UsesNoteNameList')
+                        note_list_name = uses_note_list.get('Name', '') if uses_note_list is not None else ''
+                        
+                        patches_data.append({
+                            'name': patch_name,
+                            'Number': patch_number,
+                            'programChange': program_change,
+                            'note_list_name': note_list_name
+                        })
+                    
+                    patch_banks.append({
+                        'name': bank_name,
+                        'patch_count': len(bank_patches),
+                        'patches': patches_data,
+                        'midi_commands': midi_commands
+                    })
+                
                 device_details['channel_name_sets'].append({
                     'name': name_set_name,
-                    'available_channels': available_channels
+                    'available_channels': available_channels,
+                    'patch_banks': patch_banks
                 })
+            
+            # Keep legacy flat patch_banks list for backward compatibility
+            device_details['patch_banks'] = []
+            for name_set in device_details['channel_name_sets']:
+                device_details['patch_banks'].extend(name_set['patch_banks'])
+            
+            device_details['total_patches'] = len(patches)
+            device_details['total_note_lists'] = len(note_lists)
 
             # Extract note lists (for patch editing context)
             device_details['note_lists'] = []
@@ -1756,11 +1833,11 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
             # Add a channel name set assign for channel 1
             channel_assign = ET.SubElement(channel_name_set_assigns, 'ChannelNameSetAssign', {
                 'Channel': '1',
-                'NameSet': 'Default Patches'
+                'NameSet': 'Name Set 1'
             })
             
             # Add ChannelNameSet with default patch bank
-            channel_name_set = ET.SubElement(master_device, 'ChannelNameSet', {'Name': 'Default Patches'})
+            channel_name_set = ET.SubElement(master_device, 'ChannelNameSet', {'Name': 'Name Set 1'})
             available_for_channels = ET.SubElement(channel_name_set, 'AvailableForChannels')
             available_channel = ET.SubElement(available_for_channels, 'AvailableChannel', {
                 'Channel': '1',
@@ -1971,6 +2048,7 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                 model_elem.text = model
                 
                 # Add CustomDeviceMode with default ChannelNameSet
+                # TODO: Mode Name -> Mode 1, once we support multiple modes
                 custom_mode = ET.SubElement(master_device, 'CustomDeviceMode', {'Name': 'Default'})
                 channel_name_set_assigns = ET.SubElement(custom_mode, 'ChannelNameSetAssignments')
                 
@@ -1978,11 +2056,11 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                 for channel in range(1, 17):
                     channel_assign = ET.SubElement(channel_name_set_assigns, 'ChannelNameSetAssign', {
                         'Channel': str(channel),
-                        'NameSet': 'Default Patches'
+                        'NameSet': 'Name Set 1'
                     })
                 
                 # Add ChannelNameSet with default patch bank
-                channel_name_set = ET.SubElement(master_device, 'ChannelNameSet', {'Name': 'Default Patches'})
+                channel_name_set = ET.SubElement(master_device, 'ChannelNameSet', {'Name': 'Name Set 1'})
                 available_for_channels = ET.SubElement(channel_name_set, 'AvailableForChannels')
                 
                 # Add available channels for all 16 channels
