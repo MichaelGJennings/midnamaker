@@ -408,17 +408,48 @@ export class App {
             
             const deviceData = await response.json();
             
+            // Store custom device modes and channel name sets
+            deviceData.customDeviceModes = deviceData.custom_device_modes || [];
+            deviceData.channelNameSets = deviceData.channel_name_sets || [];
+            
             // Transform API response to match frontend structure
-            // Convert patch_banks to patchList format
-            if (deviceData.patch_banks) {
+            // Convert hierarchical structure to patchList format with metadata
+            deviceData.patchList = [];
+            
+            if (deviceData.channel_name_sets && deviceData.channel_name_sets.length > 0) {
+                // Organize by ChannelNameSet
+                for (const nameSet of deviceData.channel_name_sets) {
+                    if (nameSet.patch_banks) {
+                        for (const bank of nameSet.patch_banks) {
+                            // Add metadata about which NameSet this bank belongs to
+                            const patchListEntry = {
+                                name: bank.name,
+                                channelNameSet: nameSet.name,
+                                availableChannels: nameSet.available_channels,
+                                patch: bank.patches ? bank.patches.map(p => ({
+                                    name: p.name,
+                                    programChange: parseInt(p.Number?.replace(/\D/g, '')) || 0,
+                                    usesNoteList: p.note_list_name,
+                                    note_list_name: p.note_list_name,
+                                    number: p.Number
+                                })) : []
+                            };
+                            deviceData.patchList.push(patchListEntry);
+                        }
+                    }
+                }
+            } else if (deviceData.patch_banks) {
+                // Fallback to flat structure for backward compatibility
                 deviceData.patchList = deviceData.patch_banks.map(bank => ({
                     name: bank.name,
+                    channelNameSet: null, // No NameSet association
+                    availableChannels: [],
                     patch: bank.patches ? bank.patches.map(p => ({
                         name: p.name,
-                        programChange: parseInt(p.number.replace(/\D/g, '')) || 0, // Extract number from "A11", "R01", etc.
+                        programChange: parseInt(p.Number?.replace(/\D/g, '')) || 0,
                         usesNoteList: p.note_list_name,
-                        note_list_name: p.note_list_name, // Also set the original field name
-                        number: p.number
+                        note_list_name: p.note_list_name,
+                        number: p.Number
                     })) : []
                 }));
             }
