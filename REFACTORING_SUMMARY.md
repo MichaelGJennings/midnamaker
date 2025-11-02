@@ -13,7 +13,7 @@ The monolithic `midi_name_editor.html` file (7,166 lines) has been successfully 
 
 ### New Structure
 ```
-midnamaker.html                       # Clean HTML structure (200 lines)
+index.html                            # Clean HTML structure with complete data-testid attributes (284 lines)
 css/
 ├── core.css                         # Base styles and layout
 ├── midi.css                         # MIDI-specific styles
@@ -64,7 +64,7 @@ js/
 ## Migration Guide
 
 ### For Users
-- Use `midnamaker.html` instead of `midi_name_editor.html`
+- Use `index.html` as the primary application entry point
 - All functionality remains the same
 - Better performance and stability
 

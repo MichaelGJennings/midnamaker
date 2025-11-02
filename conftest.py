@@ -76,7 +76,7 @@ if PLAYWRIGHT_AVAILABLE:
             window.DISABLE_MIDI_FOR_TESTING = true;
         """)
         
-        await page.goto(f"{BASE_URL}/midnamaker.html")
+        await page.goto(f"{BASE_URL}/index.html")
         await page.wait_for_load_state("networkidle")
         return page
 

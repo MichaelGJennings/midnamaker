@@ -888,30 +888,34 @@ export class PatchManager {
         
         const newRow = document.createElement('tr');
         newRow.setAttribute('data-note-index', newIndex);
+        newRow.setAttribute('data-testid', `row_note_${newIndex}`);
         if (isBlack) newRow.classList.add('black-key-row');
         
         newRow.innerHTML = `
-            <td>
+            <td data-testid="cel_note_number_${newIndex}">
                 <span class="note-number-display ${isBlack ? 'black-key' : 'white-key'}" 
                       data-note="${newNoteNumber}"
-                      data-piano-key="${pianoKey}">
+                      data-piano-key="${pianoKey}"
+                      data-testid="spn_note_number_${newIndex}">
                     ${newNoteNumber} <small>(${pianoKey})</small>
                 </span>
             </td>
-            <td class="note-name-cell">
+            <td class="note-name-cell" data-testid="cel_note_name_${newIndex}">
                 <input type="text" 
                        id="${noteInputId}"
                        class="note-name-input" 
                        value="${this.getDefaultNoteName(newNoteNumber)}"
                        data-index="${newIndex}"
+                       data-testid="npt_note_name_${newIndex}"
                        tabindex="0"
                        readonly>
                 <div class="note-dropdown" id="${dropdownId}" style="display: none;"></div>
             </td>
-            <td class="note-actions">
+            <td class="note-actions" data-testid="cel_note_actions_${newIndex}">
                 <button class="btn btn-sm btn-outline-primary" 
                         id="${insertBtnId}"
                         data-index="${newIndex}"
+                        data-testid="btn_insert_note_${newIndex}"
                         tabindex="0"
                         title="Insert Note">
                     +I
@@ -1231,30 +1235,34 @@ export class PatchManager {
         
         const newRow = document.createElement('tr');
         newRow.setAttribute('data-note-index', insertIndex);
+        newRow.setAttribute('data-testid', `row_note_${insertIndex}`);
         if (isBlack) newRow.classList.add('black-key-row');
         
         newRow.innerHTML = `
-            <td>
+            <td data-testid="cel_note_number_${insertIndex}">
                 <span class="note-number-display ${isBlack ? 'black-key' : 'white-key'}" 
                       data-note="${newNoteNumber}"
-                      data-piano-key="${pianoKey}">
+                      data-piano-key="${pianoKey}"
+                      data-testid="spn_note_number_${insertIndex}">
                     ${newNoteNumber} <small>(${pianoKey})</small>
                 </span>
             </td>
-            <td class="note-name-cell">
+            <td class="note-name-cell" data-testid="cel_note_name_${insertIndex}">
                 <input type="text" 
                        id="${noteInputId}"
                        class="note-name-input" 
                        value="${this.getDefaultNoteName(newNoteNumber)}"
                        data-index="${insertIndex}"
+                       data-testid="npt_note_name_${insertIndex}"
                        tabindex="0"
                        readonly>
                 <div class="note-dropdown" id="${dropdownId}" style="display: none;"></div>
             </td>
-            <td class="note-actions">
+            <td class="note-actions" data-testid="cel_note_actions_${insertIndex}">
                 <button class="btn btn-sm btn-outline-primary" 
                         id="${insertBtnId}"
                         data-index="${insertIndex}"
+                        data-testid="btn_insert_note_${insertIndex}"
                         tabindex="0"
                         title="Insert Note">
                     +I

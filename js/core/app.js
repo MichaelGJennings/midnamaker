@@ -152,7 +152,7 @@ export class App {
                     <h3>No Backend Server</h3>
                     <p>This application requires a backend server to load manufacturer data.</p>
                     <p>Please run the Python server: <code>python server.py</code></p>
-                    <p>Then access the application at: <code>http://localhost:8000/midnamaker.html</code></p>
+                    <p>Then access the application at: <code>http://localhost:8000/index.html</code></p>
                 </div>
             `;
         }

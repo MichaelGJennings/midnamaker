@@ -40,7 +40,7 @@ This is a web application meant to be run locally on your machine, and you will 
    ```
 
 3. **Open the editor**
-   Navigate to: http://localhost:8000/midi_name_editor.html
+   Navigate to: http://localhost:8000/index.html
 
 ## Usage Guide
 
