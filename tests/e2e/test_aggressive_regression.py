@@ -49,7 +49,7 @@ class TestAppendSaveRegression:
         
         # Step 3: Navigate to note editor (should be in patch tab)
         # Verify we're in the note editor
-        notes_grid = app_page.locator("#note-list-tbody")
+        notes_grid = app_page.get_by_test_id("lst_notes_tbody")
         await expect(notes_grid).to_be_visible()
         
         # Scroll to bottom
@@ -57,22 +57,25 @@ class TestAppendSaveRegression:
         await app_page.wait_for_timeout(500)
         
         # Find the last row and click its + button
-        rows = app_page.locator("#note-list-tbody tr")
+        rows = app_page.locator('[data-testid^="row_note_"]')
         row_count = await rows.count()
         assert row_count > 0, "Should have at least one note row"
         
         last_row = rows.nth(row_count - 1)
-        add_button = last_row.locator("button:has-text('+')")
+        # Find the insert button in the last row
+        add_button = last_row.locator('button[data-testid^="btn_insert_note_"]')
         await expect(add_button).to_be_visible()
         await add_button.click()
         await app_page.wait_for_timeout(500)
         
         # Step 4: Enter a new note name and press Enter to commit
+        # Re-query rows after the new row is added
+        rows = app_page.locator('[data-testid^="row_note_"]')
         new_row_count = await rows.count()
         assert new_row_count == row_count + 1, f"Expected {row_count + 1} rows, got {new_row_count}"
         
         new_row = rows.nth(new_row_count - 1)
-        note_name_input = new_row.locator(".note-name-input")
+        note_name_input = new_row.locator('[data-testid^="npt_note_name_"]')
         await expect(note_name_input).to_be_visible()
         
         # Use a unique note name with timestamp to avoid conflicts
@@ -83,12 +86,12 @@ class TestAppendSaveRegression:
         await app_page.wait_for_timeout(500)
         
         # Debug: Verify the note was added to the DOM
-        all_notes_before_save = await app_page.evaluate("() => Array.from(document.querySelectorAll('.note-name-input')).map(input => input.value)")
+        all_notes_before_save = await app_page.evaluate("() => Array.from(document.querySelectorAll('[data-testid^=\"npt_note_name_\"]')).map(input => input.value)")
         print(f"Notes before save: {all_notes_before_save[-5:]}")  # Last 5 notes
         assert test_note_name in all_notes_before_save, f"Test note '{test_note_name}' not found in DOM before save"
         
         # Step 5: Click Save
-        save_button = app_page.locator("button:has-text('Save')")
+        save_button = app_page.get_by_test_id("btn_save_patch")
         await expect(save_button).to_be_visible()
         
         # Listen for dialog (alert) messages
@@ -135,14 +138,14 @@ class TestAppendSaveRegression:
         await app_page.wait_for_timeout(500)
         
         # Debug: Print all visible note names
-        all_note_inputs = await app_page.evaluate("() => Array.from(document.querySelectorAll('.note-name-input')).map(input => input.value)")
+        all_note_inputs = await app_page.evaluate("() => Array.from(document.querySelectorAll('[data-testid^=\"npt_note_name_\"]')).map(input => input.value)")
         print(f"All visible note names: {all_note_inputs[-10:]}")  # Last 10 notes
         
         # Verify our test note name is in the list
         assert test_note_name in all_note_inputs, f"Test note '{test_note_name}' not found in saved notes. Found: {all_note_inputs[-10:]}"
         
         # Verify the last note has our test note name
-        all_notes = app_page.locator(".note-name-input")
+        all_notes = app_page.locator('[data-testid^="npt_note_name_"]')
         note_count = await all_notes.count()
         last_note = all_notes.nth(note_count - 1)
         await expect(last_note).to_be_visible()
@@ -156,7 +159,7 @@ class TestAppendSaveRegression:
         """Teardown: Delete test notes and verify they are removed from the file"""
         
         # Find the test note by iterating through all inputs and checking their values
-        all_notes = app_page.locator(".note-name-input")
+        all_notes = app_page.locator('[data-testid^="npt_note_name_"]')
         note_count = await all_notes.count()
         test_note_index = -1
         
@@ -173,8 +176,8 @@ class TestAppendSaveRegression:
         test_note_input = all_notes.nth(test_note_index)
         await expect(test_note_input).to_be_visible()
         
-        # Get the remove button for this row
-        remove_button = app_page.locator("#note-list-tbody tr").nth(test_note_index).locator(".remove-note-btn")
+        # Get the remove button for this row - look for row with the test index
+        remove_button = app_page.locator(f'[data-testid="row_note_{test_note_index}"]').locator(".remove-note-btn")
         await expect(remove_button).to_be_visible()
         
         # Click the remove button
@@ -192,7 +195,7 @@ class TestAppendSaveRegression:
             pass  # No confirmation dialog
         
         # Save the changes
-        save_button = app_page.locator("button:has-text('Save')")
+        save_button = app_page.get_by_test_id("btn_save_patch")
         await save_button.click()
         await app_page.wait_for_timeout(2000)
         
@@ -220,11 +223,11 @@ class TestAppendSaveRegression:
         await self._reload_rock_kit_notes(app_page)
         
         # Verify the test note is no longer present by checking all input values
-        all_note_values = await app_page.evaluate("() => Array.from(document.querySelectorAll('.note-name-input')).map(input => input.value)")
+        all_note_values = await app_page.evaluate("() => Array.from(document.querySelectorAll('[data-testid^=\"npt_note_name_\"]')).map(input => input.value)")
         assert test_note_name not in all_note_values, f"Test note '{test_note_name}' still present after deletion"
         
         # Verify we're back to the original number of notes
-        all_notes = app_page.locator(".note-name-input")
+        all_notes = app_page.locator('[data-testid^="npt_note_name_"]')
         note_count = await all_notes.count()
         # Rock Kit should have 46 notes (copied from Alesis D4 Aggressive)
         assert note_count == 46, f"Expected 46 notes after cleanup, got {note_count}"

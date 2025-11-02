@@ -114,35 +114,35 @@ export class ToolsManager {
             section.id = 'note-consistency-section';
             section.className = 'tool-section';
             section.innerHTML = `
-                <h3>Note Name Consistency Tool</h3>
-                <p>Click on any note name to see where it's used and fix inconsistencies.</p>
+                <h3 data-testid="hdr_note_consistency_tool">Note Name Consistency Tool</h3>
+                <p data-testid="div_note_consistency_description">Click on any note name to see where it's used and fix inconsistencies.</p>
                 
-                <div class="bank-selector">
-                    <label for="tools-bank-select">Filter by Bank:</label>
-                    <select id="tools-bank-select" onchange="toolsManager.updateToolsBankFilter()">
-                        <option value="all">All Banks</option>
+                <div class="bank-selector" data-testid="sec_bank_selector">
+                    <label for="tools-bank-select" data-testid="lbl_filter_bank">Filter by Bank:</label>
+                    <select id="tools-bank-select" onchange="toolsManager.updateToolsBankFilter()" data-testid="sel_tools_bank">
+                        <option value="all" data-testid="opt_all_banks">All Banks</option>
                     </select>
                     
-                    <label for="tools-sort-select">Sort by:</label>
-                    <select id="tools-sort-select" onchange="toolsManager.updateToolsSort()">
-                        <option value="alphabetical">Alphabetical</option>
-                        <option value="usage-count">Usage Count</option>
+                    <label for="tools-sort-select" data-testid="lbl_sort_by">Sort by:</label>
+                    <select id="tools-sort-select" onchange="toolsManager.updateToolsSort()" data-testid="sel_tools_sort">
+                        <option value="alphabetical" data-testid="opt_sort_alphabetical">Alphabetical</option>
+                        <option value="usage-count" data-testid="opt_sort_usage">Usage Count</option>
                     </select>
                     
-                    <button class="btn btn-small btn-secondary" onclick="toolsManager.refreshIndex()">Refresh List</button>
+                    <button class="btn btn-small btn-secondary" onclick="toolsManager.refreshIndex()" data-testid="btn_refresh_note_list">Refresh List</button>
                 </div>
                 
-                <div class="index-stats">
-                    <span id="index-count">Total entries: 0</span>
-                    <span id="index-size">Memory usage: 0 KB</span>
-                    <span id="pending-changes-count">Pending changes: 0</span>
+                <div class="index-stats" data-testid="sec_index_stats">
+                    <span id="index-count" data-testid="spn_index_count">Total entries: 0</span>
+                    <span id="index-size" data-testid="spn_index_size">Memory usage: 0 KB</span>
+                    <span id="pending-changes-count" data-testid="spn_pending_changes">Pending changes: 0</span>
                 </div>
-                <div class="index-search">
-                    <input type="text" id="index-search" placeholder="Search note names..." oninput="toolsManager.filterIndexEntries()">
-                    <button class="btn btn-small" onclick="toolsManager.clearIndexSearch()">Clear</button>
+                <div class="index-search" data-testid="sec_index_search">
+                    <input type="text" id="index-search" placeholder="Search note names..." oninput="toolsManager.filterIndexEntries()" data-testid="npt_index_search">
+                    <button class="btn btn-small" onclick="toolsManager.clearIndexSearch()" data-testid="btn_clear_search">Clear</button>
                 </div>
-                <div class="index-entries" id="index-entries">
-                    <div class="empty-state">No note names in index</div>
+                <div class="index-entries" id="index-entries" data-testid="lst_index_entries">
+                    <div class="empty-state" data-testid="msg_no_note_names">No note names in index</div>
                 </div>
             `;
             
@@ -202,6 +202,7 @@ export class ToolsManager {
         const div = document.createElement('div');
         div.className = `debug-message debug-${type}`;
         div.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+        div.setAttribute('data-testid', 'div_debug_message');
         
         this.debugConsole.appendChild(div);
         this.debugConsole.scrollTop = this.debugConsole.scrollHeight;
@@ -215,6 +216,7 @@ export class ToolsManager {
                 const div = document.createElement('div');
                 div.className = `debug-message debug-${type}`;
                 div.textContent = `[${timestamp}] ${message}`;
+                div.setAttribute('data-testid', 'div_debug_message');
                 this.debugConsole.appendChild(div);
             });
             this.messageBuffer = [];
@@ -243,7 +245,7 @@ export class ToolsManager {
         }
         
         if (count === 0) {
-            entriesElement.innerHTML = '<div class="empty-state">No note names in index</div>';
+            entriesElement.innerHTML = '<div class="empty-state" data-testid="msg_no_note_names_display">No note names in index</div>';
             return;
         }
         
@@ -262,9 +264,10 @@ export class ToolsManager {
         }
         entriesElement.innerHTML = '';
         
-        sortedNames.forEach(name => {
+        sortedNames.forEach((name, index) => {
             const entryDiv = document.createElement('div');
             entryDiv.className = 'index-entry';
+            entryDiv.setAttribute('data-testid', `itm_note_name_${index}`);
             
             // Find usage locations for this note name (filtered by bank if applicable)
             const usageLocations = this.findNoteNameUsage(name);
@@ -273,15 +276,15 @@ export class ToolsManager {
             const dropdownId = this.createUniqueId(name);
             
             entryDiv.innerHTML = `
-                <div class="index-entry-content" onclick="toolsManager.showUsageDropdown('${escapedName}', '${escapedName}', this)">
-                    <span class="index-entry-name">${name}</span>
-                    <span class="usage-indicator">${usageLocations.length} usage${usageLocations.length !== 1 ? 's' : ''}</span>
+                <div class="index-entry-content" onclick="toolsManager.showUsageDropdown('${escapedName}', '${escapedName}', this)" data-testid="div_note_entry_content_${index}">
+                    <span class="index-entry-name" data-testid="spn_note_name">${name}</span>
+                    <span class="usage-indicator" data-testid="spn_usage_count">${usageLocations.length} usage${usageLocations.length !== 1 ? 's' : ''}</span>
                 </div>
-                <div class="usage-dropdown" id="${dropdownId}" style="display: none;">
+                <div class="usage-dropdown" id="${dropdownId}" style="display: none;" data-testid="drp_note_usage_${index}">
                     ${this.generateUsageDropdownContent(name, usageLocations)}
                 </div>
-                <div class="index-entry-actions">
-                    <button class="btn btn-small btn-danger" onclick="toolsManager.removeIndexEntry('${escapedName}')">×</button>
+                <div class="index-entry-actions" data-testid="grp_note_actions_${index}">
+                    <button class="btn btn-small btn-danger" onclick="toolsManager.removeIndexEntry('${escapedName}')" data-testid="btn_remove_note">×</button>
                 </div>
             `;
             entriesElement.appendChild(entryDiv);
@@ -599,7 +602,7 @@ export class ToolsManager {
         if (!bankSelect) return;
         
         // Clear existing options except "All Banks"
-        bankSelect.innerHTML = '<option value="all">All Banks</option>';
+        bankSelect.innerHTML = '<option value="all" data-testid="opt_all_banks_selector">All Banks</option>';
         
         if (!appState.currentMidnam) return;
         
@@ -608,10 +611,11 @@ export class ToolsManager {
             const bankNames = appState.currentMidnam.patchList.map(bank => bank.name).filter(name => name);
             
             // Sort bank names and add to dropdown
-            bankNames.sort().forEach(bankName => {
+            bankNames.sort().forEach((bankName, index) => {
                 const option = document.createElement('option');
                 option.value = bankName;
                 option.textContent = bankName;
+                option.setAttribute('data-testid', `opt_bank_${index}`);
                 bankSelect.appendChild(option);
             });
         }
@@ -724,19 +728,23 @@ export class ToolsManager {
         this.selectedFiles.forEach((file, index) => {
             const fileItem = document.createElement('div');
             fileItem.className = 'file-upload-item';
+            fileItem.setAttribute('data-testid', `itm_upload_file_${index}`);
             
             const fileName = document.createElement('span');
             fileName.className = 'file-upload-item-name';
             fileName.textContent = file.name;
+            fileName.setAttribute('data-testid', 'spn_upload_file_name');
             
             const fileSize = document.createElement('span');
             fileSize.className = 'file-upload-item-size';
             fileSize.textContent = this.formatFileSize(file.size);
+            fileSize.setAttribute('data-testid', 'spn_upload_file_size');
             
             const removeBtn = document.createElement('button');
             removeBtn.className = 'file-upload-item-remove';
             removeBtn.textContent = 'Remove';
             removeBtn.onclick = () => this.removeFile(index);
+            removeBtn.setAttribute('data-testid', 'btn_remove_upload_file');
             
             fileItem.appendChild(fileName);
             fileItem.appendChild(fileSize);

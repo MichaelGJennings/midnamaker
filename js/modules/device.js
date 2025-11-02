@@ -228,7 +228,7 @@ export class DeviceManager {
     showEmptyState() {
         const content = document.getElementById('device-content');
         if (content) {
-            content.innerHTML = '<div class="empty-state">Please select a device from the Manufacturer tab</div>';
+            content.innerHTML = '<div class="empty-state" data-testid="msg_device_empty_state">Please select a device from the Manufacturer tab</div>';
         }
         
         // Disable action buttons
@@ -321,23 +321,23 @@ export class DeviceManager {
     
     generateDeviceStructureHTML(midnam) {
         return `
-            <div class="structure-editor">
-                <div class="device-info-grid">
-                    <div class="info-item">
-                        <div class="info-label">Device Name</div>
-                        <div class="info-value">${Utils.escapeHtml(midnam.deviceName || 'Unknown')}</div>
+            <div class="structure-editor" data-testid="sec_structure_editor">
+                <div class="device-info-grid" data-testid="sec_device_info_grid">
+                    <div class="info-item" data-testid="sec_device_name_info">
+                        <div class="info-label" data-testid="lbl_device_name">Device Name</div>
+                        <div class="info-value" data-testid="div_device_name_value">${Utils.escapeHtml(midnam.deviceName || 'Unknown')}</div>
                     </div>
-                    <div class="info-item">
-                        <div class="info-label">Manufacturer</div>
-                        <div class="info-value">${Utils.escapeHtml(midnam.manufacturer || 'Unknown')}</div>
+                    <div class="info-item" data-testid="sec_manufacturer_info">
+                        <div class="info-label" data-testid="lbl_manufacturer">Manufacturer</div>
+                        <div class="info-value" data-testid="div_manufacturer_value">${Utils.escapeHtml(midnam.manufacturer || 'Unknown')}</div>
                     </div>
-                    <div class="info-item">
-                        <div class="info-label">Model</div>
-                        <div class="info-value">${Utils.escapeHtml(midnam.model || 'Unknown')}</div>
+                    <div class="info-item" data-testid="sec_model_info">
+                        <div class="info-label" data-testid="lbl_model">Model</div>
+                        <div class="info-value" data-testid="div_model_value">${Utils.escapeHtml(midnam.model || 'Unknown')}</div>
                     </div>
-                    <div class="info-item">
-                        <div class="info-label">Version</div>
-                        <div class="info-value">${Utils.escapeHtml(midnam.version || 'Unknown')}</div>
+                    <div class="info-item" data-testid="sec_version_info">
+                        <div class="info-label" data-testid="lbl_version">Version</div>
+                        <div class="info-value" data-testid="div_version_value">${Utils.escapeHtml(midnam.version || 'Unknown')}</div>
                     </div>
                 </div>
                 
@@ -350,14 +350,14 @@ export class DeviceManager {
     
     generatePatchListHTML(patchLists) {
         if (!patchLists || patchLists.length === 0) {
-            return '<div class="structure-section"><h4>No Patch Lists Found</h4></div>';
+            return '<div class="structure-section" data-testid="sec_no_patch_lists"><h4 data-testid="hdr_no_patch_lists">No Patch Lists Found</h4></div>';
         }
         
         return `
-            <div class="structure-section">
-                <div style="display: flex; align-items: center; justify-content: space-between;">
-                    <h4>Patch Banks (${patchLists.length})</h4>
-                    <button class="btn btn-small btn-primary" onclick="deviceManager.addPatchBank()" title="Add new patch bank">+</button>
+            <div class="structure-section" data-testid="sec_patch_banks">
+                <div style="display: flex; align-items: center; justify-content: space-between;" data-testid="hdr_patch_banks_section">
+                    <h4 data-testid="hdr_patch_banks">Patch Banks (${patchLists.length})</h4>
+                    <button class="btn btn-small btn-primary" onclick="deviceManager.addPatchBank()" title="Add new patch bank" data-testid="btn_add_patch_bank">+</button>
                 </div>
                 ${patchLists.map((patchList, index) => {
                     // Check if this patch list has MIDI commands
@@ -373,16 +373,17 @@ export class DeviceManager {
                         .join('');
                     
                     return `
-                    <div class="structure-element collapsible" data-index="${index}">
-                        <div class="element-header collapsible-header" onclick="deviceManager.togglePatchBank(${index})">
-                            <div class="element-name">
-                                <span class="toggle-icon">▼</span>
+                    <div class="structure-element collapsible" data-index="${index}" data-testid="itm_patch_bank_${index}">
+                        <div class="element-header collapsible-header" onclick="deviceManager.togglePatchBank(${index})" data-testid="hdr_patch_bank_${index}">
+                            <div class="element-name" data-testid="div_patch_bank_name_${index}">
+                                <span class="toggle-icon" data-testid="icn_toggle_bank_${index}">▼</span>
                                 ${this.editingPatchListIndex === index ? `
                                     <input type="text" 
                                            class="bank-name-input"
                                            value="${Utils.escapeHtml(patchList.name || `Patch Bank ${index + 1}`)}"
                                            onclick="event.stopPropagation()"
                                            onchange="deviceManager.updateBankName(${index}, this.value)"
+                                           data-testid="npt_bank_name_${index}"
                                            style="display: inline-block; width: auto; min-width: 200px; margin-right: 10px;">
                                 ` : Utils.escapeHtml(patchList.name || `Patch Bank ${index + 1}`)}
                                 ${patchList.channelNameSet ? (this.editingPatchListIndex === index ? `
@@ -399,21 +400,22 @@ export class DeviceManager {
                                     </span>
                                 `) : ''}
                             </div>
-                            <div class="element-actions">
-                                <button class="btn btn-small btn-primary" onclick="event.stopPropagation(); deviceManager.editPatchList(${index})">${this.editingPatchListIndex === index ? 'Done' : 'Edit'}</button>
-                                <button class="btn btn-small btn-danger" onclick="event.stopPropagation(); deviceManager.deletePatchList(${index})">Delete</button>
+                            <div class="element-actions" data-testid="grp_patch_bank_actions_${index}">
+                                <button class="btn btn-small btn-primary" onclick="event.stopPropagation(); deviceManager.editPatchList(${index})" data-testid="btn_edit_patch_bank_${index}">${this.editingPatchListIndex === index ? 'Done' : 'Edit'}</button>
+                                <button class="btn btn-small btn-danger" onclick="event.stopPropagation(); deviceManager.deletePatchList(${index})" data-testid="btn_delete_patch_bank_${index}">Delete</button>
                             </div>
                         </div>
-                        <div class="element-content collapsible-content">
+                        <div class="element-content collapsible-content" data-testid="sec_patch_bank_content_${index}">
                             ${hasMidiCommands ? `
-                                <div class="bank-midi-commands">
-                                    <strong>Bank Select MIDI Command:</strong>
+                                <div class="bank-midi-commands" data-testid="sec_bank_midi_commands_${index}">
+                                    <strong data-testid="lbl_bank_midi_command">Bank Select MIDI Command:</strong>
                                     ${patchList.midi_commands.map(cmd => `
-                                        <span class="midi-command-item">CC${cmd.control}=${cmd.value}</span>
+                                        <span class="midi-command-item" data-testid="spn_midi_command">CC${cmd.control}=${cmd.value}</span>
                                     `).join(' ')}
                                     <button class="btn btn-small btn-secondary" 
                                             onclick="event.stopPropagation(); deviceManager.sendBankSelectMidi(${index})" 
-                                            title="Issue MIDI Bank Select">
+                                            title="Issue MIDI Bank Select"
+                                            data-testid="btn_test_bank_select_${index}">
                                         Test Bank Select
                                     </button>
                                 </div>
@@ -456,10 +458,10 @@ export class DeviceManager {
         }
         
         return `
-            <div class="structure-section">
-                <div style="display: flex; align-items: center; justify-content: space-between;">
-                    <h4>NameSets (${channelNameSets.length})</h4>
-                    <button class="btn btn-small btn-primary" onclick="deviceManager.addNameSet()" title="Add new NameSet">+</button>
+            <div class="structure-section" data-testid="sec_namesets">
+                <div style="display: flex; align-items: center; justify-content: space-between;" data-testid="hdr_namesets_section">
+                    <h4 data-testid="hdr_namesets">NameSets (${channelNameSets.length})</h4>
+                    <button class="btn btn-small btn-primary" onclick="deviceManager.addNameSet()" title="Add new NameSet" data-testid="btn_add_nameset">+</button>
                 </div>
                 <p class="section-description">
                     If the patch banks this device presents are dependent on MIDI channel, define a new NameSet here.
@@ -471,16 +473,16 @@ export class DeviceManager {
                     const channelAvailability = this.formatChannelAvailability(nameSet.available_channels);
                     
                     return `
-                    <div class="nameset-card" data-nameset-index="${index}">
-                        <div class="nameset-header">
-                            <div class="nameset-name">
-                                <strong>${Utils.escapeHtml(nameSet.name)}</strong>
-                                <span class="channel-availability">${channelAvailability}</span>
+                    <div class="nameset-card" data-nameset-index="${index}" data-testid="itm_nameset_${index}">
+                        <div class="nameset-header" data-testid="hdr_nameset_${index}">
+                            <div class="nameset-name" data-testid="div_nameset_name_${index}">
+                                <strong data-testid="spn_nameset_name">${Utils.escapeHtml(nameSet.name)}</strong>
+                                <span class="channel-availability" data-testid="spn_channel_availability">${channelAvailability}</span>
                             </div>
-                            <div class="nameset-actions">
-                                <button class="btn btn-small btn-primary" onclick="deviceManager.editNameSet(${index})" title="Edit NameSet">Edit</button>
-                                <button class="btn btn-small btn-secondary" onclick="deviceManager.duplicateNameSet(${index})" title="Duplicate NameSet">Duplicate</button>
-                                <button class="btn btn-small btn-danger" onclick="deviceManager.deleteNameSet(${index})" title="Delete NameSet">Delete</button>
+                            <div class="nameset-actions" data-testid="grp_nameset_actions_${index}">
+                                <button class="btn btn-small btn-primary" onclick="deviceManager.editNameSet(${index})" title="Edit NameSet" data-testid="btn_edit_nameset_${index}">Edit</button>
+                                <button class="btn btn-small btn-secondary" onclick="deviceManager.duplicateNameSet(${index})" title="Duplicate NameSet" data-testid="btn_duplicate_nameset_${index}">Duplicate</button>
+                                <button class="btn btn-small btn-danger" onclick="deviceManager.deleteNameSet(${index})" title="Delete NameSet" data-testid="btn_delete_nameset_${index}">Delete</button>
                             </div>
                         </div>
                         <div class="nameset-banks">
@@ -821,6 +823,7 @@ export class DeviceManager {
         const separator = document.createElement('div');
         separator.className = 'download-separator';
         separator.textContent = '— or download both in one file —';
+        separator.setAttribute('data-testid', 'div_download_separator');
         linksContainer.appendChild(separator);
         
         // ZIP file link
@@ -841,17 +844,21 @@ export class DeviceManager {
     createDownloadLinkItem(filename, description, url) {
         const item = document.createElement('div');
         item.className = 'download-link-item';
+        item.setAttribute('data-testid', 'itm_download_link');
         
         const info = document.createElement('div');
         info.className = 'download-link-info';
+        info.setAttribute('data-testid', 'div_download_link_info');
         
         const name = document.createElement('div');
         name.className = 'download-link-name';
         name.textContent = filename;
+        name.setAttribute('data-testid', 'div_download_filename');
         
         const desc = document.createElement('div');
         desc.className = 'download-link-description';
         desc.textContent = description;
+        desc.setAttribute('data-testid', 'div_download_description');
         
         info.appendChild(name);
         info.appendChild(desc);
@@ -861,6 +868,7 @@ export class DeviceManager {
         link.href = url;
         link.download = filename;
         link.textContent = 'Download';
+        link.setAttribute('data-testid', 'btn_download_file');
         
         item.appendChild(info);
         item.appendChild(link);

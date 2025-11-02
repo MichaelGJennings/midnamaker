@@ -97,15 +97,15 @@ export class ManufacturerManager {
             console.log('[ManufacturerManager] Built manufacturer list with', manufacturers.length, 'manufacturers');
             
             if (manufacturers.length === 0) {
-                container.innerHTML = '<div class="empty-state">No manufacturers found</div>';
+                container.innerHTML = '<div class="empty-state" data-testid="msg_no_manufacturers">No manufacturers found</div>';
                 return;
             }
             
             // Render manufacturer list
             container.innerHTML = manufacturers.map(mfg => `
-                <div class="manufacturer-list-item" data-manufacturer="${Utils.escapeAttribute(mfg.name)}">
-                    <div class="manufacturer-item-name">${Utils.escapeHtml(mfg.name)}</div>
-                    <div class="manufacturer-item-count">${mfg.deviceCount} device${mfg.deviceCount !== 1 ? 's' : ''}</div>
+                <div class="manufacturer-list-item" data-manufacturer="${Utils.escapeAttribute(mfg.name)}" data-testid="itm_manufacturer_${Utils.escapeAttribute(mfg.name).replace(/\s+/g, '_').toLowerCase()}">
+                    <div class="manufacturer-item-name" data-testid="div_manufacturer_name">${Utils.escapeHtml(mfg.name)}</div>
+                    <div class="manufacturer-item-count" data-testid="div_manufacturer_count">${mfg.deviceCount} device${mfg.deviceCount !== 1 ? 's' : ''}</div>
                 </div>
             `).join('');
             
@@ -119,7 +119,7 @@ export class ManufacturerManager {
             
         } catch (error) {
             console.error('Error loading manufacturers:', error);
-            container.innerHTML = '<div class="empty-state">Error loading manufacturers</div>';
+            container.innerHTML = '<div class="empty-state" data-testid="msg_manufacturer_error">Error loading manufacturers</div>';
         }
     }
     
@@ -202,7 +202,7 @@ export class ManufacturerManager {
         if (!container) return;
         
         if (devices.length === 0) {
-            container.innerHTML = '<div class="empty-state">No devices found for this manufacturer</div>';
+            container.innerHTML = '<div class="empty-state" data-testid="msg_no_devices">No devices found for this manufacturer</div>';
             return;
         }
         
@@ -212,9 +212,9 @@ export class ManufacturerManager {
         });
         
         container.innerHTML = sortedDevices.map(device => `
-            <div class="device-list-item" data-device-id="${Utils.escapeAttribute(device.id)}">
-                <div class="device-item-name">${Utils.escapeHtml(device.name)}</div>
-                <div class="device-item-type">${Utils.escapeHtml(device.type)}</div>
+            <div class="device-list-item" data-device-id="${Utils.escapeAttribute(device.id)}" data-testid="itm_device_${Utils.escapeAttribute(device.name).replace(/\s+/g, '_').toLowerCase()}">
+                <div class="device-item-name" data-testid="div_device_name">${Utils.escapeHtml(device.name)}</div>
+                <div class="device-item-type" data-testid="div_device_type">${Utils.escapeHtml(device.type)}</div>
             </div>
         `).join('');
         
@@ -451,17 +451,17 @@ export class ManufacturerManager {
             }
             
             const content = `
-                <div class="file-disambiguation">
-                    <p>Multiple files found for this device. Please select one:</p>
-                    <div class="file-selection-list">
+                <div class="file-disambiguation" data-testid="sec_file_disambiguation">
+                    <p data-testid="div_disambiguation_prompt">Multiple files found for this device. Please select one:</p>
+                    <div class="file-selection-list" data-testid="lst_file_selection">
                         ${devices.map((device, index) => `
-                            <div class="file-selection-item" data-index="${index}">
-                                <div class="file-selection-header">
-                                    <strong>${device.file_path.split('/').pop()}</strong>
-                                    <span class="file-type-badge ${device.type}">${device.type}</span>
+                            <div class="file-selection-item" data-index="${index}" data-testid="itm_file_${index}">
+                                <div class="file-selection-header" data-testid="hdr_file_${index}">
+                                    <strong data-testid="div_file_name">${device.file_path.split('/').pop()}</strong>
+                                    <span class="file-type-badge ${device.type}" data-testid="div_file_type_badge">${device.type}</span>
                                 </div>
-                                <div class="file-meta">
-                                    <span class="file-path">${Utils.escapeHtml(device.file_path)}</span>
+                                <div class="file-meta" data-testid="div_file_meta">
+                                    <span class="file-path" data-testid="spn_file_path">${Utils.escapeHtml(device.file_path)}</span>
                                 </div>
                             </div>
                         `).join('')}

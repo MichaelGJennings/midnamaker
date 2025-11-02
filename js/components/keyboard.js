@@ -17,6 +17,7 @@ export class KeyboardManager {
         this.tooltip.id = 'keyboard-tooltip';
         this.tooltip.className = 'keyboard-tooltip';
         this.tooltip.style.display = 'none';
+        this.tooltip.setAttribute('data-testid', 'ttp_keyboard_key');
         document.body.appendChild(this.tooltip);
     }
     
@@ -124,8 +125,8 @@ export class KeyboardManager {
         const keyName = this.getKeyName(event.code);
         
         this.tooltip.innerHTML = `
-            <img src="assets/kbd.svg" alt="keyboard" width="16" height="16">
-            <span>${keyName} → ${noteName}</span>
+            <img src="assets/kbd.svg" alt="keyboard" width="16" height="16" data-testid="icn_keyboard">
+            <span data-testid="spn_key_mapping">${keyName} → ${noteName}</span>
         `;
         
         this.tooltip.style.display = 'flex';
