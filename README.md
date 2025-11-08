@@ -129,9 +129,8 @@ The server provides the following endpoints:
 3. Update the device loading logic
 
 ### Customizing the Interface
-- Modify `midi_name_editor.html` for UI changes
+- Modify `index.html` for UI changes
 - Update `server.py` for backend functionality
-- Add new DTD files in the `dtd/` directory
 
 ## Troubleshooting
 

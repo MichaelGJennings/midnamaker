@@ -98,8 +98,20 @@ export class AppState {
         // Clear existing options and add placeholder
         select.innerHTML = '<option value="">Select a MIDI Device</option>';
         
+        // Debug: Log all available MIDI ports
+        // NOTE: There's a known issue on macOS where the WebMIDI API sometimes returns
+        // identical arrays for both .inputs and .outputs (either all inputs or all outputs
+        // for both). This appears to be a Core MIDI or browser implementation bug.
+        // The debug logging below helps identify when this occurs.
+        console.log('=== MIDI PORTS DEBUG ===');
+        console.log('MIDI Inputs:', Array.from(this.globalMIDIState.access.inputs.values()).map(i => i.name));
+        console.log('MIDI Outputs:', Array.from(this.globalMIDIState.access.outputs.values()).map(o => o.name));
+        console.log('========================');
+        
         // Add available OUTPUT devices with stable IDs
         const outputs = Array.from(this.globalMIDIState.access.outputs.values());
+        console.log(`Found ${outputs.length} MIDI output devices:`, outputs.map(o => o.name));
+        
         outputs.forEach((output) => {
             const option = document.createElement('option');
             option.value = output.id; // stable ID, not index
@@ -202,8 +214,12 @@ export class AppState {
         } else {
             // Device selected by stable ID
             const outputs = Array.from(this.globalMIDIState.access.outputs.values());
+            console.log('Selecting from outputs:', outputs.map(o => ({id: o.id, name: o.name})));
+            console.log('Looking for ID:', selectedId);
+            
             const output = outputs.find(out => out.id === selectedId);
             if (output) {
+                console.log('Found output device:', output.name);
                 this.globalMIDIState.selectedOutput = output;
                 this.globalMIDIState.selectedOutputId = output.id;
                 this.globalMIDIState.deviceName = output.name;
@@ -217,6 +233,7 @@ export class AppState {
                     }, 10);
                 }
             } else {
+                console.warn('Selected device ID not found in outputs');
                 // Selected device is not currently available
                 this.globalMIDIState.selectedOutput = null;
                 this.globalMIDIState.selectedOutputId = null;
