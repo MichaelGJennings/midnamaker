@@ -514,6 +514,7 @@ export class ManufacturerManager {
                             patch: bank.patches ? bank.patches.map(p => ({
                                 name: p.name,
                                 Number: p.Number || '0',
+                                number: p.Number || '0',
                                 programChange: p.programChange !== undefined ? parseInt(p.programChange) : 0,
                                 usesNoteList: p.note_list_name,
                                 note_list_name: p.note_list_name
@@ -533,6 +534,7 @@ export class ManufacturerManager {
                 patch: bank.patches ? bank.patches.map(p => ({
                     name: p.name,
                     Number: p.Number || '0',
+                    number: p.Number || '0',
                     programChange: p.programChange !== undefined ? parseInt(p.programChange) : 0,
                     usesNoteList: p.note_list_name,
                     note_list_name: p.note_list_name
