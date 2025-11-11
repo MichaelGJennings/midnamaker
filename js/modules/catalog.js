@@ -341,9 +341,41 @@ export class CatalogManager {
         });
     }
     
-    editDevice(deviceKey) {
-        // Implementation for editing device
-        Utils.showNotification('Device editing will be implemented', 'info');
+    async editDevice(deviceKey) {
+        try {
+            // Check for unsaved changes
+            if (appState.pendingChanges && appState.pendingChanges.hasUnsavedChanges) {
+                const currentDevice = appState.selectedDevice ? appState.selectedDevice.model : 'current device';
+                const [manufacturer, model] = deviceKey.split('|');
+                
+                const confirmed = await modal.confirm(
+                    `You have unsaved changes in "${currentDevice}".\n\nLoading "${model}" will discard these changes. Continue?`,
+                    'Unsaved Changes'
+                );
+                
+                if (!confirmed) {
+                    return; // User cancelled
+                }
+            }
+            
+            // Use the manufacturer manager to load the device
+            if (window.manufacturerManager && window.manufacturerManager.selectDevice) {
+                // Load the device
+                await window.manufacturerManager.selectDevice(deviceKey);
+                
+                // Switch to the device tab
+                if (window.tabManager && window.tabManager.switchTab) {
+                    window.tabManager.switchTab('device');
+                }
+                
+                Utils.showNotification('Device loaded for editing', 'success');
+            } else {
+                Utils.showNotification('Manufacturer manager not available', 'error');
+            }
+        } catch (error) {
+            console.error('Error loading device for editing:', error);
+            Utils.showNotification('Failed to load device', 'error');
+        }
     }
     
     deleteDevice(deviceKey) {

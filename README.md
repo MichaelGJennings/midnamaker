@@ -1,6 +1,8 @@
 # MIDI Name Editor
 
-A comprehensive web-based editor for creating and editing MIDI Name Documents (.midnam files) and MIDI Device Types (.middev files). This tool provides an intuitive interface for managing MIDI device configurations, patch names, and note mappings. In some DAWs (notably Pro Tools and Digital Performer), these files provide automatic access to patch banks and individual patch names within the DAW.  Pro Tools even shows you individual note names in piano roll editors (think drum kits or noteswitches). (Hey MOTU! Add support for this!)
+Ever tried to use patch changes, controller moves, drum sequences in your MIDI sequencing but all the patch names, note names, controller names etc. are generic?  Midnam files were a standard way of describing a device's particular banks, patches, controllers names and even note names.  In some DAWs (notably Pro Tools and Digital Performer), these files provide automatic access to patch banks and individual patch names within the DAW.  Pro Tools even shows you individual note names in piano roll editors (think drum kits or noteswitches). (Hey MOTU! Add support for this!)
+
+Midnamaker is a comprehensive web-based editor for creating and editing MIDI Name Documents (.midnam files) and MIDI Device Types (.middev files). This tool provides an intuitive interface for managing MIDI device configurations, patch names, and note mappings. 
 
 I've used this tool to create or extend midnam and middev files for some random vintage modules from my studio, like the Ensoniq TS-10, TS-12 and EPS16+, an old ART Multiverb III, and added note name lists for the Alesis D4.  If you're using any of these with a supported DAW, you're welcome to install them into your system.
 
@@ -12,11 +14,20 @@ After selecting the device, you'll see patch bank lists and other items from the
 
 When selecting a bank, a list of the patches in that bank will be expanded. You can add or edit patches, and add or edit note name lists for when you want to see individual note names in Pro Tools.  When editing note lists you can add, insert or delete items, and enter or update their names.  A dropdown will allow you to select names that have already been used elsewhere in the patch bank.  Note numbers corresponding to black keys are displayed as white on black to more easily correlate with a keyboard controller.
 
-If you have set your output device to your MIDI device, clicing the note number will send that note number, which is super helpful for double-checking that, for example, the drums are what you think they are, or even for auditioning sounds. 
+If you have set your output device to your MIDI device, you can use a few convenient features:
+* Clicking the note number in the Note Editor will play that note on your device. This is super helpful for double-checking that, for example, the drums are what you think they are, or even for auditioning sounds. 
+* In the Device tab you can click on the indicator that shows the Program Change number for each patch and it will select that patch on your device, changing patch banks if necessary. 
+* You can also issue Bank Select messages to select any of your banks – though frequently devices won't do anything visible on Bank Select until there's a subsequent Program Change.
 
-Save your changes with the button at the bottom. A backup of the old version of the file wil be created in the directory. 
+Save your changes with the button at the top. A backup of the old version of the file wil be created in the directory. An option allows you to download the edited version of the file, and from that you can add or overwrite in your system. Yamaha has done a [pretty good job of detailing the installation procedure](https://faq.yamaha.com/usa/s/article/U0007729).  If you're using Digital Performer, pay attention as you go; along the way there's a detour or two but you can't miss it.
 
-The Tools tab contains a "Note Name Consistency Tool" which can be used to control what appears in the note name field dropdown.  You can delete items that you don't want to see in the dropdowns here, but it's important to note that if the item is used somewhere, it will come back the next time you edit that device bank.  To fix that, select the item in the tool and a popup will appear.  If it's unused, you can delete it, otherwise you can jump to the Note Name editor where it's used and fix it there.  This is a good way to ensure consistency if that matters to you.
+
+### Advanced Tips
+This app has been designed to support efficient keyboard data entry.  For example, when entering a lot of patch names, fields are intelligently auto-filled, a dropdown appears with the items that have been used before, and there are some keyboard controls. The Tab and Enter keys do different things; tab moves from field to field, but Enter either jumps to a likely control to be used or, if focus is already on such a control, it executes its function (i.e. adds a new row and focuses the new name field).
+
+The dropdown can make things very fast and consistent if you're reusing names or portions of names. As you type it progresively shortens the list. This is especially useful for drum module note names, for example. The Tools tab contains a "Note Name Consistency Tool" which can be used to control what appears in the note name field dropdown.  You can delete items that you don't want to see in the dropdowns here, but it's important to note that if the item is used somewhere, it will come back the next time you edit that device bank.  To fix that, select the item in the tool and a popup will appear.  If it's unused, you can delete it, otherwise you can jump to the Note Name editor where it's used and fix it there.  This is a good way to ensure consistency if that matters to you.
+
+The Catalog tab just displays what Midnamaker understands about the devices in .middev files and their associated .midnam files, based on what's in the patchlists folder.  You can't really do much, and it's only really there for debugging purposes, but it's kind of interesting so I left it visible.
 
 ## Getting Started
 
