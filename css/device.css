@@ -655,6 +655,20 @@
     color: #666;
 }
 
+.patch-item-inline .patch-number.clickable-pc {
+    padding: 0.15rem 0.4rem;
+    background: #e8f4f8;
+    border-radius: 3px;
+    transition: all 0.2s;
+    user-select: none;
+}
+
+.patch-item-inline .patch-number.clickable-pc:hover {
+    background: #007AFF;
+    color: white;
+    transform: translateY(-1px);
+}
+
 .patch-item-inline .patch-name.clickable {
     flex: 1;
     cursor: pointer;
