@@ -770,19 +770,23 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                             if manufacturer_id:
                                 device_info['manufacturer_id'] = manufacturer_id
                             
-                            # Create device key
-                            device_key = f"{device_info['manufacturer']}|{device_info['model']}"
+                            # Get all models (handles files with multiple Model elements)
+                            all_models = device_info.get('all_models', [device_info['model']])
                             
-                            patch_files.append({
-                                'id': device_key,
-                                'name': device_info['model'],
-                                'manufacturer': device_info['manufacturer'],
-                                'type': device_info.get('type', 'Unknown'),
-                                'file_path': relative_path,
-                                'manufacturer_id': device_info.get('manufacturer_id'),
-                                'family_id': device_info.get('family_id'),
-                                'device_id': device_info.get('device_id')
-                            })
+                            # Add an entry for EACH model
+                            for model in all_models:
+                                device_key = f"{device_info['manufacturer']}|{model}"
+                                
+                                patch_files.append({
+                                    'id': device_key,
+                                    'name': model,
+                                    'manufacturer': device_info['manufacturer'],
+                                    'type': device_info.get('type', 'Unknown'),
+                                    'file_path': relative_path,
+                                    'manufacturer_id': device_info.get('manufacturer_id'),
+                                    'family_id': device_info.get('family_id'),
+                                    'device_id': device_info.get('device_id')
+                                })
                         else:
                             print(f"[get_patch_files] No device info extracted from {relative_path}")
                     except Exception as e:
@@ -871,24 +875,27 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                                 if manufacturer_id:
                                     device_info['manufacturer_id'] = manufacturer_id
                                 
-                                # Create device key from manufacturer + model
-                                device_key = f"{device_info['manufacturer']}|{device_info['model']}"
+                                # Get all models (handles files with multiple Model elements)
+                                all_models = device_info.get('all_models', [device_info['model']])
                                 
                                 if device_info['manufacturer'] not in manufacturers_dict:
                                     manufacturers_dict[device_info['manufacturer']] = []
                                 
-                                # Add device to manufacturer's list
-                                device_data = {
-                                    'id': device_key,
-                                    'name': device_info['model'],
-                                    'type': device_info.get('type', 'Unknown'),
-                                    'file_path': relative_path,
-                                    'manufacturer_id': device_info.get('manufacturer_id'),
-                                    'family_id': device_info.get('family_id'),
-                                    'device_id': device_info.get('device_id')
-                                }
-                                
-                                manufacturers_dict[device_info['manufacturer']].append(device_data)
+                                # Add an entry for EACH model
+                                for model in all_models:
+                                    device_key = f"{device_info['manufacturer']}|{model}"
+                                    
+                                    device_data = {
+                                        'id': device_key,
+                                        'name': model,
+                                        'type': device_info.get('type', 'Unknown'),
+                                        'file_path': relative_path,
+                                        'manufacturer_id': device_info.get('manufacturer_id'),
+                                        'family_id': device_info.get('family_id'),
+                                        'device_id': device_info.get('device_id')
+                                    }
+                                    
+                                    manufacturers_dict[device_info['manufacturer']].append(device_data)
                                 
                         except Exception as e:
                             print(f"Error parsing {file_path}: {e}")
@@ -1185,22 +1192,27 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                             if manufacturer_id:
                                 device_info['manufacturer_id'] = manufacturer_id
                             
-                            device_key = f"{device_info['manufacturer']}|{device_info['model']}"
+                            # Get all models (handles files with multiple Model elements)
+                            all_models = device_info.get('all_models', [device_info['model']])
                             
                             if device_info['manufacturer'] not in manufacturers_dict:
                                 manufacturers_dict[device_info['manufacturer']] = []
                             
-                            device_data = {
-                                'id': device_key,
-                                'name': device_info['model'],
-                                'type': device_info.get('type', 'Unknown'),
-                                'file_path': relative_path,
-                                'manufacturer_id': device_info.get('manufacturer_id'),
-                                'family_id': device_info.get('family_id'),
-                                'device_id': device_info.get('device_id')
-                            }
-                            
-                            manufacturers_dict[device_info['manufacturer']].append(device_data)
+                            # Create an entry for EACH model
+                            for model in all_models:
+                                device_key = f"{device_info['manufacturer']}|{model}"
+                                
+                                device_data = {
+                                    'id': device_key,
+                                    'name': model,
+                                    'type': device_info.get('type', 'Unknown'),
+                                    'file_path': relative_path,
+                                    'manufacturer_id': device_info.get('manufacturer_id'),
+                                    'family_id': device_info.get('family_id'),
+                                    'device_id': device_info.get('device_id')
+                                }
+                                
+                                manufacturers_dict[device_info['manufacturer']].append(device_data)
                             
                     except Exception as e:
                         continue
@@ -1404,26 +1416,31 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                                     if manufacturer_id:
                                         device_info['manufacturer_id'] = manufacturer_id
                                     
-                                    print(f"  Extracted: {device_info['manufacturer']} {device_info['model']} (ID: {manufacturer_id or 'unknown'})")
-                                    # Create device key from manufacturer + model
-                                    device_key = f"{device_info['manufacturer']}|{device_info['model']}"
+                                    # Get all models (handles files with multiple Model elements)
+                                    all_models = device_info.get('all_models', [device_info['model']])
                                     
-                                    if device_key not in catalog:
-                                        catalog[device_key] = {
-                                            'manufacturer': device_info['manufacturer'],
-                                            'model': device_info['model'],
-                                            'manufacturer_id': device_info.get('manufacturer_id'),
-                                            'family_id': device_info.get('family_id'),
-                                            'device_id': device_info.get('device_id'),
-                                            'type': device_info.get('type'),
-                                            'files': []
-                                        }
+                                    print(f"  Extracted: {device_info['manufacturer']} models: {', '.join(all_models)} (ID: {manufacturer_id or 'unknown'})")
                                     
-                                    catalog[device_key]['files'].append({
-                                        'path': relative_path,
-                                        'size': len(content),
-                                        'modified': os.path.getmtime(file_path)
-                                    })
+                                    # Create catalog entry for EACH model
+                                    for model in all_models:
+                                        device_key = f"{device_info['manufacturer']}|{model}"
+                                        
+                                        if device_key not in catalog:
+                                            catalog[device_key] = {
+                                                'manufacturer': device_info['manufacturer'],
+                                                'model': model,
+                                                'manufacturer_id': device_info.get('manufacturer_id'),
+                                                'family_id': device_info.get('family_id'),
+                                                'device_id': device_info.get('device_id'),
+                                                'type': device_info.get('type'),
+                                                'files': []
+                                            }
+                                        
+                                        catalog[device_key]['files'].append({
+                                            'path': relative_path,
+                                            'size': len(content),
+                                            'modified': os.path.getmtime(file_path)
+                                        })
                                 else:
                                     print(f"  No device info extracted")
                                     
@@ -1494,16 +1511,23 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
             # Try to find MasterDeviceNames first
             master_device = midnam_doc.find('.//MasterDeviceNames')
             if master_device is not None:
-                # Extract manufacturer and model
+                # Extract manufacturer
                 manufacturer_elem = master_device.find('Manufacturer')
-                model_elem = master_device.find('Model')
                 
-                if manufacturer_elem is None or model_elem is None:
-                    print(f"[extract_device_info] {file_path}: Missing Manufacturer or Model in MasterDeviceNames")
+                if manufacturer_elem is None:
+                    print(f"[extract_device_info] {file_path}: Missing Manufacturer in MasterDeviceNames")
                     return None
                 
                 manufacturer = manufacturer_elem.text or ''
-                model = model_elem.text or ''
+                
+                # Get ALL Model elements (a file can support multiple models)
+                model_elems = master_device.findall('Model')
+                if not model_elems:
+                    print(f"[extract_device_info] {file_path}: No Model elements in MasterDeviceNames")
+                    return None
+                
+                # Use the first model as the primary model for backward compatibility
+                model = model_elems[0].text or ''
                 
                 # Try to extract family and device IDs from DeviceID elements
                 family_id = None
@@ -1520,7 +1544,8 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                     'family_id': family_id,
                     'device_id': device_id,
                     'file_path': file_path,
-                    'type': 'master'
+                    'type': 'master',
+                    'all_models': [m.text.strip() for m in model_elems if m.text]
                 }
             
             # Try to find ExtendingDeviceNames
