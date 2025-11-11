@@ -15,11 +15,11 @@ class TestManufacturerTab:
         await helpers.click_tab(app_page, "manufacturer")
         
         # Wait for manufacturer list to load
-        manufacturer_list = app_page.locator("#manufacturer-list")
+        manufacturer_list = app_page.get_by_test_id("lst_manufacturers")
         await expect(manufacturer_list).to_be_visible()
         
         # Check that we have manufacturer items
-        manufacturer_items = app_page.locator(".manufacturer-list-item")
+        manufacturer_items = app_page.locator('[data-testid^="itm_manufacturer_"]')
         count = await manufacturer_items.count()
         assert count > 0, "Should have at least one manufacturer"
     
@@ -31,14 +31,14 @@ class TestManufacturerTab:
         await app_page.wait_for_timeout(1000)
         
         # Type in filter
-        filter_input = app_page.locator("#manufacturer-filter")
+        filter_input = app_page.get_by_test_id("npt_manufacturer_filter")
         await filter_input.fill("Alesis")
         
         # Wait for filter to apply
         await app_page.wait_for_timeout(500)
         
         # Check that filtered results are shown
-        visible_items = app_page.locator(".manufacturer-list-item:visible")
+        visible_items = app_page.locator('[data-testid^="itm_manufacturer_"]:visible')
         count = await visible_items.count()
         assert count > 0, "Should have filtered results"
         
@@ -56,7 +56,7 @@ class TestManufacturerTab:
         await app_page.wait_for_timeout(1000)
         
         # Find and click Alesis manufacturer
-        alesis_items = app_page.locator(".manufacturer-list-item")
+        alesis_items = app_page.locator('[data-testid^="itm_manufacturer_"]')
         alesis_found = False
         
         item_count = await alesis_items.count()
@@ -74,11 +74,11 @@ class TestManufacturerTab:
         await app_page.wait_for_timeout(1000)
         
         # Check that device list container is visible
-        device_container = app_page.locator("#device-list-container")
+        device_container = app_page.get_by_test_id("sec_device_list_container")
         await expect(device_container).to_be_visible()
         
         # Check that device list has items
-        device_items = app_page.locator(".device-list-item")
+        device_items = app_page.locator('[data-testid^="itm_device_"]')
         count = await device_items.count()
         assert count > 0, "Should have at least one device"
     
@@ -90,7 +90,7 @@ class TestManufacturerTab:
         await app_page.wait_for_timeout(1000)
         
         # Find and click Alesis manufacturer
-        alesis_items = app_page.locator(".manufacturer-list-item")
+        alesis_items = app_page.locator('[data-testid^="itm_manufacturer_"]')
         item_count = await alesis_items.count()
         for i in range(item_count):
             item = alesis_items.nth(i)
@@ -103,7 +103,7 @@ class TestManufacturerTab:
         await app_page.wait_for_timeout(1000)
         
         # Click first device
-        device_items = app_page.locator(".device-list-item")
+        device_items = app_page.locator('[data-testid^="itm_device_"]')
         if await device_items.count() > 0:
             await device_items.first.click()
             
@@ -111,7 +111,7 @@ class TestManufacturerTab:
             await app_page.wait_for_timeout(2000)
             
             # Check that we're on device tab
-            device_tab = app_page.locator("#device-tab")
+            device_tab = app_page.get_by_test_id("sec_device_tab")
             class_attr = await device_tab.get_attribute("class")
             assert "active" in class_attr, "Device tab should be active"
     
@@ -123,17 +123,17 @@ class TestManufacturerTab:
         await app_page.wait_for_timeout(1000)
         
         # Select a manufacturer
-        manufacturer_items = app_page.locator(".manufacturer-list-item")
+        manufacturer_items = app_page.locator('[data-testid^="itm_manufacturer_"]')
         if await manufacturer_items.count() > 0:
             await manufacturer_items.first.click()
             await app_page.wait_for_timeout(1000)
             
             # Device list should be visible
-            device_container = app_page.locator("#device-list-container")
+            device_container = app_page.get_by_test_id("sec_device_list_container")
             await expect(device_container).to_be_visible()
             
             # Click "Change Manufacturer" button
-            clear_btn = app_page.locator("#clear-manufacturer-selection")
+            clear_btn = app_page.get_by_test_id("btn_change_manufacturer")
             await clear_btn.click()
             await app_page.wait_for_timeout(500)
             
@@ -147,7 +147,7 @@ class TestManufacturerTab:
         await app_page.wait_for_timeout(1000)
         
         # Select a manufacturer
-        manufacturer_items = app_page.locator(".manufacturer-list-item")
+        manufacturer_items = app_page.locator('[data-testid^="itm_manufacturer_"]')
         manufacturer_name = None
         if await manufacturer_items.count() > 0:
             first_item = manufacturer_items.first
@@ -164,7 +164,7 @@ class TestManufacturerTab:
         await app_page.wait_for_timeout(500)
         
         # Device list should still be visible
-        device_container = app_page.locator("#device-list-container")
+        device_container = app_page.get_by_test_id("sec_device_list_container")
         display = await device_container.evaluate("el => window.getComputedStyle(el).display")
         assert display != "none", "Device list should still be visible after returning to tab"
 

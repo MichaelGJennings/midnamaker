@@ -1,0 +1,907 @@
+openapi: 3.0.3
+info:
+  title: MIDNAMaker API
+  description: |
+    REST API for managing MIDI Name Documents (.midnam files) and MIDI Device Type files (.middev).
+    
+    MIDNAMaker is an editor for creating and managing MIDI device definitions that follow
+    the MIDI Manufacturers Association's MIDI Name Document specification.
+  version: 1.0.0
+  contact:
+    name: MIDNAMaker
+  license:
+    name: MIT
+
+servers:
+  - url: http://localhost:8000
+    description: Local development server
+
+tags:
+  - name: Manufacturers
+    description: Manufacturer and device catalog operations
+  - name: Devices
+    description: Device detail and file operations
+  - name: MIDNAM Files
+    description: MIDI Name Document file operations
+  - name: MIDDEV Files
+    description: MIDI Device Type file operations
+  - name: Validation
+    description: File validation operations
+  - name: Cache
+    description: Cache management operations
+
+paths:
+  /manufacturers:
+    get:
+      tags:
+        - Manufacturers
+      summary: List all MIDI manufacturers
+      description: Returns a list of all manufacturers with their devices from both .midnam and .middev files
+      operationId: getManufacturers
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Device'
+              example:
+                Ensoniq:
+                  - id: "Ensoniq|TS-10"
+                    name: "TS-10"
+                    type: "Synthesizer"
+                    file_path: "patchfiles/Ensoniq_TS_10_12.midnam"
+                    source: "midnam"
+
+  /api/manufacturers:
+    get:
+      tags:
+        - Manufacturers
+      summary: List all MIDI manufacturers (alias)
+      description: Alias endpoint for /manufacturers
+      operationId: getManufacturersAlias
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  type: array
+                  items:
+                    $ref: '#/components/schemas/Device'
+
+  /midnam_catalog:
+    get:
+      tags:
+        - Manufacturers
+      summary: Get MIDNAM file catalog
+      description: Returns a cached catalog of all .midnam files with device information
+      operationId: getMidnamCatalog
+      responses:
+        '200':
+          description: Successful response with catalog data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  manufacturers:
+                    type: object
+                    additionalProperties:
+                      type: array
+                      items:
+                        $ref: '#/components/schemas/Device'
+
+  /api/device/{deviceId}:
+    get:
+      tags:
+        - Devices
+      summary: Get device details
+      description: Returns detailed information about a specific device including all patches, banks, and configurations
+      operationId: getDeviceDetails
+      parameters:
+        - name: deviceId
+          in: path
+          required: true
+          description: Device identifier in format "Manufacturer|Model"
+          schema:
+            type: string
+          example: "Ensoniq|TS-10"
+        - name: file
+          in: query
+          required: false
+          description: Specific file path if device exists in multiple files
+          schema:
+            type: string
+          example: "patchfiles/Ensoniq_TS_10_12.midnam"
+      responses:
+        '200':
+          description: Successful response with device details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceDetails'
+        '404':
+          description: Device not found
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: "Device not found: Ensoniq|TS-10"
+
+  /analyze_file/{filePath}:
+    get:
+      tags:
+        - MIDNAM Files
+      summary: Analyze a MIDNAM file
+      description: Analyzes a .midnam file and returns bank and patch counts
+      operationId: analyzeFile
+      parameters:
+        - name: filePath
+          in: path
+          required: true
+          description: Path to the .midnam file (URL encoded)
+          schema:
+            type: string
+          example: "patchfiles/Ensoniq_TS_10_12.midnam"
+      responses:
+        '200':
+          description: File analysis results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  file_path:
+                    type: string
+                  bank_count:
+                    type: integer
+                  patch_count:
+                    type: integer
+        '404':
+          description: File not found
+
+  /api/download/midnam/{filePath}:
+    get:
+      tags:
+        - MIDNAM Files
+      summary: Download a MIDNAM file
+      description: Downloads a .midnam file
+      operationId: downloadMidnam
+      parameters:
+        - name: filePath
+          in: path
+          required: true
+          description: Path to the .midnam file
+          schema:
+            type: string
+      responses:
+        '200':
+          description: File download
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: File not found
+
+  /api/download/middev/{filePath}:
+    get:
+      tags:
+        - MIDDEV Files
+      summary: Download a MIDDEV file
+      description: Downloads a .middev file
+      operationId: downloadMiddev
+      parameters:
+        - name: filePath
+          in: path
+          required: true
+          description: Path to the .middev file
+          schema:
+            type: string
+      responses:
+        '200':
+          description: File download
+          content:
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: File not found
+
+  /api/download/zip/{manufacturer}:
+    get:
+      tags:
+        - Devices
+      summary: Download manufacturer files as ZIP
+      description: Downloads all .midnam and .middev files for a manufacturer as a ZIP archive
+      operationId: downloadManufacturerZip
+      parameters:
+        - name: manufacturer
+          in: path
+          required: true
+          description: Manufacturer name
+          schema:
+            type: string
+          example: "Ensoniq"
+      responses:
+        '200':
+          description: ZIP file download
+          content:
+            application/zip:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: No files found for manufacturer
+
+  /save_file:
+    post:
+      tags:
+        - MIDNAM Files
+      summary: Save any file with automatic backup
+      description: Saves file content with automatic timestamped backup
+      operationId: saveFile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - file_path
+                - xml_content
+              properties:
+                file_path:
+                  type: string
+                  description: Path to the file to save
+                xml_content:
+                  type: string
+                  description: Complete file content to save
+      responses:
+        '200':
+          description: File saved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  backup:
+                    type: string
+                    description: Path to the backup file created
+                  file_path:
+                    type: string
+        '400':
+          description: Missing required parameters
+        '500':
+          description: Error saving file
+
+  /api/patch/save:
+    post:
+      tags:
+        - MIDNAM Files
+      summary: Save patch changes
+      description: Saves changes to individual patches within a MIDNAM file
+      operationId: savePatch
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - deviceId
+                - patch
+              properties:
+                deviceId:
+                  type: string
+                  description: Device identifier
+                patchBank:
+                  type: string
+                  description: Patch bank name
+                patch:
+                  type: object
+                  description: Patch data
+                originalPatchName:
+                  type: string
+                  description: Original patch name for finding the patch
+                notes:
+                  type: array
+                  items:
+                    type: object
+                  description: Note list data
+                noteListName:
+                  type: string
+                  description: Name of the note list
+      responses:
+        '200':
+          description: Patch saved successfully
+        '400':
+          description: Missing required fields
+        '404':
+          description: Device file not found
+        '500':
+          description: Error saving patch
+
+  /api/midnam/save:
+    post:
+      tags:
+        - MIDNAM Files
+      summary: Save MIDNAM structure
+      description: |
+        Saves the entire MIDNAM structure from the frontend, including:
+        - ChannelNameSets with available channels
+        - PatchBanks organized by ChannelNameSet
+        - NoteNameLists
+        - ControlNameLists
+        
+        Creates an automatic timestamped backup before saving.
+      operationId: saveMidnamStructure
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - file_path
+                - midnam
+              properties:
+                file_path:
+                  type: string
+                  description: Path to the MIDNAM file
+                midnam:
+                  $ref: '#/components/schemas/MidnamStructure'
+      responses:
+        '200':
+          description: MIDNAM structure saved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  backup:
+                    type: string
+                  file_path:
+                    type: string
+        '400':
+          description: Missing file_path or midnam data
+        '404':
+          description: File not found
+        '422':
+          description: Invalid XML in file
+        '500':
+          description: Error saving file
+
+  /api/midnam/reload:
+    post:
+      tags:
+        - MIDNAM Files
+      summary: Reload MIDNAM file from disk
+      description: |
+        Reloads a MIDNAM file from disk, clearing the catalog cache and re-indexing.
+        Useful for testing to verify that saved changes persist.
+        
+        This endpoint:
+        1. Clears the catalog cache
+        2. Reads the file fresh from disk
+        3. Parses and extracts all device information
+        4. Returns the complete device structure
+      operationId: reloadMidnam
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - file_path
+              properties:
+                file_path:
+                  type: string
+                  description: Path to the MIDNAM file to reload
+                device_id:
+                  type: string
+                  description: Optional device identifier
+      responses:
+        '200':
+          description: File reloaded successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DeviceDetails'
+        '400':
+          description: Missing file_path
+        '404':
+          description: File not found
+        '422':
+          description: Invalid XML in file
+        '500':
+          description: Error reloading file
+
+  /api/validate:
+    post:
+      tags:
+        - Validation
+      summary: Validate MIDNAM file
+      description: Validates a .midnam file against the DTD specification
+      operationId: validateMidnam
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - file_path
+              properties:
+                file_path:
+                  type: string
+                  description: Path to the MIDNAM file to validate
+      responses:
+        '200':
+          description: Validation results
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  valid:
+                    type: boolean
+                  errors:
+                    type: array
+                    items:
+                      type: string
+                  warnings:
+                    type: array
+                    items:
+                      type: string
+        '400':
+          description: Missing file_path
+        '404':
+          description: File not found
+
+  /api/middev/create:
+    post:
+      tags:
+        - MIDDEV Files
+      summary: Create MIDDEV file
+      description: Creates a new .middev file for a manufacturer
+      operationId: createMiddev
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - manufacturer_name
+              properties:
+                manufacturer_name:
+                  type: string
+                  description: Name of the manufacturer
+      responses:
+        '200':
+          description: MIDDEV file created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  file_path:
+                    type: string
+        '400':
+          description: Missing manufacturer_name or file already exists
+        '500':
+          description: Error creating file
+
+  /api/middev/add-device:
+    post:
+      tags:
+        - MIDDEV Files
+      summary: Add device to MIDDEV file
+      description: Adds a device definition to an existing .middev file
+      operationId: addDeviceToMiddev
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - manufacturer_name
+                - device_model
+              properties:
+                manufacturer_name:
+                  type: string
+                  description: Name of the manufacturer
+                device_model:
+                  type: string
+                  description: Model name of the device
+      responses:
+        '200':
+          description: Device added successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  file_path:
+                    type: string
+        '400':
+          description: Missing required parameters
+        '404':
+          description: MIDDEV file not found
+        '500':
+          description: Error adding device
+
+  /clear_cache:
+    post:
+      tags:
+        - Cache
+      summary: Clear catalog cache
+      description: Clears the midnam_catalog_cache.json file to force re-indexing
+      operationId: clearCache
+      responses:
+        '200':
+          description: Cache cleared successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        '500':
+          description: Error clearing cache
+
+  /merge_files:
+    post:
+      tags:
+        - MIDNAM Files
+      summary: Merge MIDNAM files
+      description: Merges multiple .midnam files into one
+      operationId: mergeFiles
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - source_files
+                - target_file
+              properties:
+                source_files:
+                  type: array
+                  items:
+                    type: string
+                  description: List of source file paths to merge
+                target_file:
+                  type: string
+                  description: Target file path for merged result
+      responses:
+        '200':
+          description: Files merged successfully
+        '400':
+          description: Missing required parameters
+        '500':
+          description: Error merging files
+
+  /delete_file:
+    post:
+      tags:
+        - MIDNAM Files
+      summary: Delete MIDNAM file
+      description: Deletes a .midnam file
+      operationId: deleteFile
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - file_path
+              properties:
+                file_path:
+                  type: string
+                  description: Path to the file to delete
+      responses:
+        '200':
+          description: File deleted successfully
+        '400':
+          description: Missing file_path
+        '404':
+          description: File not found
+        '500':
+          description: Error deleting file
+
+  /api/upload_files:
+    post:
+      tags:
+        - MIDNAM Files
+      summary: Upload files
+      description: Uploads .midnam or .middev files to the server
+      operationId: uploadFiles
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              properties:
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+      responses:
+        '200':
+          description: Files uploaded successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  uploaded_files:
+                    type: array
+                    items:
+                      type: string
+        '400':
+          description: No files provided or invalid file type
+        '500':
+          description: Error uploading files
+
+components:
+  schemas:
+    Device:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Unique device identifier in format "Manufacturer|Model"
+          example: "Ensoniq|TS-10"
+        name:
+          type: string
+          description: Device model name
+          example: "TS-10"
+        type:
+          type: string
+          description: Device type
+          enum: [Synthesizer, Sampler, Drum Machine, Mixer, Effects Unit, Unknown]
+          example: "Synthesizer"
+        file_path:
+          type: string
+          description: Relative path to the device file
+          example: "patchfiles/Ensoniq_TS_10_12.midnam"
+        manufacturer_id:
+          type: string
+          description: MIDI manufacturer ID (hexadecimal)
+          example: "0F"
+        family_id:
+          type: string
+          description: Device family ID
+        device_id:
+          type: string
+          description: Device ID
+        source:
+          type: string
+          enum: [midnam, middev]
+          description: Source file type
+
+    DeviceDetails:
+      type: object
+      properties:
+        id:
+          type: string
+          description: Device identifier
+        name:
+          type: string
+          description: Device model name
+        type:
+          type: string
+          description: Device type
+        file_path:
+          type: string
+          description: Path to the device file
+        manufacturer_id:
+          type: string
+          description: MIDI manufacturer ID
+        family_id:
+          type: string
+        device_id:
+          type: string
+        midnam_content:
+          type: string
+          description: Complete XML content of the MIDNAM file
+        raw_xml:
+          type: string
+          description: Raw XML content (alias of midnam_content)
+        custom_device_modes:
+          type: array
+          items:
+            $ref: '#/components/schemas/CustomDeviceMode'
+        channel_name_sets:
+          type: array
+          items:
+            $ref: '#/components/schemas/ChannelNameSet'
+        patch_banks:
+          type: array
+          description: Flat list of all patch banks (for backward compatibility)
+          items:
+            $ref: '#/components/schemas/PatchBank'
+
+    CustomDeviceMode:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "Mode 2"
+        channel_assignments:
+          type: array
+          items:
+            type: object
+            properties:
+              channel:
+                type: string
+              name_set:
+                type: string
+
+    ChannelNameSet:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "Name Set 1"
+        available_channels:
+          type: array
+          items:
+            type: object
+            properties:
+              channel:
+                type: string
+                example: "1"
+              available:
+                type: boolean
+                example: true
+        patch_banks:
+          type: array
+          items:
+            $ref: '#/components/schemas/PatchBank'
+
+    PatchBank:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "Sounds U0"
+        midi_commands:
+          type: array
+          items:
+            type: object
+            properties:
+              type:
+                type: string
+                example: "ControlChange"
+              control:
+                type: string
+                example: "0"
+              value:
+                type: string
+                example: "0"
+        patches:
+          type: array
+          items:
+            $ref: '#/components/schemas/Patch'
+
+    Patch:
+      type: object
+      properties:
+        name:
+          type: string
+          example: "Genesis"
+        Number:
+          type: string
+          example: "000"
+        programChange:
+          type: integer
+          example: 0
+        note_list_name:
+          type: string
+          description: Name of the NoteNameList used by this patch
+
+    MidnamStructure:
+      type: object
+      description: Complete MIDNAM structure for saving
+      properties:
+        channelNameSets:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              available_channels:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    channel:
+                      type: string
+                    available:
+                      type: boolean
+        patchList:
+          type: array
+          description: Flat list of all patch banks with their ChannelNameSet association
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              channelNameSet:
+                type: string
+                description: Name of the ChannelNameSet this bank belongs to
+              midi_commands:
+                type: array
+                items:
+                  type: object
+              patch:
+                type: array
+                items:
+                  type: object
+        note_lists:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              notes:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    number:
+                      type: integer
+                    name:
+                      type: string
+        control_lists:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              controls:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type:
+                      type: string
+                    number:
+                      type: integer
+                    name:
+                      type: string
+

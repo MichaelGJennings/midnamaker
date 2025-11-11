@@ -62,6 +62,15 @@ export class MIDIManager {
         }
     }
     
+    // Alias methods for compatibility
+    sendNoteOn(noteNumber, velocity = 127, channel = 0) {
+        return this.playNote(noteNumber, velocity, channel);
+    }
+    
+    sendNoteOff(noteNumber, channel = 0) {
+        return this.stopNote(noteNumber, channel);
+    }
+    
     // Send a program change message
     sendProgramChange(program, channel = 0) {
         if (!appState.globalMIDIState.enabled || !appState.globalMIDIState.selectedOutput) {
@@ -164,6 +173,10 @@ export class MIDIManager {
     
     isDeviceSelected() {
         return !!appState.globalMIDIState.selectedOutput;
+    }
+    
+    isOutputConnected() {
+        return this.isMIDIEnabled() && this.isDeviceSelected();
     }
     
     getSelectedDevice() {

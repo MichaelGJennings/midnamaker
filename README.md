@@ -2,7 +2,7 @@
 
 A comprehensive web-based editor for creating and editing MIDI Name Documents (.midnam files) and MIDI Device Types (.middev files). This tool provides an intuitive interface for managing MIDI device configurations, patch names, and note mappings. In some DAWs (notably Pro Tools and Digital Performer), these files provide automatic access to patch banks and individual patch names within the DAW.  Pro Tools even shows you individual note names in piano roll editors (think drum kits or noteswitches). (Hey MOTU! Add support for this!)
 
-I've used this tool to add note name lists for the Alesis D4.  If you're using that with a supported DAW, you're welcome to install it into your system.
+I've used this tool to create or extend midnam and middev files for some random vintage modules from my studio, like the Ensoniq TS-10, TS-12 and EPS16+, an old ART Multiverb III, and added note name lists for the Alesis D4.  If you're using any of these with a supported DAW, you're welcome to install them into your system.
 
 ## Features
 
@@ -40,7 +40,7 @@ This is a web application meant to be run locally on your machine, and you will 
    ```
 
 3. **Open the editor**
-   Navigate to: http://localhost:8000/midi_name_editor.html
+   Navigate to: http://localhost:8000/index.html
 
 ## Usage Guide
 
@@ -102,19 +102,17 @@ The editor includes WebMIDI support for:
 3. Select your MIDI device from the dropdown
 4. Test note triggers by clicking the note numbers in the Note Name editor
 
-## API Endpoints
+## API Documentation
 
-The server provides the following endpoints:
+For developers integrating with MIDNAMaker or writing automated tests, comprehensive API documentation is available in the `docs/` folder:
 
-- `GET /manufacturers` - List of MIDI manufacturers
-- `GET /patchfiles/*.middev` - Device definition files
-- `GET /patchfiles/*.midnam` - MIDI name documents
-- `GET /midnam_catalog` - Catalog of all .midnam files with device information
-- `GET /analyze_file/{file_path}` - Analyze a .midnam file and return bank/patch counts
-- `POST /save_file` - Save any file with automatic backup
-- `POST /clear_cache` - Clear the midnam catalog cache
-- `POST /merge_files` - Merge multiple .midnam files into one
-- `POST /delete_file` - Delete a .midnam file
+- **[API Specification (OpenAPI/Swagger)](docs/api-spec.yaml)** - Complete REST API reference with request/response schemas
+
+The API provides endpoints for:
+- Manufacturer and device catalog management
+- MIDNAM and MIDDEV file operations
+- Device validation and testing
+- Cache management
 
 ## Development
 
@@ -129,9 +127,8 @@ The server provides the following endpoints:
 3. Update the device loading logic
 
 ### Customizing the Interface
-- Modify `midi_name_editor.html` for UI changes
+- Modify `index.html` for UI changes
 - Update `server.py` for backend functionality
-- Add new DTD files in the `dtd/` directory
 
 ## Troubleshooting
 

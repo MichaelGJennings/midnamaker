@@ -42,7 +42,7 @@ export class CatalogManager {
     showLoadingState() {
         const content = document.getElementById('catalog-content');
         if (content) {
-            content.innerHTML = '<div class="loading">Loading catalog...</div>';
+            content.innerHTML = '<div class="loading" data-testid="msg_catalog_loading_state">Loading catalog...</div>';
         }
         
         const status = document.getElementById('catalog-status');
@@ -78,39 +78,39 @@ export class CatalogManager {
         if (!content) return;
         
         if (!this.catalogData || Object.keys(this.catalogData).length === 0) {
-            content.innerHTML = '<div class="empty-state">No catalog data available</div>';
+            content.innerHTML = '<div class="empty-state" data-testid="msg_no_catalog_data">No catalog data available</div>';
             return;
         }
         
         const devices = Object.keys(this.catalogData).sort();
         
         content.innerHTML = `
-            <table class="catalog-table">
-                <thead>
-                    <tr>
-                        <th>Device Key</th>
-                        <th>Type</th>
-                        <th>Files</th>
-                        <th>Actions</th>
+            <table class="catalog-table" data-testid="tbl_catalog">
+                <thead data-testid="hdr_catalog_table">
+                    <tr data-testid="row_catalog_header">
+                        <th data-testid="cel_device_key_header">Device Key</th>
+                        <th data-testid="cel_type_header">Type</th>
+                        <th data-testid="cel_files_header">Files</th>
+                        <th data-testid="cel_actions_header">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    ${devices.map(deviceKey => {
+                    ${devices.map((deviceKey, index) => {
                         const device = this.catalogData[deviceKey];
                         return `
-                            <tr>
-                                <td class="device-key">${Utils.escapeHtml(deviceKey)}</td>
-                                <td>
-                                    <span class="device-type ${device.type || 'master'}">${device.type || 'master'}</span>
+                            <tr data-testid="row_catalog_device_${index}">
+                                <td class="device-key" data-testid="cel_device_key_${index}">${Utils.escapeHtml(deviceKey)}</td>
+                                <td data-testid="cel_device_type_${index}">
+                                    <span class="device-type ${device.type || 'master'}" data-testid="spn_device_type">${device.type || 'master'}</span>
                                 </td>
-                                <td class="file-list">
-                                    ${this.generateFileListHTML(device.files || [])}
+                                <td class="file-list" data-testid="cel_device_files_${index}">
+                                    ${this.generateFileListHTML(device.files || [], index)}
                                 </td>
-                                <td>
-                                    <div class="action-buttons">
-                                        <button class="btn btn-small btn-primary" onclick="catalogManager.viewDevice('${deviceKey}')">View</button>
-                                        <button class="btn btn-small btn-secondary" onclick="catalogManager.editDevice('${deviceKey}')">Edit</button>
-                                        <button class="btn btn-small btn-danger" onclick="catalogManager.deleteDevice('${deviceKey}')">Delete</button>
+                                <td data-testid="cel_device_actions_${index}">
+                                    <div class="action-buttons" data-testid="grp_catalog_device_actions_${index}">
+                                        <button class="btn btn-small btn-primary" onclick="catalogManager.viewDevice('${deviceKey}')" data-testid="btn_view_device_${index}">View</button>
+                                        <button class="btn btn-small btn-secondary" onclick="catalogManager.editDevice('${deviceKey}')" data-testid="btn_edit_device_${index}">Edit</button>
+                                        <button class="btn btn-small btn-danger" onclick="catalogManager.deleteDevice('${deviceKey}')" data-testid="btn_delete_device_${index}">Delete</button>
                                     </div>
                                 </td>
                             </tr>
@@ -121,17 +121,17 @@ export class CatalogManager {
         `;
     }
     
-    generateFileListHTML(files) {
+    generateFileListHTML(files, deviceIndex) {
         if (!files || files.length === 0) {
-            return '<span class="text-muted">No files</span>';
+            return '<span class="text-muted" data-testid="spn_no_files">No files</span>';
         }
         
         return `
-            <div class="file-list">
-                ${files.map(file => `
-                    <div class="file-item">
-                        <span class="file-path">${Utils.escapeHtml(file.path)}</span>
-                        <span class="file-size">${Utils.formatFileSize(file.size)}</span>
+            <div class="file-list" data-testid="lst_device_files_${deviceIndex}">
+                ${files.map((file, fileIndex) => `
+                    <div class="file-item" data-testid="itm_file_${deviceIndex}_${fileIndex}">
+                        <span class="file-path" data-testid="spn_file_path">${Utils.escapeHtml(file.path)}</span>
+                        <span class="file-size" data-testid="spn_file_size">${Utils.formatFileSize(file.size)}</span>
                     </div>
                 `).join('')}
             </div>
@@ -148,7 +148,7 @@ export class CatalogManager {
         }, 0);
         
         status.innerHTML = `
-            <div class="status-text">
+            <div class="status-text" data-testid="div_catalog_status_text">
                 Loaded ${deviceCount} device${deviceCount !== 1 ? 's' : ''} with ${totalFiles} file${totalFiles !== 1 ? 's' : ''}
             </div>
         `;

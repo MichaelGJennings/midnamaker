@@ -78,8 +78,8 @@ export class Modal {
             const modalFooter = modalContent.querySelector('.modal-footer');
             if (modalFooter) {
                 modalFooter.innerHTML = `
-                    ${showCancel ? `<button class="btn btn-secondary" id="modal-cancel">${cancelText}</button>` : ''}
-                    ${showConfirm ? `<button class="btn btn-primary" id="modal-confirm">${confirmText}</button>` : ''}
+                    ${showCancel ? `<button class="btn btn-secondary" id="modal-cancel" data-testid="btn_modal_cancel_dynamic">${cancelText}</button>` : ''}
+                    ${showConfirm ? `<button class="btn btn-primary" id="modal-confirm" data-testid="btn_modal_confirm_dynamic">${confirmText}</button>` : ''}
                 `;
             }
         }

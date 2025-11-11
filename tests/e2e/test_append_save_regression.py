@@ -21,7 +21,7 @@ class TestAppendSaveFunctionality:
         await self._navigate_to_rock_kit_notes(app_page)
         
         # Get initial row count
-        rows = app_page.locator("#note-table-body tr")
+        rows = app_page.locator('[data-testid^="row_note_"]')
         initial_count = await rows.count()
         
         # Scroll to bottom and append a note
@@ -29,24 +29,25 @@ class TestAppendSaveFunctionality:
         await app_page.wait_for_timeout(500)
         
         last_row = rows.nth(initial_count - 1)
-        add_button = last_row.locator(".add-note-btn")
+        add_button = last_row.locator('button[data-testid^="btn_insert_note_"]')
         await add_button.click()
         await app_page.wait_for_timeout(500)
         
         # Verify new row was added
+        rows = app_page.locator('[data-testid^="row_note_"]')
         new_count = await rows.count()
         assert new_count == initial_count + 1, f"Expected {initial_count + 1} rows, got {new_count}"
         
         # Enter note name
         new_row = rows.nth(new_count - 1)
-        note_input = new_row.locator(".note-name-input")
+        note_input = new_row.locator('[data-testid^="npt_note_name_"]')
         test_note_name = "Test Append Note"
         await note_input.fill(test_note_name)
         await note_input.press("Enter")
         await app_page.wait_for_timeout(500)
         
         # Save the patch
-        save_button = app_page.locator("#save-patch")
+        save_button = app_page.get_by_test_id("btn_save_patch")
         await save_button.click()
         await app_page.wait_for_timeout(2000)
         

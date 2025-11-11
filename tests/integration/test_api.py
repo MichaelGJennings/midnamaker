@@ -100,7 +100,7 @@ class TestAPIIntegration:
     
     def test_static_file_serving(self, client):
         """Test static file serving"""
-        response = client.get("http://localhost:8000/midnamaker.html")
+        response = client.get("http://localhost:8000/index.html")
         
         assert response.status_code == 200
         assert 'text/html' in response.headers['content-type']
