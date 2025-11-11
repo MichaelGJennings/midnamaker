@@ -2,7 +2,7 @@
 
 A comprehensive web-based editor for creating and editing MIDI Name Documents (.midnam files) and MIDI Device Types (.middev files). This tool provides an intuitive interface for managing MIDI device configurations, patch names, and note mappings. In some DAWs (notably Pro Tools and Digital Performer), these files provide automatic access to patch banks and individual patch names within the DAW.  Pro Tools even shows you individual note names in piano roll editors (think drum kits or noteswitches). (Hey MOTU! Add support for this!)
 
-I've used this tool to add note name lists for the Alesis D4.  If you're using that with a supported DAW, you're welcome to install it into your system.
+I've used this tool to create or extend midnam and middev files for some random vintage modules from my studio, like the Ensoniq TS-10, TS-12 and EPS16+, an old ART Multiverb III, and added note name lists for the Alesis D4.  If you're using any of these with a supported DAW, you're welcome to install them into your system.
 
 ## Features
 
