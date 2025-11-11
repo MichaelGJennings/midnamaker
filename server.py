@@ -695,7 +695,17 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                         for patch in patch_name_list.findall('Patch'):
                             patch_name = patch.get('Name', '')
                             patch_number = patch.get('Number', '')
+                            
+                            # Try to get ProgramChange from attribute first
                             program_change = patch.get('ProgramChange', '')
+                            
+                            # If not found, check for PatchMIDICommands/ProgramChange structure
+                            if not program_change:
+                                patch_midi_cmds = patch.find('PatchMIDICommands')
+                                if patch_midi_cmds is not None:
+                                    pc_elem = patch_midi_cmds.find('ProgramChange')
+                                    if pc_elem is not None:
+                                        program_change = pc_elem.get('Number', '')
                             
                             patches_list.append({
                                 'name': patch_name,
@@ -1101,7 +1111,17 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                     for patch in bank_patches:
                         patch_name = patch.get('Name', 'Unnamed')
                         patch_number = patch.get('Number', '0')
+                        
+                        # Try to get ProgramChange from attribute first
                         program_change = patch.get('ProgramChange', '0')
+                        
+                        # If not found, check for PatchMIDICommands/ProgramChange structure
+                        if not program_change or program_change == '0':
+                            patch_midi_cmds = patch.find('PatchMIDICommands')
+                            if patch_midi_cmds is not None:
+                                pc_elem = patch_midi_cmds.find('ProgramChange')
+                                if pc_elem is not None:
+                                    program_change = pc_elem.get('Number', '0')
                         
                         # Find the note name list used by this patch
                         uses_note_list = patch.find('.//UsesNoteNameList')
