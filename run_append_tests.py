@@ -35,7 +35,8 @@ def run_tests():
                 test_file,
                 "-v",  # verbose
                 "--tb=short",  # short traceback
-                "--asyncio-mode=auto"  # enable asyncio support
+                "--asyncio-mode=auto",  # enable asyncio support
+                "--no-cov"  # disable coverage for e2e tests
             ], capture_output=True, text=True)
             
             if result.returncode == 0:
@@ -68,7 +69,8 @@ def run_specific_test(test_name):
             f"tests/e2e/test_aggressive_regression.py::TestAppendSaveRegression::{test_name}",
             "-v",
             "--tb=short",
-            "--asyncio-mode=auto"
+            "--asyncio-mode=auto",
+            "--no-cov"  # disable coverage for e2e tests
         ], capture_output=True, text=True)
         
         if result.returncode == 0:

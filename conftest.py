@@ -76,7 +76,7 @@ if PLAYWRIGHT_AVAILABLE:
             window.DISABLE_MIDI_FOR_TESTING = true;
         """)
         
-        await page.goto(f"{BASE_URL}/midnamaker.html")
+        await page.goto(f"{BASE_URL}/index.html")
         await page.wait_for_load_state("networkidle")
         return page
 
@@ -119,38 +119,48 @@ if PLAYWRIGHT_AVAILABLE:
         @staticmethod
         async def wait_for_tab_content(page: Page, tab_name: str):
             """Wait for tab content to load"""
-            await page.wait_for_selector(f"#{tab_name}-tab.active")
-            await page.wait_for_selector(f"#{tab_name}-tab")
+            await page.wait_for_selector(f'[data-testid="sec_{tab_name}_tab"]')
         
         @staticmethod
         async def click_tab(page: Page, tab_name: str):
             """Click on a tab and wait for content to load"""
-            await page.click(f'[data-tab="{tab_name}"]')
+            await page.get_by_test_id(f"tab_{tab_name}").click()
             await TestHelpers.wait_for_tab_content(page, tab_name)
         
         @staticmethod
-        async def fill_manufacturer_search(page: Page, manufacturer: str):
-            """Fill the manufacturer search field"""
-            await page.fill("#manufacturer-search", manufacturer)
-            await page.wait_for_timeout(500)  # Wait for search results
+        async def fill_manufacturer_filter(page: Page, manufacturer: str):
+            """Fill the manufacturer filter field"""
+            await page.get_by_test_id("npt_manufacturer_filter").fill(manufacturer)
+            await page.wait_for_timeout(500)  # Wait for filter to apply
         
         @staticmethod
         async def select_manufacturer(page: Page, manufacturer: str):
-            """Select a manufacturer from the dropdown"""
-            await TestHelpers.fill_manufacturer_search(page, manufacturer)
-            await page.click(f'text="{manufacturer}"')
-            await page.wait_for_load_state("networkidle")
+            """Select a manufacturer from the list"""
+            await TestHelpers.fill_manufacturer_filter(page, manufacturer)
+            # Find and click the manufacturer item - use text-based selector as fallback
+            manufacturer_items = page.locator('[data-testid^="itm_manufacturer_"]')
+            count = await manufacturer_items.count()
+            for i in range(count):
+                item = manufacturer_items.nth(i)
+                text = await item.text_content()
+                if manufacturer.lower() in text.lower():
+                    await item.click()
+                    await page.wait_for_timeout(1000)
+                    return
+            # Fallback: click by text
+            await page.locator(f'text="{manufacturer}"').first.click()
+            await page.wait_for_timeout(1000)
         
         @staticmethod
         async def enable_midi(page: Page):
             """Enable MIDI by clicking the MIDI toggle"""
-            await page.click("#midi-toggle")
+            await page.get_by_test_id("tgl_midi").click()
             await page.wait_for_timeout(1000)  # Wait for MIDI initialization
         
         @staticmethod
         async def select_midi_device(page: Page, device_name: str):
             """Select a MIDI device from the dropdown"""
-            await page.select_option("#midi-device-select", label=device_name)
+            await page.get_by_test_id("sel_midi_device").select_option(label=device_name)
             await page.wait_for_timeout(500)
 
     @pytest.fixture

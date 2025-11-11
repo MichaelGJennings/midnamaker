@@ -160,7 +160,7 @@ export class PatchManager {
     showEmptyState() {
         const content = document.getElementById('patch-content');
         if (content) {
-            content.innerHTML = '<div class="empty-state">Select a patch from the Device tab to edit</div>';
+            content.innerHTML = '<div class="empty-state" data-testid="msg_patch_empty_state">Select a patch from the Device tab to edit</div>';
         }
         
         // Disable action buttons
@@ -185,64 +185,64 @@ export class PatchManager {
         }
         
         content.innerHTML = `
-            <div class="patch-editor">
-                <div class="patch-info">
-                    <h3>${Utils.escapeHtml(patch.name)}</h3>
-                    <div class="patch-meta">
-                        <span class="patch-number">Patch ${patch.number}</span>
-                        <span class="patch-bank">Bank: ${Utils.escapeHtml(bank.name)}</span>
+            <div class="patch-editor" data-testid="sec_patch_editor">
+                <div class="patch-info" data-testid="sec_patch_info">
+                    <h3 data-testid="hdr_patch_name">${Utils.escapeHtml(patch.name)}</h3>
+                    <div class="patch-meta" data-testid="div_patch_meta">
+                        <span class="patch-number" data-testid="spn_patch_number">Patch ${patch.number}</span>
+                        <span class="patch-bank" data-testid="spn_patch_bank">Bank: ${Utils.escapeHtml(bank.name)}</span>
                     </div>
                 </div>
                 
-                <div class="patch-details">
-                    <div class="detail-section">
-                        <h4>Patch Information</h4>
-                        <div class="form-group">
-                            <label for="patch-name-input">Name:</label>
-                            <input type="text" id="patch-name-input" value="${Utils.escapeHtml(patch.name)}" class="form-control" onchange="patchManager.updatePatchName(this.value)">
+                <div class="patch-details" data-testid="sec_patch_details">
+                    <div class="detail-section" data-testid="sec_patch_information">
+                        <h4 data-testid="hdr_patch_information">Patch Information</h4>
+                        <div class="form-group" data-testid="grp_patch_name_form">
+                            <label for="patch-name-input" data-testid="lbl_patch_name">Name:</label>
+                            <input type="text" id="patch-name-input" value="${Utils.escapeHtml(patch.name)}" class="form-control" onchange="patchManager.updatePatchName(this.value)" data-testid="npt_patch_name">
                         </div>
-                        <div class="form-group">
-                            <label for="patch-number-input">Number:</label>
-                            <input type="text" id="patch-number-input" value="${patch.number}" class="form-control" onchange="patchManager.updatePatchNumber(this.value)">
+                        <div class="form-group" data-testid="grp_patch_number_form">
+                            <label for="patch-number-input" data-testid="lbl_patch_number">Number:</label>
+                            <input type="text" id="patch-number-input" value="${patch.number}" class="form-control" onchange="patchManager.updatePatchNumber(this.value)" data-testid="npt_patch_number">
                         </div>
                     </div>
                     
-                    <div class="detail-section">
-                        <h4>Note Names</h4>
-                        <div class="note-names">
+                    <div class="detail-section" data-testid="sec_note_names">
+                        <h4 data-testid="hdr_note_names">Note Names</h4>
+                        <div class="note-names" data-testid="sec_note_names_content">
                             ${noteList ? `
-                                <div class="note-list-info">
-                                    <strong>Note List:</strong> ${Utils.escapeHtml(noteList.name)}
-                                    <span class="note-count">(${noteList.notes.length} notes)</span>
+                                <div class="note-list-info" data-testid="div_note_list_info">
+                                    <strong data-testid="lbl_note_list">Note List:</strong> ${Utils.escapeHtml(noteList.name)}
+                                    <span class="note-count" data-testid="spn_note_count">(${noteList.notes.length} notes)</span>
                                 </div>
-                                <div class="note-editor-actions">
-                                    <button class="btn btn-primary add-note-btn" onclick="patchManager.addNote()">
+                                <div class="note-editor-actions" data-testid="grp_note_editor_actions">
+                                    <button class="btn btn-primary add-note-btn" onclick="patchManager.addNote()" data-testid="btn_add_note">
                                         + Add Note
                                     </button>
-                                    <div class="note-range-control">
-                                        <label>Note Range:</label>
-                                        <select id="note-range-min" class="note-range-select">
+                                    <div class="note-range-control" data-testid="grp_note_range_control">
+                                        <label data-testid="lbl_note_range">Note Range:</label>
+                                        <select id="note-range-min" class="note-range-select" data-testid="sel_note_range_min">
                                             ${this.generateNoteRangeOptions('min', noteList.notes)}
                                         </select>
-                                        <span>to</span>
-                                        <select id="note-range-max" class="note-range-select">
+                                        <span data-testid="spn_note_range_separator">to</span>
+                                        <select id="note-range-max" class="note-range-select" data-testid="sel_note_range_max">
                                             ${this.generateNoteRangeOptions('max', noteList.notes)}
                                         </select>
-                                        <button class="btn btn-secondary btn-sm" onclick="patchManager.updateNoteRange()">
+                                        <button class="btn btn-secondary btn-sm" onclick="patchManager.updateNoteRange()" data-testid="btn_extend_note_range">
                                             Extend
                                         </button>
                                     </div>
                                 </div>
-                                <div class="note-table-container">
-                                    <table class="note-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Note #</th>
-                                                <th>Name</th>
-                                                <th>Actions</th>
+                                <div class="note-table-container" data-testid="sec_note_table_container">
+                                    <table class="note-table" data-testid="tbl_notes">
+                                        <thead data-testid="hdr_note_table">
+                                            <tr data-testid="row_note_table_header">
+                                                <th data-testid="cel_note_number_header">Note #</th>
+                                                <th data-testid="cel_note_name_header">Name</th>
+                                                <th data-testid="cel_note_actions_header">Actions</th>
                                             </tr>
                                         </thead>
-                                        <tbody id="note-list-tbody">
+                                        <tbody id="note-list-tbody" data-testid="lst_notes_tbody">
                                             ${noteList.notes.map((note, index) => {
                                                 const noteNum = parseInt(note.number);
                                                 const pianoKey = this.getPianoKeyName(noteNum);
@@ -252,30 +252,33 @@ export class PatchManager {
                                                 const dropdownId = `note-dropdown-${index}`;
                                                 
                                                 return `
-                                                    <tr data-note-index="${index}" class="${isBlack ? 'black-key-row' : ''}">
-                                                        <td>
+                                                    <tr data-note-index="${index}" class="${isBlack ? 'black-key-row' : ''}" data-testid="row_note_${index}">
+                                                        <td data-testid="cel_note_number_${index}">
                                                             <span class="note-number-display ${isBlack ? 'black-key' : 'white-key'}" 
                                                                   data-note="${noteNum}"
-                                                                  data-piano-key="${pianoKey}">
+                                                                  data-piano-key="${pianoKey}"
+                                                                  data-testid="spn_note_display_${index}">
                                                                 ${noteNum} <small>(${pianoKey})</small>
                                                             </span>
                                                         </td>
-                                                        <td class="note-name-cell">
+                                                        <td class="note-name-cell" data-testid="cel_note_name_${index}">
                                                             <input type="text" 
                                                                    id="${noteInputId}"
                                                                    class="note-name-input" 
                                                                    value="${Utils.escapeHtml(note.name)}"
                                                                    data-index="${index}"
                                                                    tabindex="${index === 0 ? '1' : '0'}"
+                                                                   data-testid="npt_note_name_${index}"
                                                                    readonly>
-                                                            <div class="note-dropdown" id="${dropdownId}" style="display: none;"></div>
+                                                            <div class="note-dropdown" id="${dropdownId}" style="display: none;" data-testid="drp_note_suggestions_${index}"></div>
                                                         </td>
-                                                        <td class="note-actions">
+                                                        <td class="note-actions" data-testid="cel_note_actions_${index}">
                                                             <button class="btn btn-sm btn-outline-primary" 
                                                                     id="${insertBtnId}"
                                                                     data-index="${index}"
                                                                     tabindex="${index === 0 ? '2' : '0'}"
-                                                                    title="Insert Note">
+                                                                    title="Insert Note"
+                                                                    data-testid="btn_insert_note_${index}">
                                                                 +I
                                                             </button>
                                                             <button class="btn btn-sm btn-danger remove-note-btn" 
@@ -885,30 +888,34 @@ export class PatchManager {
         
         const newRow = document.createElement('tr');
         newRow.setAttribute('data-note-index', newIndex);
+        newRow.setAttribute('data-testid', `row_note_${newIndex}`);
         if (isBlack) newRow.classList.add('black-key-row');
         
         newRow.innerHTML = `
-            <td>
+            <td data-testid="cel_note_number_${newIndex}">
                 <span class="note-number-display ${isBlack ? 'black-key' : 'white-key'}" 
                       data-note="${newNoteNumber}"
-                      data-piano-key="${pianoKey}">
+                      data-piano-key="${pianoKey}"
+                      data-testid="spn_note_number_${newIndex}">
                     ${newNoteNumber} <small>(${pianoKey})</small>
                 </span>
             </td>
-            <td class="note-name-cell">
+            <td class="note-name-cell" data-testid="cel_note_name_${newIndex}">
                 <input type="text" 
                        id="${noteInputId}"
                        class="note-name-input" 
                        value="${this.getDefaultNoteName(newNoteNumber)}"
                        data-index="${newIndex}"
+                       data-testid="npt_note_name_${newIndex}"
                        tabindex="0"
                        readonly>
                 <div class="note-dropdown" id="${dropdownId}" style="display: none;"></div>
             </td>
-            <td class="note-actions">
+            <td class="note-actions" data-testid="cel_note_actions_${newIndex}">
                 <button class="btn btn-sm btn-outline-primary" 
                         id="${insertBtnId}"
                         data-index="${newIndex}"
+                        data-testid="btn_insert_note_${newIndex}"
                         tabindex="0"
                         title="Insert Note">
                     +I
@@ -1228,30 +1235,34 @@ export class PatchManager {
         
         const newRow = document.createElement('tr');
         newRow.setAttribute('data-note-index', insertIndex);
+        newRow.setAttribute('data-testid', `row_note_${insertIndex}`);
         if (isBlack) newRow.classList.add('black-key-row');
         
         newRow.innerHTML = `
-            <td>
+            <td data-testid="cel_note_number_${insertIndex}">
                 <span class="note-number-display ${isBlack ? 'black-key' : 'white-key'}" 
                       data-note="${newNoteNumber}"
-                      data-piano-key="${pianoKey}">
+                      data-piano-key="${pianoKey}"
+                      data-testid="spn_note_number_${insertIndex}">
                     ${newNoteNumber} <small>(${pianoKey})</small>
                 </span>
             </td>
-            <td class="note-name-cell">
+            <td class="note-name-cell" data-testid="cel_note_name_${insertIndex}">
                 <input type="text" 
                        id="${noteInputId}"
                        class="note-name-input" 
                        value="${this.getDefaultNoteName(newNoteNumber)}"
                        data-index="${insertIndex}"
+                       data-testid="npt_note_name_${insertIndex}"
                        tabindex="0"
                        readonly>
                 <div class="note-dropdown" id="${dropdownId}" style="display: none;"></div>
             </td>
-            <td class="note-actions">
+            <td class="note-actions" data-testid="cel_note_actions_${insertIndex}">
                 <button class="btn btn-sm btn-outline-primary" 
                         id="${insertBtnId}"
                         data-index="${insertIndex}"
+                        data-testid="btn_insert_note_${insertIndex}"
                         tabindex="0"
                         title="Insert Note">
                     +I
@@ -1821,6 +1832,7 @@ export class PatchManager {
         const separator = document.createElement('div');
         separator.className = 'download-separator';
         separator.textContent = '— or download both in one file —';
+        separator.setAttribute('data-testid', 'div_download_separator');
         linksContainer.appendChild(separator);
         
         // ZIP file link
@@ -1841,17 +1853,21 @@ export class PatchManager {
     createDownloadLinkItem(filename, description, url) {
         const item = document.createElement('div');
         item.className = 'download-link-item';
+        item.setAttribute('data-testid', 'itm_download_link');
         
         const info = document.createElement('div');
         info.className = 'download-link-info';
+        info.setAttribute('data-testid', 'div_download_link_info');
         
         const name = document.createElement('div');
         name.className = 'download-link-name';
         name.textContent = filename;
+        name.setAttribute('data-testid', 'div_download_filename');
         
         const desc = document.createElement('div');
         desc.className = 'download-link-description';
         desc.textContent = description;
+        desc.setAttribute('data-testid', 'div_download_description');
         
         info.appendChild(name);
         info.appendChild(desc);
@@ -1861,6 +1877,7 @@ export class PatchManager {
         link.href = url;
         link.download = filename;
         link.textContent = 'Download';
+        link.setAttribute('data-testid', 'btn_download_file');
         
         item.appendChild(info);
         item.appendChild(link);

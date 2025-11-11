@@ -8,6 +8,7 @@ export class DeviceManager {
         this.validationState = 'unvalidated'; // Track validation state: unvalidated, validated, invalid
         this.editingPatchListIndex = null; // Track which patch list is being edited
         this.editingControlListIndex = null; // Track which control list is being edited
+        this.collapsedBanks = new Set(); // Track which banks are collapsed (by bank name)
         
         // MIDI Controller defaults map (from MIDI.midnam)
         this.midiControllerDefaults = {
@@ -225,10 +226,15 @@ export class DeviceManager {
         this.renderDeviceConfiguration();
     }
     
+    clearCollapsedBanksState() {
+        // Clear the collapsed banks state (useful when switching to a different device)
+        this.collapsedBanks.clear();
+    }
+    
     showEmptyState() {
         const content = document.getElementById('device-content');
         if (content) {
-            content.innerHTML = '<div class="empty-state">Please select a device from the Manufacturer tab</div>';
+            content.innerHTML = '<div class="empty-state" data-testid="msg_device_empty_state">Please select a device from the Manufacturer tab</div>';
         }
         
         // Disable action buttons
@@ -321,23 +327,23 @@ export class DeviceManager {
     
     generateDeviceStructureHTML(midnam) {
         return `
-            <div class="structure-editor">
-                <div class="device-info-grid">
-                    <div class="info-item">
-                        <div class="info-label">Device Name</div>
-                        <div class="info-value">${Utils.escapeHtml(midnam.deviceName || 'Unknown')}</div>
+            <div class="structure-editor" data-testid="sec_structure_editor">
+                <div class="device-info-grid" data-testid="sec_device_info_grid">
+                    <div class="info-item" data-testid="sec_device_name_info">
+                        <div class="info-label" data-testid="lbl_device_name">Device Name</div>
+                        <div class="info-value" data-testid="div_device_name_value">${Utils.escapeHtml(midnam.deviceName || 'Unknown')}</div>
                     </div>
-                    <div class="info-item">
-                        <div class="info-label">Manufacturer</div>
-                        <div class="info-value">${Utils.escapeHtml(midnam.manufacturer || 'Unknown')}</div>
+                    <div class="info-item" data-testid="sec_manufacturer_info">
+                        <div class="info-label" data-testid="lbl_manufacturer">Manufacturer</div>
+                        <div class="info-value" data-testid="div_manufacturer_value">${Utils.escapeHtml(midnam.manufacturer || 'Unknown')}</div>
                     </div>
-                    <div class="info-item">
-                        <div class="info-label">Model</div>
-                        <div class="info-value">${Utils.escapeHtml(midnam.model || 'Unknown')}</div>
+                    <div class="info-item" data-testid="sec_model_info">
+                        <div class="info-label" data-testid="lbl_model">Model</div>
+                        <div class="info-value" data-testid="div_model_value">${Utils.escapeHtml(midnam.model || 'Unknown')}</div>
                     </div>
-                    <div class="info-item">
-                        <div class="info-label">Version</div>
-                        <div class="info-value">${Utils.escapeHtml(midnam.version || 'Unknown')}</div>
+                    <div class="info-item" data-testid="sec_version_info">
+                        <div class="info-label" data-testid="lbl_version">Version</div>
+                        <div class="info-value" data-testid="div_version_value">${Utils.escapeHtml(midnam.version || 'Unknown')}</div>
                     </div>
                 </div>
                 
@@ -350,14 +356,14 @@ export class DeviceManager {
     
     generatePatchListHTML(patchLists) {
         if (!patchLists || patchLists.length === 0) {
-            return '<div class="structure-section"><h4>No Patch Lists Found</h4></div>';
+            return '<div class="structure-section" data-testid="sec_no_patch_lists"><h4 data-testid="hdr_no_patch_lists">No Patch Lists Found</h4></div>';
         }
         
         return `
-            <div class="structure-section">
-                <div style="display: flex; align-items: center; justify-content: space-between;">
-                    <h4>Patch Banks (${patchLists.length})</h4>
-                    <button class="btn btn-small btn-primary" onclick="deviceManager.addPatchBank()" title="Add new patch bank">+</button>
+            <div class="structure-section" data-testid="sec_patch_banks">
+                <div style="display: flex; align-items: center; justify-content: space-between;" data-testid="hdr_patch_banks_section">
+                    <h4 data-testid="hdr_patch_banks">Patch Banks (${patchLists.length})</h4>
+                    <button class="btn btn-small btn-primary" onclick="deviceManager.addPatchBank()" title="Add new patch bank" data-testid="btn_add_patch_bank">+</button>
                 </div>
                 ${patchLists.map((patchList, index) => {
                     // Check if this patch list has MIDI commands
@@ -373,16 +379,17 @@ export class DeviceManager {
                         .join('');
                     
                     return `
-                    <div class="structure-element collapsible" data-index="${index}">
-                        <div class="element-header collapsible-header" onclick="deviceManager.togglePatchBank(${index})">
-                            <div class="element-name">
-                                <span class="toggle-icon">▼</span>
+                    <div class="structure-element collapsible" data-index="${index}" data-testid="itm_patch_bank_${index}">
+                        <div class="element-header collapsible-header" onclick="deviceManager.togglePatchBank(${index})" data-testid="hdr_patch_bank_${index}">
+                            <div class="element-name" data-testid="div_patch_bank_name_${index}">
+                                <span class="toggle-icon" data-testid="icn_toggle_bank_${index}">▼</span>
                                 ${this.editingPatchListIndex === index ? `
                                     <input type="text" 
                                            class="bank-name-input"
                                            value="${Utils.escapeHtml(patchList.name || `Patch Bank ${index + 1}`)}"
                                            onclick="event.stopPropagation()"
                                            onchange="deviceManager.updateBankName(${index}, this.value)"
+                                           data-testid="npt_bank_name_${index}"
                                            style="display: inline-block; width: auto; min-width: 200px; margin-right: 10px;">
                                 ` : Utils.escapeHtml(patchList.name || `Patch Bank ${index + 1}`)}
                                 ${patchList.channelNameSet ? (this.editingPatchListIndex === index ? `
@@ -399,21 +406,22 @@ export class DeviceManager {
                                     </span>
                                 `) : ''}
                             </div>
-                            <div class="element-actions">
-                                <button class="btn btn-small btn-primary" onclick="event.stopPropagation(); deviceManager.editPatchList(${index})">${this.editingPatchListIndex === index ? 'Done' : 'Edit'}</button>
-                                <button class="btn btn-small btn-danger" onclick="event.stopPropagation(); deviceManager.deletePatchList(${index})">Delete</button>
+                            <div class="element-actions" data-testid="grp_patch_bank_actions_${index}">
+                                <button class="btn btn-small btn-primary" onclick="event.stopPropagation(); deviceManager.editPatchList(${index})" data-testid="btn_edit_patch_bank_${index}">${this.editingPatchListIndex === index ? 'Done' : 'Edit'}</button>
+                                <button class="btn btn-small btn-danger" onclick="event.stopPropagation(); deviceManager.deletePatchList(${index})" data-testid="btn_delete_patch_bank_${index}">Delete</button>
                             </div>
                         </div>
-                        <div class="element-content collapsible-content">
+                        <div class="element-content collapsible-content" data-testid="sec_patch_bank_content_${index}">
                             ${hasMidiCommands ? `
-                                <div class="bank-midi-commands">
-                                    <strong>Bank Select MIDI Command:</strong>
+                                <div class="bank-midi-commands" data-testid="sec_bank_midi_commands_${index}">
+                                    <strong data-testid="lbl_bank_midi_command">Bank Select MIDI Command:</strong>
                                     ${patchList.midi_commands.map(cmd => `
-                                        <span class="midi-command-item">CC${cmd.control}=${cmd.value}</span>
+                                        <span class="midi-command-item" data-testid="spn_midi_command">CC${cmd.control}=${cmd.value}</span>
                                     `).join(' ')}
                                     <button class="btn btn-small btn-secondary" 
                                             onclick="event.stopPropagation(); deviceManager.sendBankSelectMidi(${index})" 
-                                            title="Issue MIDI Bank Select">
+                                            title="Issue MIDI Bank Select"
+                                            data-testid="btn_test_bank_select_${index}">
                                         Test Bank Select
                                     </button>
                                 </div>
@@ -434,7 +442,10 @@ export class DeviceManager {
                                                     <div class="patch-item-inline">
                                                         <span class="patch-number">${patchNumber}</span>
                                                         <span class="patch-name clickable" onclick="deviceManager.editPatchInList(${index}, ${patchIndex})" title="Click to edit patch">${Utils.escapeHtml(patchName)}</span>
-                                                        <span class="patch-program-change">PC: ${programChange}</span>
+                                                        <span class="patch-program-change clickable-pc" 
+                                                              data-bank-index="${index}"
+                                                              data-patch-index="${patchIndex}"
+                                                              data-program-change="${programChange}">PC: ${programChange}</span>
                                                     </div>
                                                 `;
                                             }).join('')}
@@ -456,10 +467,10 @@ export class DeviceManager {
         }
         
         return `
-            <div class="structure-section">
-                <div style="display: flex; align-items: center; justify-content: space-between;">
-                    <h4>NameSets (${channelNameSets.length})</h4>
-                    <button class="btn btn-small btn-primary" onclick="deviceManager.addNameSet()" title="Add new NameSet">+</button>
+            <div class="structure-section" data-testid="sec_namesets">
+                <div style="display: flex; align-items: center; justify-content: space-between;" data-testid="hdr_namesets_section">
+                    <h4 data-testid="hdr_namesets">NameSets (${channelNameSets.length})</h4>
+                    <button class="btn btn-small btn-primary" onclick="deviceManager.addNameSet()" title="Add new NameSet" data-testid="btn_add_nameset">+</button>
                 </div>
                 <p class="section-description">
                     If the patch banks this device presents are dependent on MIDI channel, define a new NameSet here.
@@ -471,16 +482,16 @@ export class DeviceManager {
                     const channelAvailability = this.formatChannelAvailability(nameSet.available_channels);
                     
                     return `
-                    <div class="nameset-card" data-nameset-index="${index}">
-                        <div class="nameset-header">
-                            <div class="nameset-name">
-                                <strong>${Utils.escapeHtml(nameSet.name)}</strong>
-                                <span class="channel-availability">${channelAvailability}</span>
+                    <div class="nameset-card" data-nameset-index="${index}" data-testid="itm_nameset_${index}">
+                        <div class="nameset-header" data-testid="hdr_nameset_${index}">
+                            <div class="nameset-name" data-testid="div_nameset_name_${index}">
+                                <strong data-testid="spn_nameset_name">${Utils.escapeHtml(nameSet.name)}</strong>
+                                <span class="channel-availability" data-testid="spn_channel_availability">${channelAvailability}</span>
                             </div>
-                            <div class="nameset-actions">
-                                <button class="btn btn-small btn-primary" onclick="deviceManager.editNameSet(${index})" title="Edit NameSet">Edit</button>
-                                <button class="btn btn-small btn-secondary" onclick="deviceManager.duplicateNameSet(${index})" title="Duplicate NameSet">Duplicate</button>
-                                <button class="btn btn-small btn-danger" onclick="deviceManager.deleteNameSet(${index})" title="Delete NameSet">Delete</button>
+                            <div class="nameset-actions" data-testid="grp_nameset_actions_${index}">
+                                <button class="btn btn-small btn-primary" onclick="deviceManager.editNameSet(${index})" title="Edit NameSet" data-testid="btn_edit_nameset_${index}">Edit</button>
+                                <button class="btn btn-small btn-secondary" onclick="deviceManager.duplicateNameSet(${index})" title="Duplicate NameSet" data-testid="btn_duplicate_nameset_${index}">Duplicate</button>
+                                <button class="btn btn-small btn-danger" onclick="deviceManager.deleteNameSet(${index})" title="Delete NameSet" data-testid="btn_delete_nameset_${index}">Delete</button>
                             </div>
                         </div>
                         <div class="nameset-banks">
@@ -683,16 +694,65 @@ export class DeviceManager {
     }
     
     setupDeviceEventListeners() {
-        // Add any specific event listeners for device configuration
-        // This will be called after rendering the device structure
+        // Add event listeners for clickable program change buttons
+        const pcButtons = document.querySelectorAll('.patch-program-change.clickable-pc');
+        
+        pcButtons.forEach(button => {
+            // Set up click handler
+            button.addEventListener('click', () => {
+                const bankIndex = parseInt(button.getAttribute('data-bank-index'));
+                const patchIndex = parseInt(button.getAttribute('data-patch-index'));
+                this.sendProgramChangeFromDeviceTab(bankIndex, patchIndex);
+            });
+            
+            // Set up dynamic tooltip
+            button.addEventListener('mouseenter', () => {
+                if (window.midiManager && window.midiManager.isOutputConnected()) {
+                    button.setAttribute('title', 'Send Program Change message');
+                    button.style.cursor = 'url(assets/kbd.png) 8 8, pointer';
+                } else {
+                    button.setAttribute('title', 'Select a MIDI device to enable program changes.');
+                    button.style.cursor = 'not-allowed';
+                }
+            });
+        });
     }
     
     setupCollapsiblePatchBanks() {
-        // Initialize all patch banks as expanded
+        // Initialize patch banks and restore their previous expand/collapse state
         const patchBanks = document.querySelectorAll('.structure-element.collapsible');
         patchBanks.forEach(bank => {
-            bank.classList.add('expanded');
+            const index = bank.getAttribute('data-index');
+            const bankName = this.getBankNameByIndex(parseInt(index));
+            
+            // Check if this bank was previously collapsed
+            if (bankName && this.collapsedBanks.has(bankName)) {
+                // Restore collapsed state
+                bank.classList.remove('expanded');
+                bank.classList.add('collapsed');
+                const icon = bank.querySelector('.toggle-icon');
+                const content = bank.querySelector('.collapsible-content');
+                if (icon) icon.textContent = '▶';
+                if (content) content.style.display = 'none';
+            } else {
+                // Default to expanded
+                bank.classList.add('expanded');
+                bank.classList.remove('collapsed');
+                const icon = bank.querySelector('.toggle-icon');
+                const content = bank.querySelector('.collapsible-content');
+                if (icon) icon.textContent = '▼';
+                if (content) content.style.display = 'block';
+            }
         });
+    }
+    
+    getBankNameByIndex(index) {
+        // Get the bank name from the current patchList by index
+        if (!appState.currentMidnam || !appState.currentMidnam.patchList) {
+            return null;
+        }
+        const bank = appState.currentMidnam.patchList[index];
+        return bank ? bank.name : null;
     }
     
     togglePatchBank(index) {
@@ -701,6 +761,7 @@ export class DeviceManager {
         
         const icon = patchBank.querySelector('.toggle-icon');
         const content = patchBank.querySelector('.collapsible-content');
+        const bankName = this.getBankNameByIndex(index);
         
         if (patchBank.classList.contains('expanded')) {
             // Collapse
@@ -708,12 +769,22 @@ export class DeviceManager {
             patchBank.classList.add('collapsed');
             if (icon) icon.textContent = '▶';
             if (content) content.style.display = 'none';
+            
+            // Track collapsed state
+            if (bankName) {
+                this.collapsedBanks.add(bankName);
+            }
         } else {
             // Expand
             patchBank.classList.remove('collapsed');
             patchBank.classList.add('expanded');
             if (icon) icon.textContent = '▼';
             if (content) content.style.display = 'block';
+            
+            // Remove from collapsed tracking
+            if (bankName) {
+                this.collapsedBanks.delete(bankName);
+            }
         }
     }
     
@@ -821,6 +892,7 @@ export class DeviceManager {
         const separator = document.createElement('div');
         separator.className = 'download-separator';
         separator.textContent = '— or download both in one file —';
+        separator.setAttribute('data-testid', 'div_download_separator');
         linksContainer.appendChild(separator);
         
         // ZIP file link
@@ -841,17 +913,21 @@ export class DeviceManager {
     createDownloadLinkItem(filename, description, url) {
         const item = document.createElement('div');
         item.className = 'download-link-item';
+        item.setAttribute('data-testid', 'itm_download_link');
         
         const info = document.createElement('div');
         info.className = 'download-link-info';
+        info.setAttribute('data-testid', 'div_download_link_info');
         
         const name = document.createElement('div');
         name.className = 'download-link-name';
         name.textContent = filename;
+        name.setAttribute('data-testid', 'div_download_filename');
         
         const desc = document.createElement('div');
         desc.className = 'download-link-description';
         desc.textContent = description;
+        desc.setAttribute('data-testid', 'div_download_description');
         
         info.appendChild(name);
         info.appendChild(desc);
@@ -861,6 +937,7 @@ export class DeviceManager {
         link.href = url;
         link.download = filename;
         link.textContent = 'Download';
+        link.setAttribute('data-testid', 'btn_download_file');
         
         item.appendChild(info);
         item.appendChild(link);
@@ -1047,6 +1124,83 @@ export class DeviceManager {
         }
     }
     
+    async reloadDevice() {
+        /**
+         * Reload the current device from disk, clearing cache and re-indexing.
+         * Useful for testing to verify that saved changes persist.
+         * Returns the reloaded device data.
+         */
+        
+        // Check if we have a device loaded
+        if (!appState.selectedDevice || !appState.currentMidnam) {
+            Utils.showNotification('No device loaded to reload', 'warning');
+            return null;
+        }
+        
+        // Get the file path from the selected device
+        const filePath = appState.selectedDevice.file_path || appState.currentMidnam.file_path;
+        const deviceId = appState.selectedDevice.id;
+        
+        if (!filePath) {
+            Utils.showNotification('Cannot determine file path for reload', 'error');
+            this.logToDebugConsole('Reload failed: no file path available', 'error');
+            return null;
+        }
+        
+        this.logToDebugConsole(`Reloading device from: ${filePath}`, 'info');
+        
+        try {
+            const response = await fetch('/api/midnam/reload', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    file_path: filePath,
+                    device_id: deviceId
+                })
+            });
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                this.logToDebugConsole(`✗ Reload failed: ${errorText}`, 'error');
+                Utils.showNotification('Failed to reload device', 'error');
+                return null;
+            }
+            
+            const deviceData = await response.json();
+            
+            // Update appState with reloaded data
+            appState.currentMidnam = deviceData;
+            appState.selectedDevice.file_path = filePath;
+            
+            // Transform device data using the manufacturer manager's transform function
+            if (window.manufacturerManager && window.manufacturerManager.transformDeviceData) {
+                await window.manufacturerManager.transformDeviceData(deviceData);
+            }
+            
+            // Re-render device configuration with fresh data
+            this.renderDeviceConfiguration();
+            
+            // Mark as saved (no unsaved changes after reload)
+            appState.markAsSaved();
+            
+            this.logToDebugConsole(`✓ Device reloaded successfully from: ${filePath}`, 'success');
+            this.logToDebugConsole(`  Found ${deviceData.channel_name_sets?.length || 0} channel name sets`, 'info');
+            this.logToDebugConsole(`  Found ${deviceData.patch_banks?.length || 0} patch banks`, 'info');
+            
+            Utils.showNotification('Device reloaded successfully', 'success');
+            
+            return deviceData;
+            
+        } catch (error) {
+            console.error('Error reloading device:', error);
+            this.logToDebugConsole(`✗ Error reloading device: ${error.message}`, 'error');
+            Utils.showNotification('Failed to reload device', 'error');
+            return null;
+        }
+    }
+    
     logToDebugConsole(message, type = 'info') {
         if (window.toolsManager && window.toolsManager.logToDebugConsole) {
             window.toolsManager.logToDebugConsole(message, type);
@@ -1062,6 +1216,40 @@ export class DeviceManager {
         // Ensure patchList array exists
         if (!appState.currentMidnam.patchList) {
             appState.currentMidnam.patchList = [];
+        }
+        
+        // Determine which ChannelNameSet to use for the new bank
+        let targetChannelNameSet = null;
+        
+        // First, try to use the same ChannelNameSet as existing banks
+        if (appState.currentMidnam.patchList.length > 0) {
+            const firstBank = appState.currentMidnam.patchList[0];
+            if (firstBank.channelNameSet) {
+                targetChannelNameSet = firstBank.channelNameSet;
+            }
+        }
+        
+        // If no existing banks or they don't have a ChannelNameSet, use the first available ChannelNameSet
+        if (!targetChannelNameSet && appState.currentMidnam.channelNameSets && appState.currentMidnam.channelNameSets.length > 0) {
+            targetChannelNameSet = appState.currentMidnam.channelNameSets[0].name;
+        }
+        
+        // If still no ChannelNameSet found, create a default one
+        if (!targetChannelNameSet) {
+            if (!appState.currentMidnam.channelNameSets) {
+                appState.currentMidnam.channelNameSets = [];
+            }
+            const defaultNameSet = {
+                name: 'Name Set 1',
+                available_channels: Array.from({length: 16}, (_, i) => ({
+                    channel: String(i + 1),
+                    available: true
+                })),
+                patch_banks: []
+            };
+            appState.currentMidnam.channelNameSets.push(defaultNameSet);
+            targetChannelNameSet = defaultNameSet.name;
+            this.logToDebugConsole(`Created default ChannelNameSet "${targetChannelNameSet}"`, 'info');
         }
         
         // Find the highest Control 32 value across all banks
@@ -1082,10 +1270,16 @@ export class DeviceManager {
         // Calculate new CC32 value (increment from highest, default to 0 if none found)
         const newCC32Value = highestCC32 >= 0 ? highestCC32 + 1 : 0;
         
+        // Get the available channels from the target ChannelNameSet
+        const targetNameSet = appState.currentMidnam.channelNameSets?.find(ns => ns.name === targetChannelNameSet);
+        const availableChannels = targetNameSet?.available_channels || [];
+        
         // Create new bank with a default patch and default MIDI commands
         const newBankIndex = appState.currentMidnam.patchList.length;
         const newBank = {
             name: `New Bank ${newBankIndex + 1}`,
+            channelNameSet: targetChannelNameSet,  // CRITICAL: Set the ChannelNameSet so the bank can be saved
+            availableChannels: availableChannels,  // Set the available channels for display in header
             midi_commands: [
                 { type: 'ControlChange', control: '0', value: '0' },
                 { type: 'ControlChange', control: '32', value: newCC32Value.toString() }
@@ -1111,6 +1305,7 @@ export class DeviceManager {
             this.editPatchList(newBankIndex);
         }, 100);
         
+        this.logToDebugConsole(`Added new bank "${newBank.name}" to ChannelNameSet "${targetChannelNameSet}"`, 'info');
         Utils.showNotification('New patch bank added', 'success');
     }
     
@@ -2293,6 +2488,38 @@ export class DeviceManager {
             window.midiManager.sendNoteOff(note);
             await new Promise(resolve => setTimeout(resolve, 50)); // Small gap
         }
+    }
+    
+    async sendProgramChangeFromDeviceTab(bankIndex, patchIndex) {
+        const patchList = appState.currentMidnam?.patchList?.[bankIndex];
+        if (!patchList || !patchList.patch) return;
+        
+        const patch = patchList.patch[patchIndex];
+        if (!patch) return;
+        
+        const programChange = patch.programChange !== undefined ? patch.programChange : patchIndex;
+        
+        // Check if MIDI is enabled
+        if (!window.midiManager || !window.midiManager.isOutputConnected()) {
+            Utils.showNotification('MIDI output not connected', 'warning');
+            return;
+        }
+        
+        // Send bank select MIDI commands if they exist
+        if (patchList.midi_commands && patchList.midi_commands.length > 0) {
+            for (const cmd of patchList.midi_commands) {
+                if (cmd.type === 'ControlChange') {
+                    window.midiManager.sendControlChange(parseInt(cmd.control), parseInt(cmd.value), 0);
+                    await new Promise(resolve => setTimeout(resolve, 10));
+                }
+            }
+        }
+        
+        // Send program change
+        window.midiManager.sendProgramChange(programChange);
+        
+        const patchName = patch.name || `Patch ${patchIndex + 1}`;
+        Utils.showNotification(`Program Change sent: ${patchName} (PC ${programChange})`, 'success');
     }
 }
 

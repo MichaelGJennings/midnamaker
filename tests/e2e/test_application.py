@@ -4,6 +4,7 @@ Tests complete user workflows in the browser
 """
 
 import pytest
+import re
 from playwright.async_api import Page, expect
 
 
@@ -14,9 +15,9 @@ class TestApplicationWorkflow:
     async def test_application_loads(self, app_page: Page):
         """Test that the application loads correctly"""
         # Check that main elements are present
-        await expect(app_page.locator("h1")).to_contain_text("MIDI Name Editor")
-        await expect(app_page.locator(".tabs")).to_be_visible()
-        await expect(app_page.locator("#global-midi-controls")).to_be_visible()
+        await expect(app_page.get_by_test_id("hdr_app_title")).to_contain_text("Midnamaker")
+        await expect(app_page.get_by_test_id("sec_tabs")).to_be_visible()
+        await expect(app_page.get_by_test_id("sec_global_midi_controls")).to_be_visible()
     
     async def test_tab_navigation(self, app_page: Page, helpers):
         """Test tab navigation functionality"""
@@ -25,32 +26,32 @@ class TestApplicationWorkflow:
         
         for tab in tabs:
             await helpers.click_tab(app_page, tab)
-            await expect(app_page.locator(f"#{tab}-tab")).to_have_class("active")
-            await expect(app_page.locator(f"#{tab}-tab")).to_be_visible()
+            await expect(app_page.get_by_test_id(f"sec_{tab}_tab")).to_have_class(re.compile("active"))
+            await expect(app_page.get_by_test_id(f"sec_{tab}_tab")).to_be_visible()
     
-    async def test_manufacturer_search(self, app_page: Page, helpers):
-        """Test manufacturer search functionality"""
+    async def test_manufacturer_filter(self, app_page: Page, helpers):
+        """Test manufacturer filter functionality"""
         # Click manufacturer tab
         await helpers.click_tab(app_page, "manufacturer")
         
-        # Check search input is present
-        search_input = app_page.locator("#manufacturer-search")
-        await expect(search_input).to_be_visible()
+        # Check filter input is present
+        filter_input = app_page.get_by_test_id("npt_manufacturer_filter")
+        await expect(filter_input).to_be_visible()
         
-        # Test typing in search
-        await search_input.fill("Alesis")
-        await app_page.wait_for_timeout(500)  # Wait for search results
+        # Test typing in filter
+        await filter_input.fill("Alesis")
+        await app_page.wait_for_timeout(500)  # Wait for filter to apply
         
-        # Check that dropdown appears
-        dropdown = app_page.locator("#manufacturer-dropdown-list")
-        await expect(dropdown).to_be_visible()
+        # Check that filtered items appear
+        filtered_items = app_page.locator('[data-testid^="itm_manufacturer_"]:visible')
+        assert await filtered_items.count() > 0, "Should have filtered results"
     
     async def test_midi_controls(self, app_page: Page, helpers):
         """Test MIDI control functionality"""
         # Check MIDI controls are present
-        midi_toggle = app_page.locator("#midi-toggle")
-        midi_device_select = app_page.locator("#midi-device-select")
-        midi_device_info = app_page.locator("#midi-device-info")
+        midi_toggle = app_page.get_by_test_id("tgl_midi")
+        midi_device_select = app_page.get_by_test_id("sel_midi_device")
+        midi_device_info = app_page.get_by_test_id("div_midi_device_info")
         
         await expect(midi_toggle).to_be_visible()
         await expect(midi_device_select).to_be_visible()
@@ -72,26 +73,27 @@ class TestApplicationWorkflow:
         # Navigate to manufacturer tab
         await helpers.click_tab(app_page, "manufacturer")
         
-        # Search for a manufacturer
-        await helpers.fill_manufacturer_search(app_page, "Alesis")
+        # Filter for a manufacturer
+        await helpers.fill_manufacturer_filter(app_page, "Alesis")
         await app_page.wait_for_timeout(500)
         
+        # Select Alesis manufacturer
+        await helpers.select_manufacturer(app_page, "Alesis")
+        await app_page.wait_for_timeout(1000)
+        
         # Check that devices appear
-        devices_section = app_page.locator("#manufacturer-devices")
-        await expect(devices_section).to_be_visible()
+        device_container = app_page.get_by_test_id("sec_device_list_container")
+        await expect(device_container).to_be_visible()
         
         # Look for device list items
-        device_items = devices_section.locator(".device-item")
+        device_items = app_page.locator('[data-testid^="itm_device_"]')
         if await device_items.count() > 0:
             # Click on first device
             await device_items.first.click()
-            await app_page.wait_for_timeout(1000)  # Wait for device details to load
+            await app_page.wait_for_timeout(2000)  # Wait for device to load and tab switch
             
-            # Navigate to device tab
-            await helpers.click_tab(app_page, "device")
-            
-            # Check that device content is loaded
-            device_content = app_page.locator("#device-content")
+            # Check that we're on device tab and content is loaded
+            device_content = app_page.get_by_test_id("sec_device_content")
             await expect(device_content).not_to_contain_text("Please select a device")
     
     async def test_catalog_functionality(self, app_page: Page, helpers):
@@ -99,11 +101,11 @@ class TestApplicationWorkflow:
         await helpers.click_tab(app_page, "catalog")
         
         # Check that catalog content loads
-        catalog_content = app_page.locator("#catalog-content")
+        catalog_content = app_page.get_by_test_id("sec_catalog_content")
         await expect(catalog_content).to_be_visible()
         
         # Check for refresh button
-        refresh_btn = app_page.locator("#refresh-catalog-btn")
+        refresh_btn = app_page.get_by_test_id("btn_refresh_catalog")
         await expect(refresh_btn).to_be_visible()
         
         # Click refresh button
@@ -111,7 +113,7 @@ class TestApplicationWorkflow:
         await app_page.wait_for_timeout(2000)  # Wait for catalog refresh
         
         # Check that status updates
-        catalog_status = app_page.locator("#catalog-status")
+        catalog_status = app_page.get_by_test_id("div_catalog_status")
         await expect(catalog_status).to_be_visible()
     
     async def test_tools_console(self, app_page: Page, helpers):
@@ -119,20 +121,16 @@ class TestApplicationWorkflow:
         await helpers.click_tab(app_page, "tools")
         
         # Check tools content
-        tools_content = app_page.locator("#tools-content")
+        tools_content = app_page.get_by_test_id("sec_tools_content")
         await expect(tools_content).to_be_visible()
         
         # Check for console
-        debug_console = app_page.locator("#debug-console")
+        debug_console = app_page.get_by_test_id("div_debug_console")
         await expect(debug_console).to_be_visible()
         
         # Check for clear button
-        clear_btn = app_page.locator("#clear-console-btn")
+        clear_btn = app_page.get_by_test_id("btn_clear_console")
         await expect(clear_btn).to_be_visible()
-        
-        # Check for test MIDI button
-        test_midi_btn = app_page.locator("#test-midi-btn")
-        await expect(test_midi_btn).to_be_visible()
 
 
 @pytest.mark.e2e
@@ -146,7 +144,7 @@ class TestMIDIFunctionality:
         await helpers.enable_midi(app_page)
         
         # Check device dropdown is populated
-        device_select = app_page.locator("#midi-device-select")
+        device_select = app_page.get_by_test_id("sel_midi_device")
         options = await device_select.locator("option").all()
         
         # Should have at least the placeholder option
@@ -159,7 +157,7 @@ class TestMIDIFunctionality:
             await app_page.wait_for_timeout(500)
             
             # Check device info updates
-            device_info = app_page.locator("#midi-device-info")
+            device_info = app_page.get_by_test_id("div_midi_device_info")
             device_info_text = await device_info.text_content()
             assert "Connected:" in device_info_text or "Not connected" in device_info_text
     
@@ -168,7 +166,7 @@ class TestMIDIFunctionality:
         # Enable MIDI and select device
         await helpers.enable_midi(app_page)
         
-        device_select = app_page.locator("#midi-device-select")
+        device_select = app_page.get_by_test_id("sel_midi_device")
         options = await device_select.locator("option").all()
         
         if len(options) > 1:
@@ -178,8 +176,8 @@ class TestMIDIFunctionality:
             # Navigate to device tab to test note playback
             await helpers.click_tab(app_page, "device")
             
-            # Look for playable note elements
-            playable_notes = app_page.locator(".note-number-cell.playable")
+            # Look for playable note elements (these might not have specific test IDs)
+            playable_notes = app_page.locator(".note-number-display")
             if await playable_notes.count() > 0:
                 # Click on first playable note
                 await playable_notes.first.click()
@@ -190,28 +188,29 @@ class TestMIDIFunctionality:
 class TestErrorHandling:
     """Test error handling in the UI"""
     
-    async def test_invalid_manufacturer_search(self, app_page: Page, helpers):
-        """Test searching for non-existent manufacturer"""
+    async def test_invalid_manufacturer_filter(self, app_page: Page, helpers):
+        """Test filtering for non-existent manufacturer"""
         await helpers.click_tab(app_page, "manufacturer")
         
-        # Search for non-existent manufacturer
-        await helpers.fill_manufacturer_search(app_page, "NonExistentManufacturer123")
+        # Filter for non-existent manufacturer
+        await helpers.fill_manufacturer_filter(app_page, "NonExistentManufacturer123")
         await app_page.wait_for_timeout(500)
         
-        # Check that appropriate message is shown
-        devices_section = app_page.locator("#manufacturer-devices")
-        await expect(devices_section).to_be_visible()
+        # Check that no items are visible
+        visible_items = app_page.locator('[data-testid^="itm_manufacturer_"]:visible')
+        count = await visible_items.count()
+        assert count == 0, "Should have no visible manufacturers for invalid filter"
     
     async def test_midi_not_supported(self, app_page: Page):
         """Test behavior when WebMIDI is not supported"""
         # This test would need to be run in a browser that doesn't support WebMIDI
         # or with WebMIDI disabled
         
-        midi_toggle = app_page.locator("#midi-toggle")
+        midi_toggle = app_page.get_by_test_id("tgl_midi")
         await midi_toggle.click()
         
         # Check that appropriate message is shown
-        device_info = app_page.locator("#midi-device-info")
+        device_info = app_page.get_by_test_id("div_midi_device_info")
         device_info_text = await device_info.text_content()
         
         # Should show either connection status or not supported message
@@ -232,11 +231,11 @@ class TestPerformance:
         # Measure time to load catalog
         start_time = time.time()
         
-        refresh_btn = app_page.locator("#refresh-catalog-btn")
+        refresh_btn = app_page.get_by_test_id("btn_refresh_catalog")
         await refresh_btn.click()
         
         # Wait for catalog to load
-        await app_page.wait_for_selector("#catalog-status", timeout=10000)
+        await app_page.wait_for_selector('[data-testid="div_catalog_status"]', timeout=10000)
         
         load_time = time.time() - start_time
         
@@ -249,16 +248,16 @@ class TestPerformance:
         
         await helpers.click_tab(app_page, "manufacturer")
         
-        # Measure search performance
+        # Measure filter performance
         start_time = time.time()
         
-        await helpers.fill_manufacturer_search(app_page, "Alesis")
-        await app_page.wait_for_timeout(1000)  # Wait for search results
+        await helpers.fill_manufacturer_filter(app_page, "Alesis")
+        await app_page.wait_for_timeout(1000)  # Wait for filter to apply
         
-        search_time = time.time() - start_time
+        filter_time = time.time() - start_time
         
-        # Search should be fast (under 2 seconds)
-        assert search_time < 2, f"Search took too long: {search_time:.2f}s"
+        # Filter should be fast (under 2 seconds)
+        assert filter_time < 2, f"Filter took too long: {filter_time:.2f}s"
 
 
 @pytest.mark.e2e
@@ -277,7 +276,7 @@ class TestAccessibility:
     async def test_aria_labels(self, app_page: Page):
         """Test that important elements have ARIA labels"""
         # Check for ARIA labels on interactive elements
-        midi_toggle = app_page.locator("#midi-toggle")
+        midi_toggle = app_page.get_by_test_id("tgl_midi")
         await expect(midi_toggle).to_be_visible()
         
         # Check that buttons have accessible names

@@ -17,12 +17,12 @@ async def test_manufacturer_debug():
         page.on('console', lambda msg: console_messages.append(f"{msg.type}: {msg.text}"))
         
         try:
-            print("🌐 Navigating to midnamaker.html...")
+            print("🌐 Navigating to index.html...")
             
             # Set MIDI disable flag before page loads
             await page.add_init_script("window.DISABLE_MIDI_FOR_TESTING = true;")
             
-            await page.goto("http://localhost:8000/midnamaker.html")
+            await page.goto("http://localhost:8000/index.html")
             await page.wait_for_load_state('networkidle')
             
             print("⏳ Waiting for page to load...")

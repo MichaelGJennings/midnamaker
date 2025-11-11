@@ -14,8 +14,8 @@ async def test_full_patch_editor_workflow():
         page = await browser.new_page()
         
         try:
-            print("🌐 Navigating to midnamaker.html...")
-            await page.goto("http://localhost:8000/midnamaker.html")
+            print("🌐 Navigating to index.html...")
+            await page.goto("http://localhost:8000/index.html")
             
             # Disable MIDI for testing to prevent permission requests
             await page.add_init_script("window.DISABLE_MIDI_FOR_TESTING = true;")
