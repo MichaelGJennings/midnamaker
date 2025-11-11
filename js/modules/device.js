@@ -8,6 +8,7 @@ export class DeviceManager {
         this.validationState = 'unvalidated'; // Track validation state: unvalidated, validated, invalid
         this.editingPatchListIndex = null; // Track which patch list is being edited
         this.editingControlListIndex = null; // Track which control list is being edited
+        this.collapsedBanks = new Set(); // Track which banks are collapsed (by bank name)
         
         // MIDI Controller defaults map (from MIDI.midnam)
         this.midiControllerDefaults = {
@@ -225,6 +226,11 @@ export class DeviceManager {
         this.renderDeviceConfiguration();
     }
     
+    clearCollapsedBanksState() {
+        // Clear the collapsed banks state (useful when switching to a different device)
+        this.collapsedBanks.clear();
+    }
+    
     showEmptyState() {
         const content = document.getElementById('device-content');
         if (content) {
@@ -436,7 +442,10 @@ export class DeviceManager {
                                                     <div class="patch-item-inline">
                                                         <span class="patch-number">${patchNumber}</span>
                                                         <span class="patch-name clickable" onclick="deviceManager.editPatchInList(${index}, ${patchIndex})" title="Click to edit patch">${Utils.escapeHtml(patchName)}</span>
-                                                        <span class="patch-program-change">PC: ${programChange}</span>
+                                                        <span class="patch-program-change clickable-pc" 
+                                                              data-bank-index="${index}"
+                                                              data-patch-index="${patchIndex}"
+                                                              data-program-change="${programChange}">PC: ${programChange}</span>
                                                     </div>
                                                 `;
                                             }).join('')}
@@ -685,16 +694,65 @@ export class DeviceManager {
     }
     
     setupDeviceEventListeners() {
-        // Add any specific event listeners for device configuration
-        // This will be called after rendering the device structure
+        // Add event listeners for clickable program change buttons
+        const pcButtons = document.querySelectorAll('.patch-program-change.clickable-pc');
+        
+        pcButtons.forEach(button => {
+            // Set up click handler
+            button.addEventListener('click', () => {
+                const bankIndex = parseInt(button.getAttribute('data-bank-index'));
+                const patchIndex = parseInt(button.getAttribute('data-patch-index'));
+                this.sendProgramChangeFromDeviceTab(bankIndex, patchIndex);
+            });
+            
+            // Set up dynamic tooltip
+            button.addEventListener('mouseenter', () => {
+                if (window.midiManager && window.midiManager.isOutputConnected()) {
+                    button.setAttribute('title', 'Send Program Change message');
+                    button.style.cursor = 'url(assets/kbd.png) 8 8, pointer';
+                } else {
+                    button.setAttribute('title', 'Select a MIDI device to enable program changes.');
+                    button.style.cursor = 'not-allowed';
+                }
+            });
+        });
     }
     
     setupCollapsiblePatchBanks() {
-        // Initialize all patch banks as expanded
+        // Initialize patch banks and restore their previous expand/collapse state
         const patchBanks = document.querySelectorAll('.structure-element.collapsible');
         patchBanks.forEach(bank => {
-            bank.classList.add('expanded');
+            const index = bank.getAttribute('data-index');
+            const bankName = this.getBankNameByIndex(parseInt(index));
+            
+            // Check if this bank was previously collapsed
+            if (bankName && this.collapsedBanks.has(bankName)) {
+                // Restore collapsed state
+                bank.classList.remove('expanded');
+                bank.classList.add('collapsed');
+                const icon = bank.querySelector('.toggle-icon');
+                const content = bank.querySelector('.collapsible-content');
+                if (icon) icon.textContent = '▶';
+                if (content) content.style.display = 'none';
+            } else {
+                // Default to expanded
+                bank.classList.add('expanded');
+                bank.classList.remove('collapsed');
+                const icon = bank.querySelector('.toggle-icon');
+                const content = bank.querySelector('.collapsible-content');
+                if (icon) icon.textContent = '▼';
+                if (content) content.style.display = 'block';
+            }
         });
+    }
+    
+    getBankNameByIndex(index) {
+        // Get the bank name from the current patchList by index
+        if (!appState.currentMidnam || !appState.currentMidnam.patchList) {
+            return null;
+        }
+        const bank = appState.currentMidnam.patchList[index];
+        return bank ? bank.name : null;
     }
     
     togglePatchBank(index) {
@@ -703,6 +761,7 @@ export class DeviceManager {
         
         const icon = patchBank.querySelector('.toggle-icon');
         const content = patchBank.querySelector('.collapsible-content');
+        const bankName = this.getBankNameByIndex(index);
         
         if (patchBank.classList.contains('expanded')) {
             // Collapse
@@ -710,12 +769,22 @@ export class DeviceManager {
             patchBank.classList.add('collapsed');
             if (icon) icon.textContent = '▶';
             if (content) content.style.display = 'none';
+            
+            // Track collapsed state
+            if (bankName) {
+                this.collapsedBanks.add(bankName);
+            }
         } else {
             // Expand
             patchBank.classList.remove('collapsed');
             patchBank.classList.add('expanded');
             if (icon) icon.textContent = '▼';
             if (content) content.style.display = 'block';
+            
+            // Remove from collapsed tracking
+            if (bankName) {
+                this.collapsedBanks.delete(bankName);
+            }
         }
     }
     
@@ -1055,6 +1124,83 @@ export class DeviceManager {
         }
     }
     
+    async reloadDevice() {
+        /**
+         * Reload the current device from disk, clearing cache and re-indexing.
+         * Useful for testing to verify that saved changes persist.
+         * Returns the reloaded device data.
+         */
+        
+        // Check if we have a device loaded
+        if (!appState.selectedDevice || !appState.currentMidnam) {
+            Utils.showNotification('No device loaded to reload', 'warning');
+            return null;
+        }
+        
+        // Get the file path from the selected device
+        const filePath = appState.selectedDevice.file_path || appState.currentMidnam.file_path;
+        const deviceId = appState.selectedDevice.id;
+        
+        if (!filePath) {
+            Utils.showNotification('Cannot determine file path for reload', 'error');
+            this.logToDebugConsole('Reload failed: no file path available', 'error');
+            return null;
+        }
+        
+        this.logToDebugConsole(`Reloading device from: ${filePath}`, 'info');
+        
+        try {
+            const response = await fetch('/api/midnam/reload', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    file_path: filePath,
+                    device_id: deviceId
+                })
+            });
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                this.logToDebugConsole(`✗ Reload failed: ${errorText}`, 'error');
+                Utils.showNotification('Failed to reload device', 'error');
+                return null;
+            }
+            
+            const deviceData = await response.json();
+            
+            // Update appState with reloaded data
+            appState.currentMidnam = deviceData;
+            appState.selectedDevice.file_path = filePath;
+            
+            // Transform device data using the manufacturer manager's transform function
+            if (window.manufacturerManager && window.manufacturerManager.transformDeviceData) {
+                await window.manufacturerManager.transformDeviceData(deviceData);
+            }
+            
+            // Re-render device configuration with fresh data
+            this.renderDeviceConfiguration();
+            
+            // Mark as saved (no unsaved changes after reload)
+            appState.markAsSaved();
+            
+            this.logToDebugConsole(`✓ Device reloaded successfully from: ${filePath}`, 'success');
+            this.logToDebugConsole(`  Found ${deviceData.channel_name_sets?.length || 0} channel name sets`, 'info');
+            this.logToDebugConsole(`  Found ${deviceData.patch_banks?.length || 0} patch banks`, 'info');
+            
+            Utils.showNotification('Device reloaded successfully', 'success');
+            
+            return deviceData;
+            
+        } catch (error) {
+            console.error('Error reloading device:', error);
+            this.logToDebugConsole(`✗ Error reloading device: ${error.message}`, 'error');
+            Utils.showNotification('Failed to reload device', 'error');
+            return null;
+        }
+    }
+    
     logToDebugConsole(message, type = 'info') {
         if (window.toolsManager && window.toolsManager.logToDebugConsole) {
             window.toolsManager.logToDebugConsole(message, type);
@@ -1070,6 +1216,40 @@ export class DeviceManager {
         // Ensure patchList array exists
         if (!appState.currentMidnam.patchList) {
             appState.currentMidnam.patchList = [];
+        }
+        
+        // Determine which ChannelNameSet to use for the new bank
+        let targetChannelNameSet = null;
+        
+        // First, try to use the same ChannelNameSet as existing banks
+        if (appState.currentMidnam.patchList.length > 0) {
+            const firstBank = appState.currentMidnam.patchList[0];
+            if (firstBank.channelNameSet) {
+                targetChannelNameSet = firstBank.channelNameSet;
+            }
+        }
+        
+        // If no existing banks or they don't have a ChannelNameSet, use the first available ChannelNameSet
+        if (!targetChannelNameSet && appState.currentMidnam.channelNameSets && appState.currentMidnam.channelNameSets.length > 0) {
+            targetChannelNameSet = appState.currentMidnam.channelNameSets[0].name;
+        }
+        
+        // If still no ChannelNameSet found, create a default one
+        if (!targetChannelNameSet) {
+            if (!appState.currentMidnam.channelNameSets) {
+                appState.currentMidnam.channelNameSets = [];
+            }
+            const defaultNameSet = {
+                name: 'Name Set 1',
+                available_channels: Array.from({length: 16}, (_, i) => ({
+                    channel: String(i + 1),
+                    available: true
+                })),
+                patch_banks: []
+            };
+            appState.currentMidnam.channelNameSets.push(defaultNameSet);
+            targetChannelNameSet = defaultNameSet.name;
+            this.logToDebugConsole(`Created default ChannelNameSet "${targetChannelNameSet}"`, 'info');
         }
         
         // Find the highest Control 32 value across all banks
@@ -1090,10 +1270,16 @@ export class DeviceManager {
         // Calculate new CC32 value (increment from highest, default to 0 if none found)
         const newCC32Value = highestCC32 >= 0 ? highestCC32 + 1 : 0;
         
+        // Get the available channels from the target ChannelNameSet
+        const targetNameSet = appState.currentMidnam.channelNameSets?.find(ns => ns.name === targetChannelNameSet);
+        const availableChannels = targetNameSet?.available_channels || [];
+        
         // Create new bank with a default patch and default MIDI commands
         const newBankIndex = appState.currentMidnam.patchList.length;
         const newBank = {
             name: `New Bank ${newBankIndex + 1}`,
+            channelNameSet: targetChannelNameSet,  // CRITICAL: Set the ChannelNameSet so the bank can be saved
+            availableChannels: availableChannels,  // Set the available channels for display in header
             midi_commands: [
                 { type: 'ControlChange', control: '0', value: '0' },
                 { type: 'ControlChange', control: '32', value: newCC32Value.toString() }
@@ -1119,6 +1305,7 @@ export class DeviceManager {
             this.editPatchList(newBankIndex);
         }, 100);
         
+        this.logToDebugConsole(`Added new bank "${newBank.name}" to ChannelNameSet "${targetChannelNameSet}"`, 'info');
         Utils.showNotification('New patch bank added', 'success');
     }
     
@@ -2301,6 +2488,38 @@ export class DeviceManager {
             window.midiManager.sendNoteOff(note);
             await new Promise(resolve => setTimeout(resolve, 50)); // Small gap
         }
+    }
+    
+    async sendProgramChangeFromDeviceTab(bankIndex, patchIndex) {
+        const patchList = appState.currentMidnam?.patchList?.[bankIndex];
+        if (!patchList || !patchList.patch) return;
+        
+        const patch = patchList.patch[patchIndex];
+        if (!patch) return;
+        
+        const programChange = patch.programChange !== undefined ? patch.programChange : patchIndex;
+        
+        // Check if MIDI is enabled
+        if (!window.midiManager || !window.midiManager.isOutputConnected()) {
+            Utils.showNotification('MIDI output not connected', 'warning');
+            return;
+        }
+        
+        // Send bank select MIDI commands if they exist
+        if (patchList.midi_commands && patchList.midi_commands.length > 0) {
+            for (const cmd of patchList.midi_commands) {
+                if (cmd.type === 'ControlChange') {
+                    window.midiManager.sendControlChange(parseInt(cmd.control), parseInt(cmd.value), 0);
+                    await new Promise(resolve => setTimeout(resolve, 10));
+                }
+            }
+        }
+        
+        // Send program change
+        window.midiManager.sendProgramChange(programChange);
+        
+        const patchName = patch.name || `Patch ${patchIndex + 1}`;
+        Utils.showNotification(`Program Change sent: ${patchName} (PC ${programChange})`, 'success');
     }
 }
 

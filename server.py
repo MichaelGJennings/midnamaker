@@ -55,6 +55,8 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
             self.save_patch()
         elif self.path == '/api/midnam/save':
             self.save_midnam_structure()
+        elif self.path == '/api/midnam/reload':
+            self.reload_midnam()
         elif self.path == '/api/validate':
             self.validate_midnam()
         elif self.path == '/api/middev/create':
@@ -570,6 +572,173 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
             import traceback
             traceback.print_exc()
             self.send_error(500, f"Error saving file: {str(e)}")
+    
+    def reload_midnam(self):
+        """Reload a MIDNAM file from disk, clearing cache and re-indexing.
+        Useful for testing to verify that saved changes persist."""
+        try:
+            import json
+            import xml.etree.ElementTree as ET
+            
+            content_length = int(self.headers['Content-Length'])
+            post_data = self.rfile.read(content_length).decode()
+            data = json.loads(post_data)
+            
+            file_path = data.get('file_path')
+            device_id = data.get('device_id')  # Optional: used to identify which device to return
+            
+            if not file_path:
+                self.send_error(400, "Missing file_path")
+                return
+            
+            print(f"[reload_midnam] Reloading file: {file_path}")
+            
+            # Check if file exists
+            if not os.path.exists(file_path):
+                self.send_error(404, f"File not found: {file_path}")
+                return
+            
+            # Clear the catalog cache to force re-indexing
+            cache_file = 'midnam_catalog_cache.json'
+            if os.path.exists(cache_file):
+                os.remove(cache_file)
+                print(f"[reload_midnam] Cleared catalog cache")
+            
+            # Read and parse the file fresh from disk
+            with open(file_path, 'r', encoding='utf-8') as f:
+                midnam_content = f.read()
+            
+            # Parse the XML to extract device details
+            root_elem = ET.fromstring(midnam_content)
+            
+            # Extract device information (same as serve_device_details)
+            device_info = self.extract_device_info(root_elem, file_path)
+            
+            if not device_info:
+                self.send_error(500, "Failed to extract device information from file")
+                return
+            
+            # Build full device details response
+            device_details = {
+                'id': device_id or f"{device_info['manufacturer']}|{device_info['model']}",
+                'name': device_info['model'],
+                'type': device_info.get('type', 'Unknown'),
+                'file_path': file_path,
+                'manufacturer_id': device_info.get('manufacturer_id'),
+                'family_id': device_info.get('family_id'),
+                'device_id': device_info.get('device_id'),
+                'midnam_content': midnam_content,
+                'raw_xml': midnam_content
+            }
+            
+            # Extract CustomDeviceModes with full hierarchy
+            note_lists = root_elem.findall('.//NoteNameList')
+            patches = root_elem.findall('.//Patch')
+            
+            # Extract CustomDeviceModes (there can be multiple)
+            device_details['custom_device_modes'] = []
+            custom_modes = root_elem.findall('.//CustomDeviceMode')
+            
+            for mode in custom_modes:
+                mode_name = mode.get('Name', 'Default Mode')
+                
+                # Extract ChannelNameSetAssignments
+                channel_assignments = []
+                assignments = mode.findall('.//ChannelNameSetAssign')
+                for assignment in assignments:
+                    channel_assignments.append({
+                        'channel': assignment.get('Channel'),
+                        'name_set': assignment.get('NameSet')
+                    })
+                
+                device_details['custom_device_modes'].append({
+                    'name': mode_name,
+                    'channel_assignments': channel_assignments
+                })
+            
+            # Extract ChannelNameSets with their PatchBanks
+            device_details['channel_name_sets'] = []
+            channel_name_sets = root_elem.findall('.//ChannelNameSet')
+            
+            for cns in channel_name_sets:
+                name_set_name = cns.get('Name', 'Default')
+                
+                # Extract AvailableForChannels
+                available_channels = []
+                available_channel_elements = cns.findall('.//AvailableChannel')
+                for ac in available_channel_elements:
+                    available_channels.append({
+                        'channel': ac.get('Channel'),
+                        'available': ac.get('Available', 'true').lower() == 'true'
+                    })
+                
+                # Extract PatchBanks
+                patch_banks = []
+                for bank in cns.findall('./PatchBank'):  # Direct children only
+                    bank_name = bank.get('Name', 'Unnamed Bank')
+                    
+                    # Extract MIDI commands
+                    midi_commands = []
+                    midi_cmds_elem = bank.find('MIDICommands')
+                    if midi_cmds_elem is not None:
+                        for cc in midi_cmds_elem.findall('ControlChange'):
+                            midi_commands.append({
+                                'type': 'ControlChange',
+                                'control': cc.get('Control'),
+                                'value': cc.get('Value')
+                            })
+                    
+                    # Extract patches
+                    patches_list = []
+                    patch_name_list = bank.find('PatchNameList')
+                    if patch_name_list is not None:
+                        for patch in patch_name_list.findall('Patch'):
+                            patch_name = patch.get('Name', '')
+                            patch_number = patch.get('Number', '')
+                            program_change = patch.get('ProgramChange', '')
+                            
+                            patches_list.append({
+                                'name': patch_name,
+                                'Number': patch_number,
+                                'programChange': int(program_change) if program_change.isdigit() else 0,
+                                'note_list_name': patch.find('UsesNoteNameList').get('Name') if patch.find('UsesNoteNameList') is not None else None
+                            })
+                    
+                    patch_banks.append({
+                        'name': bank_name,
+                        'midi_commands': midi_commands,
+                        'patches': patches_list
+                    })
+                
+                device_details['channel_name_sets'].append({
+                    'name': name_set_name,
+                    'available_channels': available_channels,
+                    'patch_banks': patch_banks
+                })
+            
+            # Extract patch banks (flat list for backward compatibility)
+            device_details['patch_banks'] = []
+            for cns in device_details['channel_name_sets']:
+                device_details['patch_banks'].extend(cns['patch_banks'])
+            
+            print(f"[reload_midnam] Successfully reloaded {file_path}")
+            print(f"[reload_midnam] Found {len(device_details['channel_name_sets'])} channel name sets")
+            print(f"[reload_midnam] Found {len(device_details['patch_banks'])} total patch banks")
+            
+            # Send response
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            self.end_headers()
+            self.wfile.write(json.dumps(device_details).encode())
+            
+        except ET.ParseError as e:
+            print(f"[reload_midnam] XML Parse Error: {str(e)}")
+            self.send_error(422, f"Invalid XML in file: {str(e)}")
+        except Exception as e:
+            print(f"[reload_midnam] Error: {str(e)}")
+            import traceback
+            traceback.print_exc()
+            self.send_error(500, f"Error reloading file: {str(e)}")
     
     def get_patch_files(self):
         """Get list of all patch files with their metadata"""

@@ -298,6 +298,11 @@ export class ManufacturerManager {
             };
             appState.currentMidnam = deviceData;
             
+            // Clear collapsed banks state when switching to a new device
+            if (window.deviceManager && window.deviceManager.clearCollapsedBanksState) {
+                window.deviceManager.clearCollapsedBanksState();
+            }
+            
             // Transform device data for frontend
             await this.transformDeviceData(deviceData);
             
@@ -406,6 +411,11 @@ export class ManufacturerManager {
                     file_path: result.midnam_path
                 };
                 appState.currentMidnam = deviceData;
+                
+                // Clear collapsed banks state when creating a new device
+                if (window.deviceManager && window.deviceManager.clearCollapsedBanksState) {
+                    window.deviceManager.clearCollapsedBanksState();
+                }
                 
                 // Transform device data for frontend
                 await this.transformDeviceData(deviceData);

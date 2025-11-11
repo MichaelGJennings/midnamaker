@@ -102,19 +102,17 @@ The editor includes WebMIDI support for:
 3. Select your MIDI device from the dropdown
 4. Test note triggers by clicking the note numbers in the Note Name editor
 
-## API Endpoints
+## API Documentation
 
-The server provides the following endpoints:
+For developers integrating with MIDNAMaker or writing automated tests, comprehensive API documentation is available in the `docs/` folder:
 
-- `GET /manufacturers` - List of MIDI manufacturers
-- `GET /patchfiles/*.middev` - Device definition files
-- `GET /patchfiles/*.midnam` - MIDI name documents
-- `GET /midnam_catalog` - Catalog of all .midnam files with device information
-- `GET /analyze_file/{file_path}` - Analyze a .midnam file and return bank/patch counts
-- `POST /save_file` - Save any file with automatic backup
-- `POST /clear_cache` - Clear the midnam catalog cache
-- `POST /merge_files` - Merge multiple .midnam files into one
-- `POST /delete_file` - Delete a .midnam file
+- **[API Specification (OpenAPI/Swagger)](docs/api-spec.yaml)** - Complete REST API reference with request/response schemas
+
+The API provides endpoints for:
+- Manufacturer and device catalog management
+- MIDNAM and MIDDEV file operations
+- Device validation and testing
+- Cache management
 
 ## Development
 
