@@ -1513,9 +1513,13 @@ export class PatchManager {
                     <div class="patch-item" data-patch-index="${index}">
                         <div class="patch-header">
                             <div class="patch-info-inline">
-                                <span class="patch-number">${patchNumber}</span>
+                                <span class="patch-number clickable-pc" 
+                                      data-patch-index="${index}"
+                                      data-program-change="${programChange}">${patchNumber}</span>
                                 <span class="patch-name clickable" onclick="patchManager.editPatch(${index})" title="Click to edit patch">${Utils.escapeHtml(patchName)}</span>
-                                <span class="patch-program-change">PC: ${programChange}</span>
+                                <span class="patch-program-change clickable-pc"
+                                      data-patch-index="${index}"
+                                      data-program-change="${programChange}">PC: ${programChange}</span>
                             </div>
                             <div class="patch-actions">
                                 <button class="btn btn-small btn-secondary" onclick="patchManager.testPatch(${index})">Test</button>
@@ -1547,6 +1551,9 @@ export class PatchManager {
                     }
                 });
             });
+            
+            // Setup MIDI-related event listeners for clickable-pc elements
+            this.setupPatchTabMIDIListeners();
         } else {
             // In edit mode, setup patch editing event listeners
             this.setupPatchEditListeners();
@@ -1982,6 +1989,62 @@ export class PatchManager {
             console.error('Error testing patch list:', error);
             Utils.showNotification('Failed to test patch list', 'error');
         }
+    }
+    
+    setupPatchTabMIDIListeners() {
+        const content = document.getElementById('patch-list-content');
+        if (!content) return;
+        
+        // Select all clickable-pc elements (both patch-number and patch-program-change)
+        const pcButtons = content.querySelectorAll('.patch-number.clickable-pc, .patch-program-change.clickable-pc');
+        
+        pcButtons.forEach(button => {
+            // Set up click handler
+            button.addEventListener('click', (e) => {
+                // Prevent the parent patch-item click handler from firing
+                e.stopPropagation();
+                const patchIndex = parseInt(button.getAttribute('data-patch-index'));
+                this.sendProgramChangeFromPatchTab(patchIndex);
+            });
+            
+            // Set up dynamic tooltip and cursor
+            button.addEventListener('mouseenter', () => {
+                if (window.midiManager && window.midiManager.isOutputConnected()) {
+                    button.setAttribute('title', 'Send Program Change message');
+                    button.style.cursor = 'url(assets/kbd.png) 8 8, pointer';
+                } else {
+                    button.setAttribute('title', 'Select a MIDI device to enable program changes.');
+                    button.style.cursor = 'not-allowed';
+                }
+            });
+        });
+    }
+    
+    async sendProgramChangeFromPatchTab(patchIndex) {
+        if (!this.selectedPatchList || !this.selectedPatchList.patch) return;
+        
+        const patch = this.selectedPatchList.patch[patchIndex];
+        if (!patch) return;
+        
+        const programChange = patch.programChange !== undefined ? patch.programChange : patchIndex;
+        
+        // Check if MIDI is enabled
+        if (!window.midiManager || !window.midiManager.isOutputConnected()) {
+            Utils.showNotification('MIDI output not connected', 'warning');
+            return;
+        }
+        
+        // Send bank select if specified
+        if (patch.bankSelectMSB !== undefined) {
+            window.midiManager.sendBankSelect(patch.bankSelectMSB, patch.bankSelectLSB || 0, 0);
+            await new Promise(resolve => setTimeout(resolve, 10));
+        }
+        
+        // Send program change
+        window.midiManager.sendProgramChange(programChange, 0);
+        
+        const patchName = patch.name || `Patch ${patchIndex + 1}`;
+        Utils.showNotification(`Program Change sent: ${patchName} (PC ${programChange})`, 'success');
     }
     
     editNoteListReference(noteListName) {

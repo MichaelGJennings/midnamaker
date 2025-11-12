@@ -16,8 +16,10 @@ When selecting a bank, a list of the patches in that bank will be expanded. You 
 
 If you have set your output device to your MIDI device, you can use a few convenient features:
 * Clicking the note number in the Note Editor will play that note on your device. This is super helpful for double-checking that, for example, the drums are what you think they are, or even for auditioning sounds. 
-* In the Device tab you can click on the indicator that shows the Program Change number for each patch and it will select that patch on your device, changing patch banks if necessary. 
+* Clicking the patch number for each patch will load that patch on your device, changing patch banks if necessary. 
 * You can also issue Bank Select messages to select any of your banks – though frequently devices won't do anything visible on Bank Select until there's a subsequent Program Change.
+
+For now, these functions are hard-coded for MIDI channel 1.
 
 Save your changes with the button at the top. A backup of the old version of the file wil be created in the directory. An option allows you to download the edited version of the file, and from that you can add or overwrite in your system. Yamaha has done a [pretty good job of detailing the installation procedure](https://faq.yamaha.com/usa/s/article/U0007729).  If you're using Digital Performer, pay attention as you go; along the way there's a detour or two but you can't miss it.
 

@@ -2,7 +2,7 @@
 """
 Simple HTTP server for the MIDI Name Editor
 Run with: python3 server.py
-Then open: http://localhost:8000/midi_name_editor.html
+Then open: http://localhost:8000/index.html
 """
 
 import http.server
@@ -2746,7 +2746,7 @@ if __name__ == "__main__":
     
     with socketserver.TCPServer(("", PORT), MIDINameHandler) as httpd:
         print(f"Server running at http://localhost:{PORT}/")
-        print(f"Open: http://localhost:{PORT}/midi_name_editor.html")
+        print(f"Open: http://localhost:{PORT}/index.html")
         print("Press Ctrl+C to stop")
         try:
             httpd.serve_forever()

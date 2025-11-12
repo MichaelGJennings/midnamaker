@@ -440,7 +440,10 @@ export class DeviceManager {
                                                 const programChange = patch.programChange !== undefined ? patch.programChange : patchIndex;
                                                 return `
                                                     <div class="patch-item-inline">
-                                                        <span class="patch-number">${patchNumber}</span>
+                                                        <span class="patch-number clickable-pc" 
+                                                              data-bank-index="${index}"
+                                                              data-patch-index="${patchIndex}"
+                                                              data-program-change="${programChange}">${patchNumber}</span>
                                                         <span class="patch-name clickable" onclick="deviceManager.editPatchInList(${index}, ${patchIndex})" title="Click to edit patch">${Utils.escapeHtml(patchName)}</span>
                                                         <span class="patch-program-change clickable-pc" 
                                                               data-bank-index="${index}"
@@ -694,8 +697,8 @@ export class DeviceManager {
     }
     
     setupDeviceEventListeners() {
-        // Add event listeners for clickable program change buttons
-        const pcButtons = document.querySelectorAll('.patch-program-change.clickable-pc');
+        // Add event listeners for clickable program change buttons and bank number buttons
+        const pcButtons = document.querySelectorAll('.patch-program-change.clickable-pc, .patch-number.clickable-pc');
         
         pcButtons.forEach(button => {
             // Set up click handler
@@ -1888,6 +1891,7 @@ export class DeviceManager {
                                                data-list-index="${listIndex}"
                                                data-patch-index="${index}"
                                                tabindex="0"
+                                               autocomplete="off"
                                                value="${patchId}"
                                                onkeydown="deviceManager.handlePatchEditKeydown(event, ${listIndex}, ${index}, 'id')"
                                                onchange="deviceManager.updatePatchInList(${listIndex}, ${index}, 'Number', this.value)">
@@ -1898,6 +1902,7 @@ export class DeviceManager {
                                                data-list-index="${listIndex}"
                                                data-patch-index="${index}"
                                                tabindex="0"
+                                               autocomplete="off"
                                                value="${Utils.escapeHtml(patchName)}"
                                                onkeydown="deviceManager.handlePatchEditKeydown(event, ${listIndex}, ${index}, 'name')"
                                                onchange="deviceManager.updatePatchInList(${listIndex}, ${index}, 'name', this.value)">
@@ -1908,6 +1913,7 @@ export class DeviceManager {
                                                data-list-index="${listIndex}"
                                                data-patch-index="${index}"
                                                tabindex="0"
+                                               autocomplete="off"
                                                value="${programChange}"
                                                min="0"
                                                max="127"
