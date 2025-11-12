@@ -529,6 +529,33 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                         
                         print(f"[save_midnam_structure] Set active ControlNameList: {midnam['activeControlListName']}")
             
+            # Update SupportsStandardDeviceMode
+            for master_device in root.findall('.//MasterDeviceNames'):
+                # Remove existing SupportsStandardDeviceMode elements
+                existing_standard_modes = master_device.findall('SupportsStandardDeviceMode')
+                for standard_mode in existing_standard_modes:
+                    master_device.remove(standard_mode)
+                
+                # Add SupportsStandardDeviceMode if enabled
+                if midnam.get('supportsStandardDeviceMode', False):
+                    standard_mode_name = midnam.get('standardDeviceModeName', 'General MIDI')
+                    
+                    # Create the SupportsStandardDeviceMode element
+                    standard_mode_elem = ET.Element('SupportsStandardDeviceMode')
+                    standard_mode_elem.set('Name', standard_mode_name)
+                    
+                    # Insert after Model elements but before CustomDeviceMode
+                    # Find the position to insert
+                    insert_index = 0
+                    for i, child in enumerate(master_device):
+                        if child.tag == 'Model':
+                            insert_index = i + 1
+                        elif child.tag == 'CustomDeviceMode':
+                            break
+                    
+                    master_device.insert(insert_index, standard_mode_elem)
+                    print(f"[save_midnam_structure] Saved SupportsStandardDeviceMode: {standard_mode_name}")
+            
             # Create backup
             backup_name = f'{file_path}.backup.{datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}'
             shutil.copy(file_path, backup_name)
@@ -655,6 +682,16 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                     'name': mode_name,
                     'channel_assignments': channel_assignments
                 })
+            
+            # Extract SupportsStandardDeviceMode
+            device_details['supportsStandardDeviceMode'] = False
+            device_details['standardDeviceModeName'] = 'General MIDI'
+            standard_mode_elem = root_elem.find('.//SupportsStandardDeviceMode')
+            if standard_mode_elem is not None:
+                device_details['supportsStandardDeviceMode'] = True
+                mode_name = standard_mode_elem.get('Name')
+                if mode_name:
+                    device_details['standardDeviceModeName'] = mode_name
             
             # Extract ChannelNameSets with their PatchBanks
             device_details['channel_name_sets'] = []
@@ -1069,6 +1106,16 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                     'name': 'Default Mode',
                     'channel_assignments': []
                 })
+            
+            # Extract SupportsStandardDeviceMode
+            device_details['supportsStandardDeviceMode'] = False
+            device_details['standardDeviceModeName'] = 'General MIDI'
+            standard_mode_elem = root_elem.find('.//SupportsStandardDeviceMode')
+            if standard_mode_elem is not None:
+                device_details['supportsStandardDeviceMode'] = True
+                mode_name = standard_mode_elem.get('Name')
+                if mode_name:
+                    device_details['standardDeviceModeName'] = mode_name
             
             # Extract ChannelNameSets with their PatchBanks
             device_details['channel_name_sets'] = []
