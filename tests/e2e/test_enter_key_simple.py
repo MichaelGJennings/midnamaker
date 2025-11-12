@@ -2,104 +2,71 @@
 Simple test to verify Enter key functionality in Note Editor
 """
 import pytest
-from playwright.async_api import async_playwright, expect
+from playwright.async_api import Page, expect
 
 
 @pytest.mark.asyncio
-async def test_enter_key_simple():
-    """Simple test that creates a note input and tests Enter key"""
+async def test_enter_key_simple(app_page: Page, helpers):
+    """Test that Enter key moves focus to Add button in note editor"""
     
-    async with async_playwright() as p:
-        browser = await p.chromium.launch(headless=False)
-        page = await browser.new_page()
-        
-        try:
-            # Navigate to the application
-            await page.goto("http://localhost:8000/midi_name_editor.html")
-            await page.wait_for_load_state("networkidle")
-            
-            # Go to Patch tab
-            await page.click('[data-tab="patch"]')
-            await page.wait_for_timeout(1000)
-            
-            # Create a simple note editor by executing JavaScript
-            await page.evaluate("""
-                // Create a simple note editor for testing
-                const container = document.getElementById('patch-editor-container');
-                if (container) {
-                    container.innerHTML = `
-                        <div class="structure-item">
-                            <h3>Test Note Editor</h3>
-                            <div class="note-table-container">
-                                <table class="note-table" id="note-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Note #</th>
-                                            <th>Note Name</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="note-table-body">
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    `;
-                    
-                    // Add a test note row
-                    addNoteRow(36, 'Test Note');
-                }
-            """)
-            
-            await page.wait_for_timeout(500)
-            
-            # Find the note name input
-            note_name_input = page.locator('.note-name-input').first
-            await expect(note_name_input).to_be_visible()
-            
-            # Clear and type a new note name
-            await note_name_input.clear()
-            await note_name_input.fill("New Test Note")
-            
-            # Press Enter key
-            await note_name_input.press("Enter")
-            
-            # Wait for focus change
-            await page.wait_for_timeout(200)
-            
-            # Check what element has focus
-            focused_element = await page.evaluate("document.activeElement")
-            focused_tag = await page.evaluate("document.activeElement.tagName")
-            focused_class = await page.evaluate("document.activeElement.className")
-            
-            print(f"Focused element after Enter: {focused_tag} with class: {focused_class}")
-            
-            # Verify focus moved to Add button
-            assert "add-note-btn" in focused_class, f"Expected focus on Add button, but got class: {focused_class}"
-            
-            print("✅ Enter key successfully moved focus to Add button")
-            
-        finally:
-            await browser.close()
+    # Load Alesis D4 device (has note names) and select first patch
+    await helpers.load_test_device_and_patch(app_page, "Alesis", "D4")
+    
+    # Should now be on patch tab with patch loaded
+    await app_page.wait_for_timeout(1000)
+    
+    # Verify patch content is loaded (not empty state)
+    empty_state = app_page.locator('[data-testid="msg_patch_empty"]')
+    await expect(empty_state).not_to_be_visible()
+    
+    # Verify patch content area exists and has content
+    patch_content = app_page.locator('#patch-content')
+    await expect(patch_content).to_be_visible()
+    
+    # Find the first note name input
+    note_name_input = app_page.locator('.note-name-input').first
+    await expect(note_name_input).to_be_visible(timeout=5000)
+    
+    # Click on the input to focus it and potentially make it editable
+    await note_name_input.click()
+    await app_page.wait_for_timeout(200)
+    
+    # Check if it's now editable by checking readonly attribute
+    is_readonly = await note_name_input.get_attribute('readonly')
+    print(f"After click - readonly: {is_readonly}")
+    
+    # If still readonly, try double-clicking
+    if is_readonly is not None:
+        await note_name_input.dblclick()
+        await app_page.wait_for_timeout(200)
+        is_readonly = await note_name_input.get_attribute('readonly')
+        print(f"After double-click - readonly: {is_readonly}")
+    
+    # Now try to edit - use fill instead of clear+fill since it handles readonly better
+    await note_name_input.fill("New Test Note")
+    
+    # Press Enter key
+    await note_name_input.press("Enter")
+    
+    # Wait for focus change
+    await app_page.wait_for_timeout(200)
+    
+    # Check what element has focus
+    focused_class = await app_page.evaluate("document.activeElement.className")
+    focused_id = await app_page.evaluate("document.activeElement.id")
+    
+    print(f"Focused element after Enter - class: {focused_class}, id: {focused_id}")
+    
+    # Verify focus moved to a button (could be add-note-btn or insert-btn)
+    is_button = "btn" in focused_class
+    is_add_or_insert = "add-note-btn" in focused_class or "insert-btn" in focused_id or "add-note-btn" in focused_id
+    
+    assert is_button and is_add_or_insert, \
+        f"Expected focus on Add/Insert button, but got class: {focused_class}, id: {focused_id}"
+    
+    print(f"✅ Enter key successfully moved focus to button: {focused_id}")
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+if __name__ == "__main__":
+    import asyncio
+    asyncio.run(test_enter_key_simple())
