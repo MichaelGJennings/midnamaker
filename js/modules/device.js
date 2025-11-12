@@ -1891,6 +1891,7 @@ export class DeviceManager {
                                                data-list-index="${listIndex}"
                                                data-patch-index="${index}"
                                                tabindex="0"
+                                               autocomplete="off"
                                                value="${patchId}"
                                                onkeydown="deviceManager.handlePatchEditKeydown(event, ${listIndex}, ${index}, 'id')"
                                                onchange="deviceManager.updatePatchInList(${listIndex}, ${index}, 'Number', this.value)">
@@ -1901,6 +1902,7 @@ export class DeviceManager {
                                                data-list-index="${listIndex}"
                                                data-patch-index="${index}"
                                                tabindex="0"
+                                               autocomplete="off"
                                                value="${Utils.escapeHtml(patchName)}"
                                                onkeydown="deviceManager.handlePatchEditKeydown(event, ${listIndex}, ${index}, 'name')"
                                                onchange="deviceManager.updatePatchInList(${listIndex}, ${index}, 'name', this.value)">
@@ -1911,6 +1913,7 @@ export class DeviceManager {
                                                data-list-index="${listIndex}"
                                                data-patch-index="${index}"
                                                tabindex="0"
+                                               autocomplete="off"
                                                value="${programChange}"
                                                min="0"
                                                max="127"

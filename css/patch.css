@@ -434,6 +434,23 @@
     font-size: 0.85rem;
 }
 
+/* MIDI-enabled clickable styles for patch tab */
+.patch-number.clickable-pc,
+.patch-program-change.clickable-pc {
+    padding: 0.15rem 0.4rem;
+    background: #e8f4f8;
+    border-radius: 3px;
+    transition: all 0.2s;
+    user-select: none;
+}
+
+.patch-number.clickable-pc:hover,
+.patch-program-change.clickable-pc:hover {
+    background: #007AFF;
+    color: white;
+    transform: translateY(-1px);
+}
+
 .patch-actions,
 .device-actions {
     display: flex;
