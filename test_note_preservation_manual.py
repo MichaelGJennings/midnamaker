@@ -36,7 +36,7 @@ def main():
         time.sleep(2)
     
     print("Opening browser...")
-    webbrowser.open('http://localhost:8000/midi_name_editor.html')
+    webbrowser.open('http://localhost:8000/index.html')
     
     print()
     print("MANUAL TEST STEPS:")
@@ -76,6 +76,8 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
 
 
 

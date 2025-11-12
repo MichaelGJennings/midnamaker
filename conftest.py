@@ -13,7 +13,7 @@ except ImportError:
     PLAYWRIGHT_AVAILABLE = False
 
 # Test configuration
-BASE_URL = "http://localhost:8001"
+BASE_URL = "http://localhost:8000"
 TEST_TIMEOUT = 30000  # 30 seconds
 
 # Playwright fixtures (only available if Playwright is installed)
@@ -25,6 +25,7 @@ if PLAYWRIGHT_AVAILABLE:
             "viewport": {"width": 1280, "height": 720},
             "ignore_https_errors": True,
             "accept_downloads": True,
+            "permissions": ["midi", "midi-sysex"],  # Grant MIDI permissions
         }
 
     @pytest.fixture(scope="function")
@@ -76,6 +77,14 @@ if PLAYWRIGHT_AVAILABLE:
             window.DISABLE_MIDI_FOR_TESTING = true;
         """)
         
+        await page.goto(f"{BASE_URL}/index.html")
+        await page.wait_for_load_state("networkidle")
+        return page
+    
+    @pytest.fixture
+    async def app_page_with_midi(page: Page):
+        """Navigate to the main application page WITH MIDI enabled"""
+        # Don't disable MIDI for this fixture
         await page.goto(f"{BASE_URL}/index.html")
         await page.wait_for_load_state("networkidle")
         return page
@@ -162,6 +171,86 @@ if PLAYWRIGHT_AVAILABLE:
             """Select a MIDI device from the dropdown"""
             await page.get_by_test_id("sel_midi_device").select_option(label=device_name)
             await page.wait_for_timeout(500)
+        
+        @staticmethod
+        async def load_test_device(page: Page, manufacturer: str = "TestManufacturer", device: str = "TestModel"):
+            """Load a test device (defaults to TestManufacturer TestModel)"""
+            # Navigate to manufacturer tab
+            await page.click('[data-testid="tab_manufacturer"]')
+            await page.wait_for_timeout(1000)
+            
+            # Make sure manufacturer section is expanded
+            manufacturer_section = page.locator('#manufacturer-section-collapsible')
+            section_class = await manufacturer_section.get_attribute('class')
+            if 'collapsed' in section_class:
+                # Click header to expand
+                await page.click('[data-testid="hdr_manufacturer_section"]')
+                await page.wait_for_timeout(500)
+            
+            # Filter and select manufacturer
+            await TestHelpers.fill_manufacturer_filter(page, manufacturer)
+            await page.wait_for_timeout(500)
+            
+            # Click on manufacturer (use force to bypass overlapping elements)
+            manufacturer_items = page.locator('[data-testid^="itm_manufacturer_"]')
+            count = await manufacturer_items.count()
+            for i in range(count):
+                item = manufacturer_items.nth(i)
+                text = await item.text_content()
+                if manufacturer.lower() in text.lower():
+                    await item.click(force=True)
+                    await page.wait_for_timeout(1000)
+                    break
+            
+            # Wait for device list to load
+            await page.wait_for_timeout(500)
+            
+            # Click on device (use force to bypass overlapping elements)
+            device_items = page.locator('[data-testid^="itm_device_"]')
+            device_count = await device_items.count()
+            for i in range(device_count):
+                item = device_items.nth(i)
+                text = await item.text_content()
+                if device.lower() in text.lower():
+                    await item.click(force=True)
+                    await page.wait_for_timeout(2000)  # Wait for device to load
+                    break
+            
+            # Should now be on device tab with device loaded
+            return page
+        
+        @staticmethod
+        async def select_first_patch(page: Page):
+            """Click on the first patch in the device tab to load it in patch editor"""
+            # Make sure we're on device tab
+            await page.click('[data-testid="tab_device"]')
+            await page.wait_for_timeout(1000)
+            
+            # Wait for device content to load
+            await page.wait_for_selector('.patch-name.clickable', timeout=10000)
+            
+            # Find and click first patch name
+            first_patch = page.locator('.patch-name.clickable').first
+            await first_patch.wait_for(state='visible')
+            await first_patch.click()
+            await page.wait_for_timeout(1500)
+            
+            # Verify we're now on patch tab
+            patch_tab_active = await page.locator('[data-tab="patch"].active').count()
+            if patch_tab_active == 0:
+                # If not automatically switched, switch manually
+                await page.click('[data-testid="tab_patch"]')
+                await page.wait_for_timeout(500)
+            
+            # Should now be on patch tab with patch loaded
+            return page
+        
+        @staticmethod
+        async def load_test_device_and_patch(page: Page, manufacturer: str = "TestManufacturer", device: str = "TestModel"):
+            """Load a test device and select the first patch"""
+            await TestHelpers.load_test_device(page, manufacturer, device)
+            await TestHelpers.select_first_patch(page)
+            return page
 
     @pytest.fixture
     def helpers():

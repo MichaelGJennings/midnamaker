@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE MIDINameDocument PUBLIC "-//MIDI Manufacturers Association//DTD MIDINameDocument 1.0//EN" "http://www.midi.org/dtds/MIDINameDocument10.dtd">
+
+<MIDINameDocument>
+	<Author>Created by Midnamaker on 2025-11-11</Author>
+	<MasterDeviceNames>
+		<Manufacturer>Alesis</Manufacturer>
+		<Model>MIDIVerb</Model>
+		<CustomDeviceMode Name="Default">
+			<ChannelNameSetAssignments>
+				<ChannelNameSetAssign Channel="1" NameSet="Name Set 1"/>
+				<ChannelNameSetAssign Channel="2" NameSet="Name Set 1"/>
+				<ChannelNameSetAssign Channel="3" NameSet="Name Set 1"/>
+				<ChannelNameSetAssign Channel="4" NameSet="Name Set 1"/>
+				<ChannelNameSetAssign Channel="5" NameSet="Name Set 1"/>
+				<ChannelNameSetAssign Channel="6" NameSet="Name Set 1"/>
+				<ChannelNameSetAssign Channel="7" NameSet="Name Set 1"/>
+				<ChannelNameSetAssign Channel="8" NameSet="Name Set 1"/>
+				<ChannelNameSetAssign Channel="9" NameSet="Name Set 1"/>
+				<ChannelNameSetAssign Channel="10" NameSet="Name Set 1"/>
+				<ChannelNameSetAssign Channel="11" NameSet="Name Set 1"/>
+				<ChannelNameSetAssign Channel="12" NameSet="Name Set 1"/>
+				<ChannelNameSetAssign Channel="13" NameSet="Name Set 1"/>
+				<ChannelNameSetAssign Channel="14" NameSet="Name Set 1"/>
+				<ChannelNameSetAssign Channel="15" NameSet="Name Set 1"/>
+				<ChannelNameSetAssign Channel="16" NameSet="Name Set 1"/>
+			</ChannelNameSetAssignments>
+		</CustomDeviceMode>
+		<ChannelNameSet Name="Name Set 1">
+			<AvailableForChannels>
+				<AvailableChannel Channel="1" Available="true"/>
+				<AvailableChannel Channel="2" Available="true"/>
+				<AvailableChannel Channel="3" Available="true"/>
+				<AvailableChannel Channel="4" Available="true"/>
+				<AvailableChannel Channel="5" Available="true"/>
+				<AvailableChannel Channel="6" Available="true"/>
+				<AvailableChannel Channel="7" Available="true"/>
+				<AvailableChannel Channel="8" Available="true"/>
+				<AvailableChannel Channel="9" Available="true"/>
+				<AvailableChannel Channel="10" Available="true"/>
+				<AvailableChannel Channel="11" Available="true"/>
+				<AvailableChannel Channel="12" Available="true"/>
+				<AvailableChannel Channel="13" Available="true"/>
+				<AvailableChannel Channel="14" Available="true"/>
+				<AvailableChannel Channel="15" Available="true"/>
+				<AvailableChannel Channel="16" Available="true"/>
+			</AvailableForChannels>
+			<UsesControlNameList Name="MIDI Continuous Controllers"/>
+			<PatchBank Name="Presets">
+				<PatchNameList>
+					<Patch Name=".2 Sec Small Bright" Number="1" ProgramChange="0"/>
+					<Patch Name=".2 Sec Small Warm" Number="2" ProgramChange="1"/>
+					<Patch Name=".2 Sec Medium Bright" Number="3" ProgramChange="2"/>
+					<Patch Name=".3 Sec Small Bright" Number="4" ProgramChange="3"/>
+					<Patch Name=".3 Sec Small Warm" Number="5" ProgramChange="4"/>
+					<Patch Name=".4 Sec Medium Bright" Number="6" ProgramChange="5"/>
+					<Patch Name=".4 Sec Medium Warm " Number="7" ProgramChange="6"/>
+					<Patch Name=".6 Sec Small Bright" Number="8" ProgramChange="7"/>
+					<Patch Name=".6 Sec Medium Warm" Number="9" ProgramChange="8"/>
+					<Patch Name=".6 Sec Medium Dark" Number="10" ProgramChange="9"/>
+					<Patch Name=".8 sec Small Bright" Number="11" ProgramChange="10"/>
+					<Patch Name=".8 Sec Large Warm" Number="12" ProgramChange="11"/>
+					<Patch Name="1.0 Sec Small Warm" Number="13" ProgramChange="12"/>
+					<Patch Name="1.0 Sec Medium Warm" Number="14" ProgramChange="13"/>
+					<Patch Name="1.0 Sec Large Bright" Number="15" ProgramChange="14"/>
+					<Patch Name="1.2 Sec Medium Warm" Number="16" ProgramChange="15"/>
+					<Patch Name="1.2 Sec Small Warm" Number="17" ProgramChange="16"/>
+					<Patch Name="1.2 Sec Small Bright" Number="18" ProgramChange="17"/>
+					<Patch Name="1.4 Sec Large Warm" Number="19" ProgramChange="18"/>
+					<Patch Name="1.4 Sec Large Dark" Number="20" ProgramChange="19"/>
+					<Patch Name="1.4 Sec Medium Warm" Number="21" ProgramChange="20"/>
+					<Patch Name="1.6 Sec Small Dark" Number="22" ProgramChange="21"/>
+					<Patch Name="1.6 Sec Large Bright" Number="23" ProgramChange="22"/>
+					<Patch Name="1.6 Sec Medium Bright" Number="24" ProgramChange="23"/>
+					<Patch Name="1.8 Sec Large Dark" Number="25" ProgramChange="24"/>
+					<Patch Name="1.8 Sec Large Bright" Number="26" ProgramChange="25"/>
+					<Patch Name="1.8 Sec Medium Warm" Number="27" ProgramChange="26"/>
+					<Patch Name="2.0 Sec Large Bright" Number="28" ProgramChange="27"/>
+					<Patch Name="2.0 Sec Medium Warm" Number="29" ProgramChange="28"/>
+					<Patch Name="2.0 Sec Large Warm" Number="30" ProgramChange="29"/>
+					<Patch Name="2.5 Sec Medium Warm" Number="31" ProgramChange="30"/>
+					<Patch Name="2.5 Sec Large Bright" Number="32" ProgramChange="31"/>
+					<Patch Name="2.5 Sec Medium Dark" Number="33" ProgramChange="32"/>
+					<Patch Name="2.8 Sec Small Bright" Number="34" ProgramChange="33"/>
+					<Patch Name="2.8 Sec Medium Bright" Number="35" ProgramChange="34"/>
+					<Patch Name="3.0 Sec Large Bright" Number="36" ProgramChange="35"/>
+					<Patch Name="3.0 Sec Large Warm" Number="37" ProgramChange="36"/>
+					<Patch Name="3.0 Sec Medium Dark" Number="38" ProgramChange="37"/>
+					<Patch Name="3.5 Sec Large Bright" Number="39" ProgramChange="38"/>
+					<Patch Name="3.5 Sec Medium Warm" Number="40" ProgramChange="39"/>
+					<Patch Name="4.0 Sec Large Dark" Number="41" ProgramChange="40"/>
+					<Patch Name="4.0 Sec Medium Bright" Number="42" ProgramChange="41"/>
+					<Patch Name="5 Sec Large Warm" Number="43" ProgramChange="42"/>
+					<Patch Name="8 Sec Large Bright" Number="44" ProgramChange="43"/>
+					<Patch Name="8 Sec Large Warm" Number="45" ProgramChange="44"/>
+					<Patch Name="10 Sec Large Bright" Number="46" ProgramChange="45"/>
+					<Patch Name="10 Sec Large Warm" Number="47" ProgramChange="46"/>
+					<Patch Name="16 Sec Large Dark" Number="48" ProgramChange="47"/>
+					<Patch Name="18 Sec Extra Large Bright" Number="49" ProgramChange="48"/>
+					<Patch Name="20 Sec Extra Large Dark" Number="50" ProgramChange="49"/>
+					<Patch Name="Gated – 100ms" Number="51" ProgramChange="50"/>
+					<Patch Name="Gated – 150ms" Number="52" ProgramChange="51"/>
+					<Patch Name="Gated – 200ms" Number="53" ProgramChange="52"/>
+					<Patch Name="Gated – 250ms" Number="54" ProgramChange="53"/>
+					<Patch Name="Gated – 300ms" Number="55" ProgramChange="54"/>
+					<Patch Name="Gated – 350ms" Number="56" ProgramChange="55"/>
+					<Patch Name="Gated – 400ms" Number="57" ProgramChange="56"/>
+					<Patch Name="Gated – 500ms" Number="58" ProgramChange="57"/>
+					<Patch Name="Gated – 600ms" Number="59" ProgramChange="58"/>
+					<Patch Name="Reverse – 300ms" Number="60" ProgramChange="59"/>
+					<Patch Name="Reverse – 400ms" Number="61" ProgramChange="60"/>
+					<Patch Name="Reverse – 500ms" Number="62" ProgramChange="61"/>
+					<Patch Name="Reverse – 600ms" Number="63" ProgramChange="62"/>
+				</PatchNameList>
+			</PatchBank>
+		</ChannelNameSet>
+		<ControlNameList Name="MIDI Continuous Controllers">
+			<Control Type="7bit" Number="1" Name="Mod Wheel"/>
+		</ControlNameList>
+	</MasterDeviceNames>
+</MIDINameDocument>

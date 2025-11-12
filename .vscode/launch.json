@@ -1,0 +1,90 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: Debug Current Test File",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "pytest",
+            "args": [
+                "${file}",
+                "-v",
+                "-s",
+                "--headed"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
+        },
+        {
+            "name": "Python: Debug E2E Tests (Headed)",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "pytest",
+            "args": [
+                "tests/e2e/",
+                "-v",
+                "-s",
+                "--headed",
+                "-k",
+                "${input:testName}"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
+        },
+        {
+            "name": "Python: Debug Specific Test",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "pytest",
+            "args": [
+                "${file}::${input:testFunction}",
+                "-v",
+                "-s",
+                "--headed"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}"
+            }
+        },
+        {
+            "name": "Python: Current Test with Playwright Inspector",
+            "type": "debugpy",
+            "request": "launch",
+            "module": "pytest",
+            "args": [
+                "${file}",
+                "-v",
+                "-s"
+            ],
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "env": {
+                "PYTHONPATH": "${workspaceFolder}",
+                "PWDEBUG": "1"
+            }
+        }
+    ],
+    "inputs": [
+        {
+            "id": "testName",
+            "type": "promptString",
+            "description": "Test name pattern (leave empty for all)",
+            "default": ""
+        },
+        {
+            "id": "testFunction",
+            "type": "promptString",
+            "description": "Test function name",
+            "default": "test_"
+        }
+    ]
+}
+
