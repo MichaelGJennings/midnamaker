@@ -1,6 +1,7 @@
 // Patch module
 import { appState } from '../core/state.js';
 import { Utils } from '../core/utils.js';
+import { testPatch as testPatchHelper } from '../utils/midiHelpers.js';
 import { modal } from '../components/modal.js';
 import { midiManager } from './midi.js';
 
@@ -2427,31 +2428,7 @@ export class PatchManager {
         if (!this.selectedPatchList || !this.selectedPatchList.patch) return;
         
         const patch = this.selectedPatchList.patch[index];
-        if (!patch) return;
-        
-        const programChange = patch.programChange !== undefined ? patch.programChange : index;
-        
-        // Send program change before playing notes
-        if (midiManager && midiManager.isOutputConnected()) {
-            // Send program change
-            midiManager.sendProgramChange(programChange);
-            
-            // Wait a bit for the program change to take effect
-            await new Promise(resolve => setTimeout(resolve, 50));
-            
-            // Play 3 random notes
-            const notes = [60, 64, 67]; // C, E, G
-            const randomNotes = notes.sort(() => Math.random() - 0.5).slice(0, 3);
-            
-            for (const note of randomNotes) {
-                midiManager.sendNoteOn(note, 100);
-                await new Promise(resolve => setTimeout(resolve, 200)); // 8th note at 150 BPM
-                midiManager.sendNoteOff(note);
-                await new Promise(resolve => setTimeout(resolve, 50)); // Small gap
-            }
-        } else {
-            Utils.showNotification('MIDI output not connected', 'warning');
-        }
+        await testPatchHelper(this.selectedPatchList, patch, index);
     }
 }
 
