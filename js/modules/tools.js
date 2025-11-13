@@ -159,6 +159,90 @@ export class ToolsManager {
             }
         }
         
+        // Check if MIDI SysEx Tool section exists
+        let sysexSection = document.getElementById('sysex-tool-section');
+        if (!sysexSection) {
+            const debugConsole = document.getElementById('debug-console');
+            
+            const section = document.createElement('div');
+            section.id = 'sysex-tool-section';
+            section.className = 'tool-section';
+            section.innerHTML = `
+                <h3 data-testid="hdr_sysex_tool">MIDI SysEx Tool</h3>
+                <p data-testid="div_sysex_description">Here you can send little MIDI SysEx sequences to experiment with your device. You'll need to refer to your device's technical documentation for details.</p>
+                
+                <div class="sysex-input-container" data-testid="sec_sysex_input">
+                    <label for="sysex-input" data-testid="lbl_sysex_bytes">SysEx Bytes (hex):</label>
+                    <div class="sysex-input-wrapper">
+                        <span class="sysex-prefix">F0</span>
+                        <input 
+                            type="text" 
+                            id="sysex-input" 
+                            placeholder="e.g., 43 10 4C 00 00 7E 00" 
+                            data-testid="npt_sysex_bytes"
+                            oninput="toolsManager.validateSysExInput()"
+                        >
+                        <span class="sysex-suffix">F7</span>
+                    </div>
+                    <div class="sysex-validation-message" id="sysex-validation" data-testid="msg_sysex_validation"></div>
+                </div>
+                
+                <div class="sysex-manufacturer-selector" data-testid="sec_manufacturer_selector">
+                    <label for="sysex-manufacturer-filter" data-testid="lbl_manufacturer_filter">Manufacturer/Device ID:</label>
+                    <div class="sysex-id-controls">
+                        <input 
+                            type="text" 
+                            id="sysex-manufacturer-filter" 
+                            placeholder="Type to filter manufacturers..." 
+                            data-testid="npt_manufacturer_filter"
+                            oninput="toolsManager.filterManufacturers()"
+                            onfocus="toolsManager.showManufacturerDropdown()"
+                        >
+                        <button 
+                            class="btn btn-small btn-secondary" 
+                            onclick="toolsManager.insertManufacturerId()" 
+                            data-testid="btn_insert_id"
+                            id="sysex-insert-btn"
+                        >Insert</button>
+                        <div class="sysex-manufacturer-dropdown" id="sysex-manufacturer-dropdown" data-testid="drp_manufacturers" style="display: none;">
+                            <div class="empty-state">Type to search manufacturers...</div>
+                        </div>
+                    </div>
+                    <div class="sysex-id-display" id="sysex-id-display" data-testid="msg_manufacturer_id"></div>
+                </div>
+                
+                <div class="sysex-actions" data-testid="sec_sysex_actions">
+                    <button 
+                        class="btn btn-primary sysex-send-btn" 
+                        onclick="toolsManager.sendSysEx()" 
+                        data-testid="btn_send_sysex"
+                        id="sysex-send-btn"
+                        disabled
+                    >Send SysEx</button>
+                    <button 
+                        class="btn btn-secondary" 
+                        onclick="toolsManager.clearSysExInput()" 
+                        data-testid="btn_clear_sysex"
+                    >Clear</button>
+                </div>
+            `;
+            
+            // Insert before debug console
+            if (debugConsole) {
+                const debugSection = debugConsole.closest('.tool-section');
+                if (debugSection && debugSection.parentNode === content) {
+                    content.insertBefore(section, debugSection);
+                } else {
+                    content.appendChild(section);
+                }
+            } else {
+                content.appendChild(section);
+            }
+            
+            // Initialize SysEx tool
+            this.initializeSysExTool();
+        }
+        
         // Initialize debug console
         this.ensureDebugConsole();
         this.setupDebugConsole();
@@ -837,6 +921,400 @@ export class ToolsManager {
                 uploadBtn.textContent = 'Upload Selected Files';
             }
         }
+    }
+    
+    // ========== MIDI SysEx Tool Methods ==========
+    
+    initializeSysExTool() {
+        // Load manufacturers data
+        this.sysexManufacturers = [];
+        this.selectedManufacturerId = null;
+        this.loadManufacturersForSysEx();
+        
+        // Setup event listeners
+        document.addEventListener('click', (e) => {
+            const dropdown = document.getElementById('sysex-manufacturer-dropdown');
+            const filterInput = document.getElementById('sysex-manufacturer-filter');
+            if (dropdown && filterInput && !dropdown.contains(e.target) && e.target !== filterInput) {
+                dropdown.style.display = 'none';
+            }
+        });
+        
+        // Listen for MIDI device selection changes
+        const midiDeviceSelect = document.getElementById('midi-device-select');
+        if (midiDeviceSelect) {
+            midiDeviceSelect.addEventListener('change', () => {
+                // Small delay to ensure state is updated
+                setTimeout(() => {
+                    this.updateSysExButtonState();
+                }, 100);
+            });
+        }
+        
+        // Listen for MIDI toggle changes
+        const midiToggle = document.getElementById('midi-toggle');
+        if (midiToggle) {
+            midiToggle.addEventListener('click', () => {
+                // Small delay to ensure state is updated
+                setTimeout(() => {
+                    this.updateSysExButtonState();
+                }, 100);
+            });
+        }
+        
+        // Update button state on initial load
+        setTimeout(() => {
+            this.updateSysExButtonState();
+        }, 500);
+    }
+    
+    async loadManufacturersForSysEx() {
+        try {
+            const response = await fetch('/api/manufacturers');
+            if (!response.ok) return;
+            
+            const data = await response.json();
+            
+            // Build manufacturers list with IDs
+            this.sysexManufacturers = [];
+            
+            for (const [manufacturer, devices] of Object.entries(data.manufacturers || {})) {
+                // Get manufacturer ID from first device that has one
+                let manufacturerId = null;
+                let deviceId = null;
+                let deviceName = null;
+                
+                for (const device of devices) {
+                    if (device.manufacturer_id) {
+                        manufacturerId = device.manufacturer_id;
+                        deviceId = device.device_id;
+                        deviceName = device.name;
+                        
+                        this.sysexManufacturers.push({
+                            manufacturer,
+                            manufacturerId,
+                            device: deviceName,
+                            deviceId,
+                            searchText: `${manufacturer} ${deviceName}`.toLowerCase()
+                        });
+                    }
+                }
+            }
+            
+            // Sort by manufacturer name
+            this.sysexManufacturers.sort((a, b) => a.manufacturer.localeCompare(b.manufacturer));
+            
+        } catch (error) {
+            console.error('Error loading manufacturers for SysEx:', error);
+        }
+    }
+    
+    validateSysExInput() {
+        const input = document.getElementById('sysex-input');
+        const validation = document.getElementById('sysex-validation');
+        const sendBtn = document.getElementById('sysex-send-btn');
+        
+        if (!input || !validation || !sendBtn) return;
+        
+        const value = input.value.trim();
+        
+        if (!value) {
+            validation.textContent = '';
+            validation.className = 'sysex-validation-message';
+            sendBtn.disabled = true;
+            this.updateSysExButtonState();
+            return;
+        }
+        
+        // Split by spaces and validate each byte
+        const bytes = value.split(/\s+/);
+        const errors = [];
+        const validBytes = [];
+        
+        for (let i = 0; i < bytes.length; i++) {
+            const byte = bytes[i];
+            
+            // Check if it's valid hex
+            if (!/^[0-9A-Fa-f]{1,2}$/.test(byte)) {
+                errors.push(`Invalid hex at position ${i + 1}: "${byte}"`);
+            } else {
+                const value = parseInt(byte, 16);
+                if (value > 0xFF) {
+                    errors.push(`Value too large at position ${i + 1}: 0x${byte}`);
+                } else {
+                    validBytes.push(value);
+                }
+            }
+        }
+        
+        if (errors.length > 0) {
+            validation.textContent = errors[0]; // Show first error
+            validation.className = 'sysex-validation-message error';
+            sendBtn.setAttribute('data-invalid', 'true');
+        } else {
+            const byteCount = validBytes.length + 2; // +2 for F0 and F7
+            validation.textContent = `✓ Valid (${byteCount} bytes total)`;
+            validation.className = 'sysex-validation-message success';
+            sendBtn.removeAttribute('data-invalid');
+        }
+        
+        this.updateSysExButtonState();
+    }
+    
+    updateSysExButtonState() {
+        const sendBtn = document.getElementById('sysex-send-btn');
+        if (!sendBtn) return;
+        
+        const input = document.getElementById('sysex-input');
+        const inputValue = input ? input.value.trim() : '';
+        const hasValidInput = inputValue.length > 0 && !sendBtn.getAttribute('data-invalid');
+        
+        const midiEnabled = midiManager.isMIDIEnabled();
+        const deviceSelected = midiManager.isDeviceSelected();
+        
+        if (!midiEnabled) {
+            sendBtn.title = 'MIDI not enabled. Enable MIDI in the header.';
+            sendBtn.style.cursor = 'not-allowed';
+            sendBtn.disabled = true;
+        } else if (!deviceSelected) {
+            sendBtn.title = 'No MIDI device selected. Select a device in the header.';
+            sendBtn.style.cursor = 'not-allowed';
+            sendBtn.disabled = true;
+        } else if (!hasValidInput) {
+            sendBtn.title = 'Invalid SysEx data. Check the validation message.';
+            sendBtn.style.cursor = 'not-allowed';
+            sendBtn.disabled = true;
+        } else {
+            sendBtn.title = `Send SysEx to ${midiManager.getSelectedDeviceName()}`;
+            sendBtn.style.cursor = 'pointer';
+            sendBtn.disabled = false;
+        }
+    }
+    
+    showManufacturerDropdown() {
+        const dropdown = document.getElementById('sysex-manufacturer-dropdown');
+        if (dropdown) {
+            dropdown.style.display = 'block';
+            this.filterManufacturers();
+        }
+    }
+    
+    filterManufacturers() {
+        const filterInput = document.getElementById('sysex-manufacturer-filter');
+        const dropdown = document.getElementById('sysex-manufacturer-dropdown');
+        
+        if (!filterInput || !dropdown) return;
+        
+        const filter = filterInput.value.toLowerCase().trim();
+        
+        if (!filter) {
+            dropdown.innerHTML = '<div class="empty-state">Type to search manufacturers...</div>';
+            return;
+        }
+        
+        // Filter manufacturers
+        const matches = this.sysexManufacturers.filter(m => m.searchText.includes(filter));
+        
+        if (matches.length === 0) {
+            dropdown.innerHTML = '<div class="empty-state">No manufacturers found</div>';
+            return;
+        }
+        
+        // Build dropdown HTML
+        const html = matches.slice(0, 20).map(m => {
+            const idHex = m.manufacturerId.toString(16).toUpperCase().padStart(2, '0');
+            const deviceIdHex = m.deviceId ? ` ${m.deviceId.toString(16).toUpperCase().padStart(2, '0')}` : '';
+            
+            return `
+                <div class="manufacturer-option" onclick="toolsManager.selectManufacturer('${Utils.escapeHtml(m.manufacturer)}', '${m.device}')" data-testid="opt_manufacturer">
+                    <div class="manufacturer-name">${Utils.escapeHtml(m.manufacturer)}</div>
+                    <div class="device-name">${Utils.escapeHtml(m.device)}</div>
+                    <div class="manufacturer-id">ID: ${idHex}${deviceIdHex}</div>
+                </div>
+            `;
+        }).join('');
+        
+        dropdown.innerHTML = html;
+    }
+    
+    selectManufacturer(manufacturer, device) {
+        const filterInput = document.getElementById('sysex-manufacturer-filter');
+        const dropdown = document.getElementById('sysex-manufacturer-dropdown');
+        const idDisplay = document.getElementById('sysex-id-display');
+        
+        if (!filterInput || !idDisplay) return;
+        
+        filterInput.value = `${manufacturer} - ${device}`;
+        
+        // Find the selected manufacturer data
+        const selected = this.sysexManufacturers.find(m => 
+            m.manufacturer === manufacturer && m.device === device
+        );
+        
+        if (selected) {
+            this.selectedManufacturerId = selected;
+            const idHex = selected.manufacturerId.toString(16).toUpperCase().padStart(2, '0');
+            const deviceIdHex = selected.deviceId ? ` ${selected.deviceId.toString(16).toUpperCase().padStart(2, '0')}` : '';
+            idDisplay.innerHTML = `<strong>Manufacturer ID:</strong> ${idHex}${deviceIdHex}`;
+        }
+        
+        if (dropdown) {
+            dropdown.style.display = 'none';
+        }
+    }
+    
+    insertManufacturerId() {
+        if (!this.selectedManufacturerId) {
+            Utils.showNotification('Please select a manufacturer/device first', 'warning');
+            return;
+        }
+        
+        const input = document.getElementById('sysex-input');
+        if (!input) return;
+        
+        const idHex = this.selectedManufacturerId.manufacturerId.toString(16).toUpperCase().padStart(2, '0');
+        const deviceIdHex = this.selectedManufacturerId.deviceId ? 
+            ` ${this.selectedManufacturerId.deviceId.toString(16).toUpperCase().padStart(2, '0')}` : '';
+        
+        const idString = `${idHex}${deviceIdHex}`;
+        
+        // Insert at cursor position or append
+        const cursorPos = input.selectionStart || 0;
+        const currentValue = input.value;
+        const beforeCursor = currentValue.substring(0, cursorPos);
+        const afterCursor = currentValue.substring(cursorPos);
+        
+        // Add space before if needed
+        const needsSpaceBefore = beforeCursor && !beforeCursor.endsWith(' ');
+        const needsSpaceAfter = afterCursor && !afterCursor.startsWith(' ');
+        
+        const newValue = 
+            beforeCursor + 
+            (needsSpaceBefore ? ' ' : '') + 
+            idString + 
+            (needsSpaceAfter ? ' ' : '') + 
+            afterCursor;
+        
+        input.value = newValue;
+        
+        // Move cursor after inserted ID
+        const newCursorPos = cursorPos + (needsSpaceBefore ? 1 : 0) + idString.length;
+        input.setSelectionRange(newCursorPos, newCursorPos);
+        input.focus();
+        
+        this.validateSysExInput();
+        
+        Utils.showNotification(`Inserted ID: ${idString}`, 'success');
+    }
+    
+    sendSysEx() {
+        const input = document.getElementById('sysex-input');
+        if (!input) return;
+        
+        const value = input.value.trim();
+        if (!value) return;
+        
+        // Debug: Log MIDI state
+        console.log('[SysEx] MIDI state:', {
+            enabled: midiManager.isMIDIEnabled(),
+            deviceSelected: midiManager.isDeviceSelected(),
+            sysexEnabled: appState.globalMIDIState.access?.sysexEnabled,
+            accessObject: !!appState.globalMIDIState.access
+        });
+        
+        // Parse hex bytes
+        const bytes = value.split(/\s+/).map(b => parseInt(b, 16));
+        
+        // Send via MIDI manager
+        const success = midiManager.sendSysEx(bytes);
+        
+        if (success) {
+            Utils.showNotification('SysEx sent successfully', 'success');
+            this.logToDebugConsole(`SysEx sent: F0 ${value} F7`, 'info');
+        } else {
+            Utils.showNotification('Failed to send SysEx', 'error');
+            this.logToDebugConsole('SysEx send failed', 'error');
+        }
+    }
+    
+    clearSysExInput() {
+        const input = document.getElementById('sysex-input');
+        const validation = document.getElementById('sysex-validation');
+        const filterInput = document.getElementById('sysex-manufacturer-filter');
+        const idDisplay = document.getElementById('sysex-id-display');
+        const dropdown = document.getElementById('sysex-manufacturer-dropdown');
+        
+        if (input) input.value = '';
+        if (validation) {
+            validation.textContent = '';
+            validation.className = 'sysex-validation-message';
+        }
+        if (filterInput) filterInput.value = '';
+        if (idDisplay) idDisplay.innerHTML = '';
+        if (dropdown) dropdown.style.display = 'none';
+        
+        this.selectedManufacturerId = null;
+        this.updateSysExButtonState();
+    }
+    
+    // Diagnostic function for SysEx support
+    checkSysExSupport() {
+        console.log('=== SysEx Support Diagnostic ===');
+        console.log('MIDI State:', {
+            enabled: appState.globalMIDIState.enabled,
+            initialized: appState.globalMIDIState.initialized,
+            hasAccess: !!appState.globalMIDIState.access,
+            sysexEnabled: appState.globalMIDIState.access?.sysexEnabled,
+            selectedOutput: appState.globalMIDIState.selectedOutput?.name || 'none',
+            selectedOutputId: appState.globalMIDIState.selectedOutputId || 'none'
+        });
+        
+        console.log('MIDI Manager:', {
+            midiEnabled: midiManager.isMIDIEnabled(),
+            deviceSelected: midiManager.isDeviceSelected(),
+            deviceName: midiManager.getSelectedDeviceName()
+        });
+        
+        if (appState.globalMIDIState.access) {
+            console.log('MIDI Access Details:', {
+                sysexEnabled: appState.globalMIDIState.access.sysexEnabled,
+                inputs: appState.globalMIDIState.access.inputs.size,
+                outputs: appState.globalMIDIState.access.outputs.size
+            });
+        }
+        
+        const result = {
+            canSendSysEx: !!(
+                appState.globalMIDIState.enabled &&
+                appState.globalMIDIState.access &&
+                appState.globalMIDIState.access.sysexEnabled &&
+                appState.globalMIDIState.selectedOutput
+            )
+        };
+        
+        console.log('Can Send SysEx:', result.canSendSysEx);
+        
+        if (!result.canSendSysEx) {
+            console.log('%c Troubleshooting Steps:', 'font-weight: bold');
+            if (!appState.globalMIDIState.enabled) {
+                console.log('❌ MIDI is not enabled. Click the MIDI toggle in the header.');
+            }
+            if (!appState.globalMIDIState.access) {
+                console.log('❌ No MIDI access. Try reloading the page.');
+            }
+            if (appState.globalMIDIState.access && !appState.globalMIDIState.access.sysexEnabled) {
+                console.log('❌ SysEx not enabled. Check chrome://settings/content/midi');
+                console.log('   Ensure localhost:8000 has "Allow" permission.');
+            }
+            if (!appState.globalMIDIState.selectedOutput) {
+                console.log('❌ No MIDI device selected. Select a device from the dropdown.');
+            }
+        } else {
+            console.log('✅ SysEx is ready to use!');
+        }
+        
+        console.log('================================');
+        return result;
     }
 }
 

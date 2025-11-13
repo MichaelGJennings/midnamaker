@@ -658,3 +658,166 @@
 .install-note strong {
     color: #664d03;
 }
+
+/* MIDI SysEx Tool Styles */
+.sysex-input-container {
+    margin-bottom: 1.5rem;
+}
+
+.sysex-input-container label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #495057;
+}
+
+.sysex-input-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.sysex-prefix,
+.sysex-suffix {
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    font-size: 1.1rem;
+    color: #28a745;
+    padding: 0.5rem;
+    background: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    min-width: 3rem;
+    text-align: center;
+}
+
+.sysex-input-wrapper input {
+    flex: 1;
+    font-family: 'Courier New', monospace;
+    padding: 0.5rem;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+.sysex-input-wrapper input:focus {
+    outline: none;
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.sysex-validation-message {
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+    min-height: 1.5rem;
+}
+
+.sysex-validation-message.error {
+    color: #dc3545;
+}
+
+.sysex-validation-message.success {
+    color: #28a745;
+}
+
+.sysex-manufacturer-selector {
+    margin-bottom: 1.5rem;
+}
+
+.sysex-manufacturer-selector label {
+    display: block;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+    color: #495057;
+}
+
+.sysex-id-controls {
+    display: flex;
+    gap: 0.5rem;
+    position: relative;
+}
+
+.sysex-id-controls input {
+    flex: 1;
+    padding: 0.5rem;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+}
+
+.sysex-id-controls input:focus {
+    outline: none;
+    border-color: #80bdff;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.sysex-manufacturer-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 100px; /* Leave space for Insert button */
+    max-height: 300px;
+    overflow-y: auto;
+    background: white;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    margin-top: 0.25rem;
+}
+
+.manufacturer-option {
+    padding: 0.75rem;
+    cursor: pointer;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.manufacturer-option:last-child {
+    border-bottom: none;
+}
+
+.manufacturer-option:hover {
+    background: #f8f9fa;
+}
+
+.manufacturer-name {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 0.25rem;
+}
+
+.device-name {
+    font-size: 0.9rem;
+    color: #666;
+    margin-bottom: 0.25rem;
+}
+
+.manufacturer-id {
+    font-family: 'Courier New', monospace;
+    font-size: 0.85rem;
+    color: #007bff;
+}
+
+.sysex-id-display {
+    margin-top: 0.5rem;
+    padding: 0.5rem;
+    background: #f8f9fa;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    min-height: 2rem;
+    color: #495057;
+}
+
+.sysex-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 1rem;
+}
+
+.sysex-send-btn {
+    cursor: pointer;
+}
+
+.sysex-send-btn:disabled {
+    cursor: not-allowed !important;
+    opacity: 0.6;
+}

@@ -18,6 +18,7 @@ If you have set your output device to your MIDI device, you can use a few conven
 * Clicking the note number in the Note Editor will play that note on your device. This is super helpful for double-checking that, for example, the drums are what you think they are, or even for auditioning sounds. 
 * Clicking the patch number for each patch will load that patch on your device, changing patch banks if necessary. 
 * You can also issue Bank Select messages to select any of your banks – though frequently devices won't do anything visible on Bank Select until there's a subsequent Program Change.
+* The Tools tab has a little Sysex tool you can use to squirt short SysEx messages at your MIDI device.
 
 For now, these functions are hard-coded for MIDI channel 1.
 

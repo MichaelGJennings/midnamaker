@@ -122,6 +122,76 @@ export class MIDIManager {
         }
     }
     
+    // Send SysEx message
+    sendSysEx(data) {
+        if (!appState.globalMIDIState.enabled || !appState.globalMIDIState.selectedOutput) {
+            return false;
+        }
+        
+        try {
+            // Debug logging
+            console.log('[sendSysEx] Checking SysEx capability:', {
+                hasAccess: !!appState.globalMIDIState.access,
+                sysexEnabled: appState.globalMIDIState.access?.sysexEnabled,
+                midiEnabled: appState.globalMIDIState.enabled,
+                hasOutput: !!appState.globalMIDIState.selectedOutput
+            });
+            
+            // Check if SysEx is supported
+            if (!appState.globalMIDIState.access) {
+                console.error('No MIDI access object');
+                Utils.showNotification('MIDI not initialized. Please enable MIDI in the header.', 'error');
+                return false;
+            }
+            
+            if (!appState.globalMIDIState.access.sysexEnabled) {
+                console.error('SysEx is not enabled');
+                console.error('To enable SysEx in Chrome:');
+                console.error('1. Go to chrome://settings/content/midi');
+                console.error('2. Ensure localhost:8000 is set to "Allow"');
+                console.error('3. Reload the page and re-enable MIDI');
+                
+                Utils.showNotification('SysEx not enabled. Check console for instructions.', 'error');
+                return false;
+            }
+            
+            // Ensure data is an array of numbers
+            if (!Array.isArray(data)) {
+                console.error('SysEx data must be an array');
+                return false;
+            }
+            
+            // Validate all bytes are in valid range (0-127 for data bytes)
+            for (let i = 0; i < data.length; i++) {
+                if (typeof data[i] !== 'number' || data[i] < 0 || data[i] > 255) {
+                    console.error(`Invalid byte at position ${i}: ${data[i]}`);
+                    return false;
+                }
+            }
+            
+            // Ensure first byte is 0xF0 (SysEx start)
+            if (data[0] !== 0xF0) {
+                console.warn('SysEx message should start with 0xF0, prepending...');
+                data = [0xF0, ...data];
+            }
+            
+            // Ensure last byte is 0xF7 (SysEx end)
+            if (data[data.length - 1] !== 0xF7) {
+                console.warn('SysEx message should end with 0xF7, appending...');
+                data = [...data, 0xF7];
+            }
+            
+            appState.globalMIDIState.selectedOutput.send(data);
+            return true;
+        } catch (error) {
+            console.error('Error sending SysEx:', error);
+            if (error.name === 'InvalidAccessError') {
+                Utils.showNotification('SysEx permission denied. Please reload the page and enable MIDI with SysEx support.', 'error');
+            }
+            return false;
+        }
+    }
+    
     // Test MIDI connection
     async testMIDIConnection() {
         if (!appState.globalMIDIState.enabled || !appState.globalMIDIState.selectedOutput) {
