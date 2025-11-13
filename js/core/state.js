@@ -166,9 +166,19 @@ export class AppState {
                 return;
             }
 
-            this.globalMIDIState.access = await navigator.requestMIDIAccess();
+            // Request MIDI access with SysEx support
+            this.globalMIDIState.access = await navigator.requestMIDIAccess({ sysex: true });
             this.globalMIDIState.enabled = true;
             this.globalMIDIState.initialized = true;
+            
+            // Log SysEx status for debugging
+            console.log('[MIDI] SysEx enabled:', this.globalMIDIState.access.sysexEnabled);
+            if (!this.globalMIDIState.access.sysexEnabled) {
+                console.warn('[MIDI] SysEx was requested but not granted. SysEx messages will not work.');
+                console.warn('[MIDI] Check browser permissions: chrome://settings/content/midi');
+            } else {
+                console.log('[MIDI] SysEx support is active');
+            }
             
             // Don't auto-select devices - let user choose
             this.globalMIDIState.selectedOutput = null;

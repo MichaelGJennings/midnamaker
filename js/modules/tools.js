@@ -939,6 +939,33 @@ export class ToolsManager {
                 dropdown.style.display = 'none';
             }
         });
+        
+        // Listen for MIDI device selection changes
+        const midiDeviceSelect = document.getElementById('midi-device-select');
+        if (midiDeviceSelect) {
+            midiDeviceSelect.addEventListener('change', () => {
+                // Small delay to ensure state is updated
+                setTimeout(() => {
+                    this.updateSysExButtonState();
+                }, 100);
+            });
+        }
+        
+        // Listen for MIDI toggle changes
+        const midiToggle = document.getElementById('midi-toggle');
+        if (midiToggle) {
+            midiToggle.addEventListener('click', () => {
+                // Small delay to ensure state is updated
+                setTimeout(() => {
+                    this.updateSysExButtonState();
+                }, 100);
+            });
+        }
+        
+        // Update button state on initial load
+        setTimeout(() => {
+            this.updateSysExButtonState();
+        }, 500);
     }
     
     async loadManufacturersForSysEx() {
@@ -1023,12 +1050,12 @@ export class ToolsManager {
         if (errors.length > 0) {
             validation.textContent = errors[0]; // Show first error
             validation.className = 'sysex-validation-message error';
-            sendBtn.disabled = true;
+            sendBtn.setAttribute('data-invalid', 'true');
         } else {
             const byteCount = validBytes.length + 2; // +2 for F0 and F7
             validation.textContent = `✓ Valid (${byteCount} bytes total)`;
             validation.className = 'sysex-validation-message success';
-            sendBtn.disabled = false;
+            sendBtn.removeAttribute('data-invalid');
         }
         
         this.updateSysExButtonState();
@@ -1038,7 +1065,10 @@ export class ToolsManager {
         const sendBtn = document.getElementById('sysex-send-btn');
         if (!sendBtn) return;
         
-        const isValid = !sendBtn.disabled;
+        const input = document.getElementById('sysex-input');
+        const inputValue = input ? input.value.trim() : '';
+        const hasValidInput = inputValue.length > 0 && !sendBtn.getAttribute('data-invalid');
+        
         const midiEnabled = midiManager.isMIDIEnabled();
         const deviceSelected = midiManager.isDeviceSelected();
         
@@ -1050,9 +1080,10 @@ export class ToolsManager {
             sendBtn.title = 'No MIDI device selected. Select a device in the header.';
             sendBtn.style.cursor = 'not-allowed';
             sendBtn.disabled = true;
-        } else if (!isValid) {
+        } else if (!hasValidInput) {
             sendBtn.title = 'Invalid SysEx data. Check the validation message.';
             sendBtn.style.cursor = 'not-allowed';
+            sendBtn.disabled = true;
         } else {
             sendBtn.title = `Send SysEx to ${midiManager.getSelectedDeviceName()}`;
             sendBtn.style.cursor = 'pointer';
@@ -1183,6 +1214,14 @@ export class ToolsManager {
         const value = input.value.trim();
         if (!value) return;
         
+        // Debug: Log MIDI state
+        console.log('[SysEx] MIDI state:', {
+            enabled: midiManager.isMIDIEnabled(),
+            deviceSelected: midiManager.isDeviceSelected(),
+            sysexEnabled: appState.globalMIDIState.access?.sysexEnabled,
+            accessObject: !!appState.globalMIDIState.access
+        });
+        
         // Parse hex bytes
         const bytes = value.split(/\s+/).map(b => parseInt(b, 16));
         
@@ -1216,6 +1255,66 @@ export class ToolsManager {
         
         this.selectedManufacturerId = null;
         this.updateSysExButtonState();
+    }
+    
+    // Diagnostic function for SysEx support
+    checkSysExSupport() {
+        console.log('=== SysEx Support Diagnostic ===');
+        console.log('MIDI State:', {
+            enabled: appState.globalMIDIState.enabled,
+            initialized: appState.globalMIDIState.initialized,
+            hasAccess: !!appState.globalMIDIState.access,
+            sysexEnabled: appState.globalMIDIState.access?.sysexEnabled,
+            selectedOutput: appState.globalMIDIState.selectedOutput?.name || 'none',
+            selectedOutputId: appState.globalMIDIState.selectedOutputId || 'none'
+        });
+        
+        console.log('MIDI Manager:', {
+            midiEnabled: midiManager.isMIDIEnabled(),
+            deviceSelected: midiManager.isDeviceSelected(),
+            deviceName: midiManager.getSelectedDeviceName()
+        });
+        
+        if (appState.globalMIDIState.access) {
+            console.log('MIDI Access Details:', {
+                sysexEnabled: appState.globalMIDIState.access.sysexEnabled,
+                inputs: appState.globalMIDIState.access.inputs.size,
+                outputs: appState.globalMIDIState.access.outputs.size
+            });
+        }
+        
+        const result = {
+            canSendSysEx: !!(
+                appState.globalMIDIState.enabled &&
+                appState.globalMIDIState.access &&
+                appState.globalMIDIState.access.sysexEnabled &&
+                appState.globalMIDIState.selectedOutput
+            )
+        };
+        
+        console.log('Can Send SysEx:', result.canSendSysEx);
+        
+        if (!result.canSendSysEx) {
+            console.log('%c Troubleshooting Steps:', 'font-weight: bold');
+            if (!appState.globalMIDIState.enabled) {
+                console.log('❌ MIDI is not enabled. Click the MIDI toggle in the header.');
+            }
+            if (!appState.globalMIDIState.access) {
+                console.log('❌ No MIDI access. Try reloading the page.');
+            }
+            if (appState.globalMIDIState.access && !appState.globalMIDIState.access.sysexEnabled) {
+                console.log('❌ SysEx not enabled. Check chrome://settings/content/midi');
+                console.log('   Ensure localhost:8000 has "Allow" permission.');
+            }
+            if (!appState.globalMIDIState.selectedOutput) {
+                console.log('❌ No MIDI device selected. Select a device from the dropdown.');
+            }
+        } else {
+            console.log('✅ SysEx is ready to use!');
+        }
+        
+        console.log('================================');
+        return result;
     }
 }
 

@@ -129,6 +129,32 @@ export class MIDIManager {
         }
         
         try {
+            // Debug logging
+            console.log('[sendSysEx] Checking SysEx capability:', {
+                hasAccess: !!appState.globalMIDIState.access,
+                sysexEnabled: appState.globalMIDIState.access?.sysexEnabled,
+                midiEnabled: appState.globalMIDIState.enabled,
+                hasOutput: !!appState.globalMIDIState.selectedOutput
+            });
+            
+            // Check if SysEx is supported
+            if (!appState.globalMIDIState.access) {
+                console.error('No MIDI access object');
+                Utils.showNotification('MIDI not initialized. Please enable MIDI in the header.', 'error');
+                return false;
+            }
+            
+            if (!appState.globalMIDIState.access.sysexEnabled) {
+                console.error('SysEx is not enabled');
+                console.error('To enable SysEx in Chrome:');
+                console.error('1. Go to chrome://settings/content/midi');
+                console.error('2. Ensure localhost:8000 is set to "Allow"');
+                console.error('3. Reload the page and re-enable MIDI');
+                
+                Utils.showNotification('SysEx not enabled. Check console for instructions.', 'error');
+                return false;
+            }
+            
             // Ensure data is an array of numbers
             if (!Array.isArray(data)) {
                 console.error('SysEx data must be an array');
@@ -159,6 +185,9 @@ export class MIDIManager {
             return true;
         } catch (error) {
             console.error('Error sending SysEx:', error);
+            if (error.name === 'InvalidAccessError') {
+                Utils.showNotification('SysEx permission denied. Please reload the page and enable MIDI with SysEx support.', 'error');
+            }
             return false;
         }
     }
