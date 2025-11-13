@@ -122,6 +122,47 @@ export class MIDIManager {
         }
     }
     
+    // Send SysEx message
+    sendSysEx(data) {
+        if (!appState.globalMIDIState.enabled || !appState.globalMIDIState.selectedOutput) {
+            return false;
+        }
+        
+        try {
+            // Ensure data is an array of numbers
+            if (!Array.isArray(data)) {
+                console.error('SysEx data must be an array');
+                return false;
+            }
+            
+            // Validate all bytes are in valid range (0-127 for data bytes)
+            for (let i = 0; i < data.length; i++) {
+                if (typeof data[i] !== 'number' || data[i] < 0 || data[i] > 255) {
+                    console.error(`Invalid byte at position ${i}: ${data[i]}`);
+                    return false;
+                }
+            }
+            
+            // Ensure first byte is 0xF0 (SysEx start)
+            if (data[0] !== 0xF0) {
+                console.warn('SysEx message should start with 0xF0, prepending...');
+                data = [0xF0, ...data];
+            }
+            
+            // Ensure last byte is 0xF7 (SysEx end)
+            if (data[data.length - 1] !== 0xF7) {
+                console.warn('SysEx message should end with 0xF7, appending...');
+                data = [...data, 0xF7];
+            }
+            
+            appState.globalMIDIState.selectedOutput.send(data);
+            return true;
+        } catch (error) {
+            console.error('Error sending SysEx:', error);
+            return false;
+        }
+    }
+    
     // Test MIDI connection
     async testMIDIConnection() {
         if (!appState.globalMIDIState.enabled || !appState.globalMIDIState.selectedOutput) {
