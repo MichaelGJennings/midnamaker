@@ -244,6 +244,12 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_error(404, f"Patch '{patch_name_to_find}' not found in bank '{patch_bank}'")
                 return
             
+            # Ensure DTD compliance before saving
+            print("[save_patch] Checking DTD compliance...")
+            fixes_count = self._ensure_dtd_compliance(root)
+            if fixes_count > 0:
+                print(f"[save_patch] Applied {fixes_count} DTD compliance fix(es)")
+            
             # Create backup
             import shutil
             from datetime import datetime
@@ -344,6 +350,111 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                 patch_elem.set('ProgramChange', str(patch_data.get('programChange', '')))
         
         return new_patch_bank
+    
+    def _ensure_dtd_compliance(self, root):
+        """
+        Ensure the XML structure complies with DTD requirements.
+        
+        Key DTD rules:
+        1. ChannelNameSet can only have ONE (NoteNameList | UsesNoteNameList)?
+        2. ChannelNameSet element order: AvailableForChannels, (NoteNameList | UsesNoteNameList)?, 
+           (ControlNameList | UsesControlNameList)?, PatchBank+
+        3. NoteNameLists should be at MasterDeviceNames level
+        """
+        import xml.etree.ElementTree as ET
+        
+        fixes_applied = []
+        
+        for master_device in root.findall('.//MasterDeviceNames'):
+            # Fix 1: Move any NoteNameLists from ChannelNameSets to MasterDeviceNames
+            for channel_name_set in master_device.findall('.//ChannelNameSet'):
+                note_lists_in_cns = [child for child in channel_name_set if child.tag == 'NoteNameList']
+                
+                if len(note_lists_in_cns) > 0:
+                    fixes_applied.append(f"Moving {len(note_lists_in_cns)} NoteNameList(s) from ChannelNameSet '{channel_name_set.get('Name')}' to MasterDeviceNames")
+                    
+                    for note_list in note_lists_in_cns:
+                        channel_name_set.remove(note_list)
+                        master_device.append(note_list)
+                
+                # Fix 2: Ensure proper element ordering in ChannelNameSet
+                # DTD order: AvailableForChannels, (NoteNameList | UsesNoteNameList)?, 
+                #            (ControlNameList | UsesControlNameList)?, PatchBank+
+                children = list(channel_name_set)
+                
+                # Categorize children
+                available_for_channels = []
+                note_or_control_refs = []  # NoteNameList, UsesNoteNameList, ControlNameList, UsesControlNameList
+                patch_banks = []
+                other = []
+                
+                for child in children:
+                    if child.tag == 'AvailableForChannels':
+                        available_for_channels.append(child)
+                    elif child.tag in ('NoteNameList', 'UsesNoteNameList', 'ControlNameList', 'UsesControlNameList'):
+                        note_or_control_refs.append(child)
+                    elif child.tag == 'PatchBank':
+                        patch_banks.append(child)
+                    else:
+                        other.append(child)
+                
+                # Check if reordering is needed
+                needs_reorder = False
+                if len(children) > 0:
+                    current_order = [c.tag for c in children]
+                    
+                    # Simple check: if PatchBank comes before Note/Control lists, we need to reorder
+                    if patch_banks and note_or_control_refs:
+                        first_patch_bank_idx = children.index(patch_banks[0])
+                        for ref in note_or_control_refs:
+                            if children.index(ref) > first_patch_bank_idx:
+                                needs_reorder = True
+                                break
+                
+                if needs_reorder:
+                    cns_name = channel_name_set.get('Name', 'unnamed')
+                    fixes_applied.append(f"Reordering elements in ChannelNameSet '{cns_name}' to match DTD")
+                    
+                    # Clear and re-add in correct order
+                    for child in children:
+                        channel_name_set.remove(child)
+                    
+                    # Add back in DTD order
+                    for child in available_for_channels:
+                        channel_name_set.append(child)
+                    
+                    # Separate note and control refs for proper ordering
+                    note_refs = [c for c in note_or_control_refs if c.tag in ('NoteNameList', 'UsesNoteNameList')]
+                    control_refs = [c for c in note_or_control_refs if c.tag in ('ControlNameList', 'UsesControlNameList')]
+                    
+                    # DTD allows max one note ref
+                    if len(note_refs) > 1:
+                        fixes_applied.append(f"  WARNING: ChannelNameSet '{cns_name}' has {len(note_refs)} note references, DTD allows only 1")
+                        # Keep only the first one
+                        note_refs = note_refs[:1]
+                    
+                    # Add note refs (max 1)
+                    for child in note_refs:
+                        channel_name_set.append(child)
+                    
+                    # Add control refs
+                    for child in control_refs:
+                        channel_name_set.append(child)
+                    
+                    # Add patch banks
+                    for child in patch_banks:
+                        channel_name_set.append(child)
+                    
+                    # Add any other elements at the end
+                    for child in other:
+                        channel_name_set.append(child)
+        
+        if fixes_applied:
+            print("[DTD Compliance] Applied fixes:")
+            for fix in fixes_applied:
+                print(f"  - {fix}")
+        
+        return len(fixes_applied)
     
     def save_midnam_structure(self):
         """Save the entire MIDNAM structure from frontend"""
@@ -529,6 +640,39 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                         
                         print(f"[save_midnam_structure] Set active ControlNameList: {midnam['activeControlListName']}")
             
+            # Update SupportsStandardDeviceMode
+            for master_device in root.findall('.//MasterDeviceNames'):
+                # Remove existing SupportsStandardDeviceMode elements
+                existing_standard_modes = master_device.findall('SupportsStandardDeviceMode')
+                for standard_mode in existing_standard_modes:
+                    master_device.remove(standard_mode)
+                
+                # Add SupportsStandardDeviceMode if enabled
+                if midnam.get('supportsStandardDeviceMode', False):
+                    standard_mode_name = midnam.get('standardDeviceModeName', 'General MIDI')
+                    
+                    # Create the SupportsStandardDeviceMode element
+                    standard_mode_elem = ET.Element('SupportsStandardDeviceMode')
+                    standard_mode_elem.set('Name', standard_mode_name)
+                    
+                    # Insert after Model elements but before CustomDeviceMode
+                    # Find the position to insert
+                    insert_index = 0
+                    for i, child in enumerate(master_device):
+                        if child.tag == 'Model':
+                            insert_index = i + 1
+                        elif child.tag == 'CustomDeviceMode':
+                            break
+                    
+                    master_device.insert(insert_index, standard_mode_elem)
+                    print(f"[save_midnam_structure] Saved SupportsStandardDeviceMode: {standard_mode_name}")
+            
+            # Ensure DTD compliance before saving
+            print("[save_midnam_structure] Checking DTD compliance...")
+            fixes_count = self._ensure_dtd_compliance(root)
+            if fixes_count > 0:
+                print(f"[save_midnam_structure] Applied {fixes_count} DTD compliance fix(es)")
+            
             # Create backup
             backup_name = f'{file_path}.backup.{datetime.now().strftime("%Y-%m-%d-%H-%M-%S")}'
             shutil.copy(file_path, backup_name)
@@ -655,6 +799,16 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                     'name': mode_name,
                     'channel_assignments': channel_assignments
                 })
+            
+            # Extract SupportsStandardDeviceMode
+            device_details['supportsStandardDeviceMode'] = False
+            device_details['standardDeviceModeName'] = 'General MIDI'
+            standard_mode_elem = root_elem.find('.//SupportsStandardDeviceMode')
+            if standard_mode_elem is not None:
+                device_details['supportsStandardDeviceMode'] = True
+                mode_name = standard_mode_elem.get('Name')
+                if mode_name:
+                    device_details['standardDeviceModeName'] = mode_name
             
             # Extract ChannelNameSets with their PatchBanks
             device_details['channel_name_sets'] = []
@@ -917,32 +1071,36 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
             middev_data = self.get_devices_from_middev_files()
             
             # Add devices from .middev files
-            for device_key, device_info in middev_data['devices'].items():
-                # Only add if not already in manufacturers_dict from .midnam files
-                manufacturer = device_info['manufacturer']
-                
-                # Check if device already exists
-                device_exists = False
-                if manufacturer in manufacturers_dict:
-                    for existing_device in manufacturers_dict[manufacturer]:
-                        if existing_device['id'] == device_key:
-                            device_exists = True
-                            break
-                
-                if not device_exists:
-                    if manufacturer not in manufacturers_dict:
-                        manufacturers_dict[manufacturer] = []
-                    
-                    manufacturers_dict[manufacturer].append({
-                        'id': device_key,
-                        'name': device_info['model'],
-                        'type': device_info['type'],
-                        'file_path': device_info['file_path'],
-                        'manufacturer_id': device_info.get('manufacturer_id'),
-                        'family_id': device_info.get('family_id'),
-                        'device_id': device_info.get('device_id'),
-                        'source': 'middev'
-                    })
+            # NOTE: We don't actually add these to the manufacturers list because
+            # the /api/device/ endpoint can't serve .middev files (it needs .midnam files).
+            # .middev files are only used to populate manufacturer IDs and metadata.
+            # 
+            # for device_key, device_info in middev_data['devices'].items():
+            #     # Only add if not already in manufacturers_dict from .midnam files
+            #     manufacturer = device_info['manufacturer']
+            #     
+            #     # Check if device already exists
+            #     device_exists = False
+            #     if manufacturer in manufacturers_dict:
+            #         for existing_device in manufacturers_dict[manufacturer]:
+            #             if existing_device['id'] == device_key:
+            #                 device_exists = True
+            #                 break
+            #     
+            #     if not device_exists:
+            #         if manufacturer not in manufacturers_dict:
+            #             manufacturers_dict[manufacturer] = []
+            #         
+            #         manufacturers_dict[manufacturer].append({
+            #             'id': device_key,
+            #             'name': device_info['model'],
+            #             'type': device_info['type'],
+            #             'file_path': device_info['file_path'],
+            #             'manufacturer_id': device_info.get('manufacturer_id'),
+            #             'family_id': device_info.get('family_id'),
+            #             'device_id': device_info.get('device_id'),
+            #             'source': 'middev'
+            #         })
             
             # Add empty manufacturers (no devices yet)
             for manufacturer_name, file_path in middev_data['manufacturers'].items():
@@ -1069,6 +1227,16 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                     'name': 'Default Mode',
                     'channel_assignments': []
                 })
+            
+            # Extract SupportsStandardDeviceMode
+            device_details['supportsStandardDeviceMode'] = False
+            device_details['standardDeviceModeName'] = 'General MIDI'
+            standard_mode_elem = root_elem.find('.//SupportsStandardDeviceMode')
+            if standard_mode_elem is not None:
+                device_details['supportsStandardDeviceMode'] = True
+                mode_name = standard_mode_elem.get('Name')
+                if mode_name:
+                    device_details['standardDeviceModeName'] = mode_name
             
             # Extract ChannelNameSets with their PatchBanks
             device_details['channel_name_sets'] = []
@@ -1474,24 +1642,28 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                 middev_data = self.get_devices_from_middev_files()
                 
                 # Add devices from .middev files
-                for device_key, device_info in middev_data['devices'].items():
-                    # Only add if not already in catalog from .midnam files
-                    if device_key not in catalog:
-                        catalog[device_key] = {
-                            'manufacturer': device_info['manufacturer'],
-                            'model': device_info['model'],
-                            'manufacturer_id': device_info.get('manufacturer_id'),
-                            'family_id': device_info.get('family_id'),
-                            'device_id': device_info.get('device_id'),
-                            'type': device_info['type'],
-                            'files': [{
-                                'path': device_info['file_path'],
-                                'size': 0,
-                                'modified': os.path.getmtime(device_info['file_path']) if os.path.exists(device_info['file_path']) else 0
-                            }],
-                            'source': 'middev'
-                        }
-                        print(f"  Added from .middev: {device_info['manufacturer']} {device_info['model']}")
+                # NOTE: We don't actually add these to the catalog because
+                # the /api/device/ endpoint can't serve .middev files (it needs .midnam files).
+                # .middev files are only used to populate manufacturer IDs and metadata.
+                # 
+                # for device_key, device_info in middev_data['devices'].items():
+                #     # Only add if not already in catalog from .midnam files
+                #     if device_key not in catalog:
+                #         catalog[device_key] = {
+                #             'manufacturer': device_info['manufacturer'],
+                #             'model': device_info['model'],
+                #             'manufacturer_id': device_info.get('manufacturer_id'),
+                #             'family_id': device_info.get('family_id'),
+                #             'device_id': device_info.get('device_id'),
+                #             'type': device_info['type'],
+                #             'files': [{
+                #                 'path': device_info['file_path'],
+                #                 'size': 0,
+                #                 'modified': os.path.getmtime(device_info['file_path']) if os.path.exists(device_info['file_path']) else 0
+                #             }],
+                #             'source': 'middev'
+                #         }
+                #         print(f"  Added from .middev: {device_info['manufacturer']} {device_info['model']}")
                 
                 # For empty manufacturers, we don't add anything to catalog
                 # (catalog is device-centric, but they'll appear in the manufacturers list)
@@ -1811,12 +1983,26 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                 self.send_error(400, "Invalid or missing file_path")
                 return
             
-            # For now, just validate that the XML is well-formed
-            # DTD validation is disabled because MIDIEvents10.dtd is missing
+            # Validate XML against DTD
             try:
-                # Parse XML file with a parser that doesn't load external entities
+                # Get the DTD path
+                dtd_path = os.path.join(os.path.dirname(__file__), 'dtd', 'MIDINameDocument10.dtd')
+                dtd_dir = os.path.join(os.path.dirname(__file__), 'dtd')
+                
+                # Change to dtd directory so relative DTD references work (MIDIEvents10.dtd)
+                original_dir = os.getcwd()
+                os.chdir(dtd_dir)
+                
+                try:
+                    # Parse the DTD
+                    with open(dtd_path, 'r', encoding='utf-8') as dtd_file:
+                        dtd = etree.DTD(dtd_file)
+                finally:
+                    os.chdir(original_dir)
+                
+                # Parse XML file with a parser that loads DTD for validation
                 parser = etree.XMLParser(
-                    dtd_validation=False,
+                    dtd_validation=False,  # We'll validate manually with the DTD object
                     load_dtd=False,
                     no_network=True,
                     resolve_entities=False
@@ -1824,6 +2010,29 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                 
                 with open(file_path, 'r', encoding='utf-8') as f:
                     xml_doc = etree.parse(f, parser)
+                
+                # Validate against DTD
+                if not dtd.validate(xml_doc):
+                    # Collect DTD validation errors
+                    errors = []
+                    for error in dtd.error_log:
+                        errors.append({
+                            'line': error.line,
+                            'column': error.column,
+                            'message': error.message,
+                            'type': 'dtd_validation'
+                        })
+                    
+                    self.send_response(200)
+                    self.send_header('Content-Type', 'application/json')
+                    self.end_headers()
+                    self.wfile.write(json.dumps({
+                        'valid': False,
+                        'message': 'DTD validation failed',
+                        'errors': errors,
+                        'file_path': file_path
+                    }).encode())
+                    return
                 
                 # Basic structure validation
                 root = xml_doc.getroot()

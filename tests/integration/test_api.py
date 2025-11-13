@@ -11,6 +11,7 @@ import subprocess
 import time
 import requests
 from threading import Thread
+from urllib.parse import quote
 
 
 class TestAPIIntegration:
@@ -173,8 +174,12 @@ class TestDataConsistency:
         # Test that we can get details for devices listed in manufacturers
         for manufacturer, devices in manufacturers_data['manufacturers'].items():
             for device in devices[:2]:  # Test first 2 devices to avoid too many requests
-                device_response = client.get(f"http://localhost:8000/api/device/{device['id']}")
-                assert device_response.status_code == 200
+                # URL-encode the device ID to handle special characters like #
+                encoded_device_id = quote(device['id'], safe='')
+                url = f"http://localhost:8000/api/device/{encoded_device_id}"
+                
+                device_response = client.get(url)
+                assert device_response.status_code == 200, f"Failed for device {device['name']} ({device['id']}): {device_response.text}"
                 
                 device_data = device_response.json()
                 assert device_data['id'] == device['id']
