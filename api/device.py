@@ -1,18 +1,17 @@
 """API endpoint: /api/device/* - Get device details"""
+from http.server import BaseHTTPRequestHandler
 import json
 import xml.etree.ElementTree as ET
 from urllib.parse import urlparse, parse_qs, unquote
 from pathlib import Path
 from ._utils import get_manufacturers_data, get_patchfiles_dir, cors_headers
 
-def handler(req, res):
-    """Handle GET request for device details"""
-    if req.method == 'GET':
+class handler(BaseHTTPRequestHandler):
+    def do_GET(self):
+        """Handle GET request for device details"""
         try:
             # Parse URL to get device ID
-            # Vercel provides the full URL in req.url or we can construct it
-            url = req.url if hasattr(req, 'url') else f"{req.headers.get('x-forwarded-proto', 'https')}://{req.headers.get('host', '')}{req.path}"
-            parsed_url = urlparse(url)
+            parsed_url = urlparse(self.path)
             
             # Extract device ID from path (everything after /api/device/)
             path_parts = parsed_url.path.split('/api/device/')
@@ -39,15 +38,15 @@ def handler(req, res):
                 for manufacturer, devices in manufacturers_data.items():
                     for device in devices:
                         if device['id'] == device_id:
-                            # Normalize both paths for comparison
+                            # Normalize device path for comparison
                             device_file_path = str(device['file_path'])
-                            # Remove /var/task/ prefix if present in device path
                             if device_file_path.startswith('/var/task/'):
                                 device_file_path = device_file_path.replace('/var/task/', '')
                             
-                            # Compare normalized paths or just filenames
-                            if (device_file_path == specific_file or 
-                                Path(device_file_path).name == Path(specific_file).name or
+                            # Check if file path matches
+                            file_path = Path(device_file_path)
+                            if (str(file_path) == specific_file or 
+                                file_path.name == Path(specific_file).name or
                                 device_file_path.endswith(specific_file) or
                                 specific_file.endswith(device_file_path)):
                                 device_data = device
@@ -65,34 +64,19 @@ def handler(req, res):
                         break
             
             if not device_data:
-                res.status = 404
-                res.headers.update(cors_headers())
-                res.json({
+                self.send_response(404)
+                self.send_header('Content-Type', 'application/json')
+                for key, value in cors_headers().items():
+                    self.send_header(key, value)
+                self.end_headers()
+                
+                self.wfile.write(json.dumps({
                     'error': f'Device not found: {device_id}'
-                })
+                }).encode())
                 return
             
             # Read and parse the MIDNAM file
             file_path = Path(device_data['file_path'])
-            
-            # Handle Vercel's file system - try multiple path variations
-            if not file_path.exists():
-                # Try with patchfiles_dir prefix if it's just a filename
-                patchfiles_dir = get_patchfiles_dir()
-                if not str(file_path).startswith(str(patchfiles_dir)):
-                    alt_path = patchfiles_dir / file_path.name
-                    if alt_path.exists():
-                        file_path = alt_path
-            
-            if not file_path.exists():
-                res.status = 500
-                res.headers.update(cors_headers())
-                res.json({
-                    'error': f'File not found: {file_path}',
-                    'device_file_path': device_data['file_path'],
-                    'resolved_path': str(file_path)
-                })
-                return
             
             with open(file_path, 'r', encoding='utf-8') as f:
                 midnam_content = f.read()
@@ -250,18 +234,28 @@ def handler(req, res):
                     })
             
             # Send successful response
-            res.status = 200
-            res.headers.update(cors_headers())
-            res.json(device_details)
+            self.send_response(200)
+            self.send_header('Content-Type', 'application/json')
+            for key, value in cors_headers().items():
+                self.send_header(key, value)
+            self.end_headers()
+            
+            self.wfile.write(json.dumps(device_details).encode())
             
         except Exception as e:
-            res.status = 500
-            res.headers.update(cors_headers())
-            res.json({
+            self.send_response(500)
+            self.send_header('Content-Type', 'application/json')
+            for key, value in cors_headers().items():
+                self.send_header(key, value)
+            self.end_headers()
+            
+            self.wfile.write(json.dumps({
                 'error': str(e)
-            })
-    elif req.method == 'OPTIONS':
+            }).encode())
+    
+    def do_OPTIONS(self):
         """Handle OPTIONS request for CORS"""
-        res.status = 200
-        res.headers.update(cors_headers())
-        res.send()
+        self.send_response(200)
+        for key, value in cors_headers().items():
+            self.send_header(key, value)
+        self.end_headers()
