@@ -1065,7 +1065,13 @@ export class DeviceManager {
             console.log('Download MIDNAM - raw_xml exists:', !!midnamXml);
             console.log('Download MIDNAM - raw_xml type:', typeof midnamXml);
             
-            if (!midnamXml) {
+            // If raw_xml is an object, serialize it
+            if (midnamXml && typeof midnamXml === 'object') {
+                console.log('Download MIDNAM - raw_xml is object, serializing...');
+                midnamXml = this.serializeMidnamToXML(midnamXml);
+            }
+            
+            if (!midnamXml || typeof midnamXml !== 'string') {
                 // Check if device is in browser storage
                 const { isHostedVersion } = await import('../core/hosting.js');
                 if (isHostedVersion() && appState.selectedDevice?.file_path) {
@@ -1074,19 +1080,26 @@ export class DeviceManager {
                     if (storedFile && storedFile.midnam) {
                         midnamXml = storedFile.midnam;
                         console.log('Download MIDNAM - Retrieved from browser storage');
+                        
+                        // If stored as object, serialize it
+                        if (typeof midnamXml === 'object') {
+                            console.log('Download MIDNAM - Stored as object, serializing...');
+                            midnamXml = this.serializeMidnamToXML(midnamXml);
+                        }
                     }
                 }
             }
             
-            if (!midnamXml) {
-                // Generate XML from current state if raw_xml not available
-                midnamXml = this.generateMidnamXmlFromState();
-                console.log('Download MIDNAM - Generated from state');
+            if (!midnamXml || typeof midnamXml !== 'string') {
+                // Generate XML from current state
+                console.log('Download MIDNAM - Generating from currentMidnam');
+                midnamXml = this.serializeMidnamToXML(appState.currentMidnam);
             }
             
-            // Ensure it's a string
+            // Final check
             if (typeof midnamXml !== 'string') {
-                throw new Error('MIDNAM XML is not a string');
+                console.error('Download MIDNAM - Final type check failed:', typeof midnamXml);
+                throw new Error(`MIDNAM XML is not a string, it's ${typeof midnamXml}`);
             }
             
             console.log('Download MIDNAM - XML length:', midnamXml.length);
@@ -1151,7 +1164,13 @@ export class DeviceManager {
             console.log('Download ZIP - raw_xml exists:', !!midnamXml);
             console.log('Download ZIP - raw_xml type:', typeof midnamXml);
             
-            if (!midnamXml) {
+            // If raw_xml is an object, serialize it
+            if (midnamXml && typeof midnamXml === 'object') {
+                console.log('Download ZIP - raw_xml is object, serializing...');
+                midnamXml = this.serializeMidnamToXML(midnamXml);
+            }
+            
+            if (!midnamXml || typeof midnamXml !== 'string') {
                 // Check if device is in browser storage
                 const { isHostedVersion } = await import('../core/hosting.js');
                 if (isHostedVersion() && appState.selectedDevice?.file_path) {
@@ -1160,16 +1179,23 @@ export class DeviceManager {
                     if (storedFile && storedFile.midnam) {
                         midnamXml = storedFile.midnam;
                         console.log('Download ZIP - Retrieved MIDNAM from browser storage');
+                        
+                        // If stored as object, serialize it
+                        if (typeof midnamXml === 'object') {
+                            console.log('Download ZIP - Stored as object, serializing...');
+                            midnamXml = this.serializeMidnamToXML(midnamXml);
+                        }
                     }
                 }
             }
             
-            if (!midnamXml) {
-                midnamXml = this.generateMidnamXmlFromState();
-                console.log('Download ZIP - Generated MIDNAM from state');
+            if (!midnamXml || typeof midnamXml !== 'string') {
+                // Generate XML from current state
+                console.log('Download ZIP - Generating from currentMidnam');
+                midnamXml = this.serializeMidnamToXML(appState.currentMidnam);
             }
             
-            // Ensure it's a string
+            // Final check
             if (typeof midnamXml !== 'string') {
                 console.error('Download ZIP - MIDNAM XML type:', typeof midnamXml, midnamXml);
                 throw new Error(`MIDNAM XML is not a string, it's ${typeof midnamXml}`);
@@ -1219,27 +1245,13 @@ export class DeviceManager {
             throw new Error('No device data available');
         }
         
-        // If raw_xml exists, use it
-        if (midnam.raw_xml) {
+        // If raw_xml exists and is a string, use it
+        if (midnam.raw_xml && typeof midnam.raw_xml === 'string') {
             return midnam.raw_xml;
         }
         
-        // Otherwise, construct from the structured data
-        // This is a simplified version - you might want to make it more comprehensive
-        let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
-        xml += '<!DOCTYPE MIDINameDocument PUBLIC "-//MIDI Manufacturers Association//DTD MIDINameDocument 1.0//EN" "http://www.midi.org/dtds/MIDINameDocument10.dtd">\n';
-        xml += '<MIDINameDocument>\n';
-        xml += `  <Author>${Utils.escapeXml(midnam.Author || midnam.author || 'Unknown')}</Author>\n`;
-        xml += '  <MasterDeviceNames>\n';
-        xml += `    <Manufacturer>${Utils.escapeXml(midnam.Manufacturer || midnam.manufacturer)}</Manufacturer>\n`;
-        xml += `    <Model>${Utils.escapeXml(midnam.Model || midnam.model)}</Model>\n`;
-        
-        // Add CustomDeviceModes, ChannelNameSets, PatchBanks, etc. from midnam structure
-        // For now, return a basic structure
-        xml += '  </MasterDeviceNames>\n';
-        xml += '</MIDINameDocument>';
-        
-        return xml;
+        // Otherwise, serialize the full structure
+        return this.serializeMidnamToXML(midnam);
     }
 
     async saveMidnamStructure() {
@@ -1276,14 +1288,32 @@ export class DeviceManager {
                          appState.currentMidnam?.Model || 
                          'Unknown Device';
 
+            // Convert currentMidnam object to XML string
+            let midnamXml;
+            if (typeof appState.currentMidnam === 'string') {
+                midnamXml = appState.currentMidnam;
+            } else if (appState.currentMidnam?.raw_xml && typeof appState.currentMidnam.raw_xml === 'string') {
+                midnamXml = appState.currentMidnam.raw_xml;
+            } else {
+                // Generate XML from the currentMidnam object structure
+                midnamXml = this.serializeMidnamToXML(appState.currentMidnam);
+            }
+
+            this.logToDebugConsole(`Saving XML (${midnamXml.length} chars) to browser storage`, 'info');
+
             const result = await browserStorage.saveMidnam({
                 file_path: filePath,
-                midnam: appState.currentMidnam,
+                midnam: midnamXml,  // Save as XML string
                 manufacturer: manufacturer,
                 model: model
             });
 
             if (result.success) {
+                // Update raw_xml in appState to reflect what we just saved
+                if (appState.currentMidnam && typeof appState.currentMidnam === 'object') {
+                    appState.currentMidnam.raw_xml = midnamXml;
+                }
+                
                 // Mark as saved globally
                 appState.markAsSaved();
 
@@ -1296,6 +1326,118 @@ export class DeviceManager {
             this.logToDebugConsole(`✗ Failed to save to browser storage: ${error.message}`, 'error');
             Utils.showNotification(`Browser save failed: ${error.message}`, 'error');
         }
+    }
+    
+    serializeMidnamToXML(midnam) {
+        // Build complete MIDNAM XML from the object structure
+        let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+        xml += '<!DOCTYPE MIDINameDocument PUBLIC "-//MIDI Manufacturers Association//DTD MIDINameDocument 1.0//EN" "http://www.midi.org/dtds/MIDINameDocument10.dtd">\n';
+        xml += '<MIDINameDocument>\n';
+        xml += `  <Author>${Utils.escapeXml(midnam.Author || midnam.author || 'Unknown')}</Author>\n`;
+        xml += '  <MasterDeviceNames>\n';
+        xml += `    <Manufacturer>${Utils.escapeXml(midnam.Manufacturer || midnam.manufacturer)}</Manufacturer>\n`;
+        xml += `    <Model>${Utils.escapeXml(midnam.Model || midnam.model)}</Model>\n`;
+        
+        // Add CustomDeviceModes
+        if (midnam.custom_device_modes && midnam.custom_device_modes.length > 0) {
+            midnam.custom_device_modes.forEach(mode => {
+                xml += `    <CustomDeviceMode Name="${Utils.escapeXml(mode.name)}">\n`;
+                xml += '      <ChannelNameSetAssignments>\n';
+                if (mode.channel_name_set_assigns) {
+                    mode.channel_name_set_assigns.forEach(assign => {
+                        xml += `        <ChannelNameSetAssign Channel="${assign.channel}" NameSet="${Utils.escapeXml(assign.name_set)}" />\n`;
+                    });
+                }
+                xml += '      </ChannelNameSetAssignments>\n';
+                xml += '    </CustomDeviceMode>\n';
+            });
+        }
+        
+        // Add ChannelNameSets
+        if (midnam.channel_name_sets && midnam.channel_name_sets.length > 0) {
+            midnam.channel_name_sets.forEach(cns => {
+                xml += `    <ChannelNameSet Name="${Utils.escapeXml(cns.name)}">\n`;
+                xml += '      <AvailableForChannels>\n';
+                if (cns.available_channels) {
+                    cns.available_channels.forEach(ac => {
+                        xml += `        <AvailableChannel Channel="${ac.channel}" Available="${ac.available ? 'true' : 'false'}" />\n`;
+                    });
+                }
+                xml += '      </AvailableForChannels>\n';
+                
+                // Reference PatchBanks
+                if (cns.patch_banks) {
+                    cns.patch_banks.forEach(pb => {
+                        if (typeof pb === 'string') {
+                            xml += `      <PatchBank Name="${Utils.escapeXml(pb)}" />\n`;
+                        } else if (pb.name) {
+                            xml += `      <PatchBank Name="${Utils.escapeXml(pb.name)}" />\n`;
+                        }
+                    });
+                }
+                
+                xml += '    </ChannelNameSet>\n';
+            });
+        }
+        
+        // Add PatchBanks
+        if (midnam.patch_banks && midnam.patch_banks.length > 0) {
+            midnam.patch_banks.forEach(bank => {
+                xml += `    <PatchBank Name="${Utils.escapeXml(bank.name)}">\n`;
+                
+                // Add MIDI Commands if present
+                if (bank.midi_commands && bank.midi_commands.length > 0) {
+                    xml += '      <MIDICommands>\n';
+                    bank.midi_commands.forEach(cmd => {
+                        const attrs = Object.entries(cmd)
+                            .filter(([key]) => key !== 'type')
+                            .map(([key, value]) => `${key}="${Utils.escapeXml(String(value))}"`)
+                            .join(' ');
+                        xml += `        <${cmd.type} ${attrs} />\n`;
+                    });
+                    xml += '      </MIDICommands>\n';
+                }
+                
+                xml += '      <PatchNameList>\n';
+                if (bank.patches && bank.patches.length > 0) {
+                    bank.patches.forEach(patch => {
+                        const patchNumber = patch.Number || patch.number;
+                        const patchName = patch.name || 'Unnamed';
+                        const programChange = patch.programChange !== undefined ? patch.programChange : patchNumber;
+                        
+                        xml += `        <Patch Number="${patchNumber}" Name="${Utils.escapeXml(patchName)}" ProgramChange="${programChange}"`;
+                        
+                        if (patch.note_list_name) {
+                            xml += '>\n';
+                            xml += `          <UsesNoteNameList Name="${Utils.escapeXml(patch.note_list_name)}" />\n`;
+                            xml += '        </Patch>\n';
+                        } else {
+                            xml += ' />\n';
+                        }
+                    });
+                }
+                xml += '      </PatchNameList>\n';
+                xml += '    </PatchBank>\n';
+            });
+        }
+        
+        // Add NoteNameLists
+        if (midnam.note_lists && midnam.note_lists.length > 0) {
+            midnam.note_lists.forEach(noteList => {
+                xml += `    <NoteNameList Name="${Utils.escapeXml(noteList.name)}">\n`;
+                if (noteList.notes && noteList.notes.length > 0) {
+                    noteList.notes.forEach(note => {
+                        xml += `      <Note Number="${note.number}" Name="${Utils.escapeXml(note.name)}" />\n`;
+                    });
+                }
+                xml += '    </NoteNameList>\n';
+            });
+        }
+        
+        xml += '  </MasterDeviceNames>\n';
+        xml += '</MIDINameDocument>\n';
+        
+        return xml;
     }
 
     async saveMidnamToServer(filePath) {
