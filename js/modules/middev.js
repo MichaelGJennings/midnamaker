@@ -78,29 +78,67 @@ export class MiddevManager {
      */
     async createManufacturerFileHosted(manufacturerName) {
         try {
-            // Generate basic MIDDEV XML structure
-            const middevXml = `<?xml version='1.0' encoding='utf-8'?>
-<MIDIDevice>
-  <Manufacturer>${manufacturerName.trim()}</Manufacturer>
-  <Devices>
-  </Devices>
-</MIDIDevice>`;
+            const deviceModel = 'New Device';
+            const deviceId = `${manufacturerName.trim()}|${deviceModel}`;
             
-            const filePath = `patchfiles/${manufacturerName.trim()}.middev`;
+            // Generate basic MIDNAM XML structure with a dummy device
+            const midnamXml = `<?xml version='1.0' encoding='utf-8'?>
+<MIDINameDocument>
+  <Author>User Created</Author>
+  <MasterDeviceNames>
+    <Manufacturer>${Utils.escapeXml(manufacturerName.trim())}</Manufacturer>
+    <Model>${deviceModel}</Model>
+    <CustomDeviceMode Name="Default">
+      <ChannelNameSetAssignments>
+        <ChannelNameSetAssign Channel="1" NameSet="Name Set 1" />
+      </ChannelNameSetAssignments>
+    </CustomDeviceMode>
+    <ChannelNameSet Name="Name Set 1">
+      <AvailableForChannels>
+        <AvailableChannel Channel="1" Available="true" />
+      </AvailableForChannels>
+      <PatchBank Name="Bank 1">
+        <PatchNameList>
+          <Patch Number="0" Name="Patch 1" ProgramChange="0">
+            <UsesNoteNameList Name="Notes" />
+          </Patch>
+        </PatchNameList>
+      </PatchBank>
+    </ChannelNameSet>
+    <NoteNameList Name="Notes">
+      <Note Number="36" Name="Kick" />
+      <Note Number="38" Name="Snare" />
+      <Note Number="42" Name="Hi-Hat" />
+    </NoteNameList>
+  </MasterDeviceNames>
+</MIDINameDocument>`;
+            
+            const filePath = `patchfiles/${manufacturerName.trim()}_${deviceModel}.midnam`;
             
             // Save to browser storage
             const { browserStorage } = await import('../core/storage.js');
             const result = await browserStorage.saveMidnam({
                 file_path: filePath,
-                midnam: middevXml,
+                midnam: midnamXml,
                 manufacturer: manufacturerName.trim(),
-                model: 'New Manufacturer'
+                model: deviceModel
             });
             
-            Utils.showNotification(`Created ${filePath} in browser storage`, 'success');
+            // Add to catalog immediately for UI refresh
+            appState.catalog[deviceId] = {
+                manufacturer: manufacturerName.trim(),
+                model: deviceModel,
+                type: 'Synth',
+                files: [{ path: filePath }]
+            };
+            
+            Utils.showNotification(`Created ${manufacturerName} with starter device`, 'success');
             
             return {
                 file_path: filePath,
+                device_id: deviceId,
+                manufacturer: manufacturerName.trim(),
+                model: deviceModel,
                 success: true
             };
         } catch (error) {
@@ -163,67 +201,64 @@ export class MiddevManager {
      */
     async addDeviceToManufacturerHosted(manufacturerName, deviceModel) {
         try {
-            const filePath = `patchfiles/${manufacturerName.trim()}.middev`;
+            const deviceId = `${manufacturerName.trim()}|${deviceModel.trim()}`;
             
-            // Get existing file from browser storage
+            // Create a new MIDNAM file for the device
+            const midnamXml = `<?xml version='1.0' encoding='utf-8'?>
+<MIDINameDocument>
+  <Author>User Created</Author>
+  <MasterDeviceNames>
+    <Manufacturer>${Utils.escapeXml(manufacturerName.trim())}</Manufacturer>
+    <Model>${Utils.escapeXml(deviceModel.trim())}</Model>
+    <CustomDeviceMode Name="Default">
+      <ChannelNameSetAssignments>
+        <ChannelNameSetAssign Channel="1" NameSet="Name Set 1" />
+      </ChannelNameSetAssignments>
+    </CustomDeviceMode>
+    <ChannelNameSet Name="Name Set 1">
+      <AvailableForChannels>
+        <AvailableChannel Channel="1" Available="true" />
+      </AvailableForChannels>
+      <PatchBank Name="Bank 1">
+        <PatchNameList>
+          <Patch Number="0" Name="Patch 1" ProgramChange="0">
+            <UsesNoteNameList Name="Notes" />
+          </Patch>
+        </PatchNameList>
+      </PatchBank>
+    </ChannelNameSet>
+    <NoteNameList Name="Notes">
+      <Note Number="36" Name="Kick" />
+      <Note Number="38" Name="Snare" />
+      <Note Number="42" Name="Hi-Hat" />
+    </NoteNameList>
+  </MasterDeviceNames>
+</MIDINameDocument>`;
+            
+            const filePath = `patchfiles/${manufacturerName.trim()}_${deviceModel.trim()}.midnam`;
+            
+            // Save to browser storage
             const { browserStorage } = await import('../core/storage.js');
-            const existingFile = await browserStorage.getMidnam(filePath);
-            
-            let middevXml;
-            if (existingFile && existingFile.midnam) {
-                // Parse existing XML and add device
-                const parser = new DOMParser();
-                const xmlDoc = parser.parseFromString(existingFile.midnam, 'text/xml');
-                
-                // Check for parse errors
-                const parseError = xmlDoc.querySelector('parsererror');
-                if (parseError) {
-                    throw new Error('Invalid existing MIDDEV file');
-                }
-                
-                // Find Devices element
-                let devicesElem = xmlDoc.querySelector('Devices');
-                if (!devicesElem) {
-                    // Create Devices element if it doesn't exist
-                    devicesElem = xmlDoc.createElement('Devices');
-                    const root = xmlDoc.querySelector('MIDIDevice');
-                    if (root) {
-                        root.appendChild(devicesElem);
-                    } else {
-                        throw new Error('Invalid MIDDEV structure');
-                    }
-                }
-                
-                // Create Device element
-                const deviceElem = xmlDoc.createElement('Device');
-                deviceElem.setAttribute('Name', deviceModel.trim());
-                devicesElem.appendChild(deviceElem);
-                
-                // Convert back to XML string
-                middevXml = new XMLSerializer().serializeToString(xmlDoc);
-            } else {
-                // Create new file
-                middevXml = `<?xml version='1.0' encoding='utf-8'?>
-<MIDIDevice>
-  <Manufacturer>${manufacturerName.trim()}</Manufacturer>
-  <Devices>
-    <Device Name="${deviceModel.trim()}" />
-  </Devices>
-</MIDIDevice>`;
-            }
-            
-            // Save updated file
             const result = await browserStorage.saveMidnam({
                 file_path: filePath,
-                midnam: middevXml,
+                midnam: midnamXml,
                 manufacturer: manufacturerName.trim(),
                 model: deviceModel.trim()
             });
             
-            Utils.showNotification(`Added ${deviceModel} to ${manufacturerName} in browser storage`, 'success');
+            // Add to catalog immediately for UI refresh
+            appState.catalog[deviceId] = {
+                manufacturer: manufacturerName.trim(),
+                model: deviceModel.trim(),
+                type: 'Synth',
+                files: [{ path: filePath }]
+            };
+            
+            Utils.showNotification(`Added ${deviceModel} to ${manufacturerName}`, 'success');
             
             return {
                 file_path: filePath,
+                device_id: deviceId,
                 success: true
             };
         } catch (error) {
@@ -252,14 +287,8 @@ export class MiddevManager {
         
         // Refresh manufacturer list and select the new manufacturer if successful
         if (result && window.manufacturerManager) {
-            // Clear the catalog cache so the new file is picked up
-            await this.clearCatalogCache();
-            
-            // Reload the catalog
-            await window.manufacturerManager.refreshManufacturerList();
-            
-            // Small delay to ensure catalog is loaded
-            await new Promise(resolve => setTimeout(resolve, 100));
+            // Refresh the manufacturer dropdown dynamically
+            await window.manufacturerManager.refreshManufacturerListDynamic();
             
             // Select the newly created manufacturer
             const manufacturers = window.manufacturerManager.buildManufacturerList(appState.catalog || {});
@@ -267,9 +296,6 @@ export class MiddevManager {
             
             if (manufacturer) {
                 await window.manufacturerManager.selectManufacturer(manufacturerName.trim(), manufacturers);
-            } else {
-                console.warn('New manufacturer not found in catalog after refresh');
-                Utils.showNotification('Manufacturer created but not yet in catalog. Please refresh the page.', 'warning');
             }
         }
         
@@ -298,16 +324,11 @@ export class MiddevManager {
         
         const result = await this.addDeviceToManufacturer(manufacturerName, deviceModel);
         
-        // Refresh manufacturer list if successful
+        // Refresh manufacturer list if successful  
         if (result && window.manufacturerManager) {
-            // Clear the catalog cache so the new device is picked up
-            await this.clearCatalogCache();
-            
-            // Reload the catalog
-            await window.manufacturerManager.refreshManufacturerList();
-            
-            // Small delay to ensure catalog is loaded
-            await new Promise(resolve => setTimeout(resolve, 100));
+            // For hosted version, the device was already added to catalog in addDeviceToManufacturerHosted
+            // Just refresh the manufacturer dropdown dynamically
+            await window.manufacturerManager.refreshManufacturerListDynamic();
             
             // Re-select the manufacturer to show the new device
             if (window.manufacturerManager.selectManufacturer) {

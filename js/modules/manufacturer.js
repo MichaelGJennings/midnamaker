@@ -95,10 +95,18 @@ export class ManufacturerManager {
             
             const catalog = await response.json();
             console.log('[ManufacturerManager] Loaded catalog with', Object.keys(catalog).length, 'devices');
-            appState.catalog = catalog;
+            
+            // Merge in user-created devices from IndexedDB if hosted
+            const { isHostedVersion } = await import('../core/hosting.js');
+            if (isHostedVersion()) {
+                const mergedCatalog = await this.mergeBrowserStorageCatalog(catalog);
+                appState.catalog = mergedCatalog;
+            } else {
+                appState.catalog = catalog;
+            }
             
             // Build manufacturer list from catalog
-            const manufacturers = this.buildManufacturerList(catalog);
+            const manufacturers = this.buildManufacturerList(appState.catalog);
             console.log('[ManufacturerManager] Built manufacturer list with', manufacturers.length, 'manufacturers');
             
             if (manufacturers.length === 0) {
@@ -125,6 +133,84 @@ export class ManufacturerManager {
         } catch (error) {
             console.error('Error loading manufacturers:', error);
             container.innerHTML = '<div class="empty-state" data-testid="msg_manufacturer_error">Error loading manufacturers</div>';
+        }
+    }
+    
+    /**
+     * Merge browser storage devices into catalog
+     */
+    async mergeBrowserStorageCatalog(baseCatalog) {
+        try {
+            const { browserStorage } = await import('../core/storage.js');
+            const allFiles = await browserStorage.getAllMidnams();
+            
+            // Create a copy of the base catalog
+            const mergedCatalog = { ...baseCatalog };
+            
+            // Add each browser storage file to catalog
+            allFiles.forEach(file => {
+                if (file.manufacturer && file.model) {
+                    const deviceId = `${file.manufacturer}|${file.model}`;
+                    mergedCatalog[deviceId] = {
+                        manufacturer: file.manufacturer,
+                        model: file.model,
+                        type: 'Synth', // Default type for user-created devices
+                        files: [{ path: file.file_path }],
+                        fromBrowserStorage: true // Mark as user-created
+                    };
+                }
+            });
+            
+            console.log('[ManufacturerManager] Merged browser storage:', 
+                allFiles.length, 'user files into catalog');
+            
+            return mergedCatalog;
+        } catch (error) {
+            console.error('[ManufacturerManager] Error merging browser storage:', error);
+            return baseCatalog;
+        }
+    }
+    
+    /**
+     * Refresh manufacturer list dynamically without fetching from server
+     * Uses current appState.catalog
+     */
+    async refreshManufacturerListDynamic() {
+        const container = document.getElementById('manufacturer-list');
+        if (!container) return;
+        
+        try {
+            // Use existing catalog from appState
+            const catalog = appState.catalog || {};
+            
+            // Build manufacturer list from catalog
+            const manufacturers = this.buildManufacturerList(catalog);
+            console.log('[ManufacturerManager] Dynamically refreshed manufacturer list with', manufacturers.length, 'manufacturers');
+            
+            if (manufacturers.length === 0) {
+                container.innerHTML = '<div class="empty-state" data-testid="msg_no_manufacturers">No manufacturers found</div>';
+                return;
+            }
+            
+            // Render manufacturer list
+            container.innerHTML = manufacturers.map(mfg => `
+                <div class="manufacturer-list-item" data-manufacturer="${Utils.escapeAttribute(mfg.name)}" data-testid="itm_manufacturer_${Utils.escapeAttribute(mfg.name).replace(/\s+/g, '_').toLowerCase()}">
+                    <div class="manufacturer-item-name" data-testid="div_manufacturer_name">${Utils.escapeHtml(mfg.name)}</div>
+                    <div class="manufacturer-item-count" data-testid="div_manufacturer_count">${mfg.deviceCount} device${mfg.deviceCount !== 1 ? 's' : ''}</div>
+                </div>
+            `).join('');
+            
+            // Add click handlers
+            container.querySelectorAll('.manufacturer-list-item').forEach(item => {
+                item.addEventListener('click', () => {
+                    const manufacturerName = item.getAttribute('data-manufacturer');
+                    this.selectManufacturer(manufacturerName, manufacturers);
+                });
+            });
+            
+        } catch (error) {
+            console.error('Error refreshing manufacturers:', error);
+            Utils.showNotification('Error refreshing manufacturer list', 'error');
         }
     }
     
@@ -279,15 +365,33 @@ export class ManufacturerManager {
     
     async loadDeviceFile(deviceInfo, deviceId, manufacturer, model) {
         try {
-            // Fetch device details for the specific file
-            const response = await fetch(`/api/device/${encodeURIComponent(deviceId)}?file=${encodeURIComponent(deviceInfo.file_path)}`);
+            let deviceData;
             
-            if (!response.ok) {
-                Utils.showNotification(`Device "${model}" not found`, 'warning');
-                return;
+            // Check if this is a browser storage device
+            const catalogEntry = appState.catalog[deviceId];
+            if (catalogEntry && catalogEntry.fromBrowserStorage) {
+                // Load from browser storage
+                const { browserStorage } = await import('../core/storage.js');
+                const storedFile = await browserStorage.getMidnam(deviceInfo.file_path);
+                
+                if (!storedFile) {
+                    Utils.showNotification(`Device "${model}" not found in browser storage`, 'warning');
+                    return;
+                }
+                
+                // Parse the XML to create deviceData structure
+                deviceData = await this.parseDeviceXML(storedFile.midnam, deviceId, manufacturer, model, deviceInfo.file_path);
+            } else {
+                // Fetch device details from API for built-in devices
+                const response = await fetch(`/api/device/${encodeURIComponent(deviceId)}?file=${encodeURIComponent(deviceInfo.file_path)}`);
+                
+                if (!response.ok) {
+                    Utils.showNotification(`Device "${model}" not found`, 'warning');
+                    return;
+                }
+                
+                deviceData = await response.json();
             }
-            
-            const deviceData = await response.json();
             
             // Ensure deviceData has file_path
             if (!deviceData.file_path) {
@@ -327,6 +431,137 @@ export class ManufacturerManager {
             console.error('Error loading device file:', error);
             Utils.showNotification('Failed to load device', 'error');
         }
+    }
+    
+    /**
+     * Parse device XML from browser storage into the same format as API returns
+     */
+    async parseDeviceXML(xmlString, deviceId, manufacturer, model, filePath) {
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlString, 'text/xml');
+        
+        // Build device data structure matching API format
+        const deviceData = {
+            id: deviceId,
+            Manufacturer: manufacturer,
+            Model: model,
+            Author: xmlDoc.querySelector('Author')?.textContent || 'Unknown',
+            file_path: filePath,
+            raw_xml: xmlString,
+            note_lists: [],
+            patch_banks: [],
+            channel_name_sets: [],
+            custom_device_modes: []
+        };
+        
+        // Parse note lists
+        xmlDoc.querySelectorAll('NoteNameList').forEach(noteList => {
+            const name = noteList.getAttribute('Name');
+            if (name) {
+                const notes = [];
+                noteList.querySelectorAll('Note').forEach(note => {
+                    const number = note.getAttribute('Number');
+                    const noteName = note.getAttribute('Name');
+                    if (number && noteName) {
+                        notes.push({ number: parseInt(number), name: noteName });
+                    }
+                });
+                deviceData.note_lists.push({ name, notes });
+            }
+        });
+        
+        // Parse patch banks
+        const patchBanksByName = {};
+        xmlDoc.querySelectorAll('PatchBank').forEach(patchBank => {
+            const bankName = patchBank.getAttribute('Name');
+            if (bankName) {
+                const patches = [];
+                patchBank.querySelectorAll('Patch').forEach(patch => {
+                    const patchNumber = patch.getAttribute('Number');
+                    const patchName = patch.getAttribute('Name');
+                    const programChange = patch.getAttribute('ProgramChange');
+                    
+                    const patchData = {
+                        number: patchNumber,
+                        name: patchName,
+                        Number: patchNumber
+                    };
+                    
+                    if (programChange) {
+                        patchData.programChange = parseInt(programChange);
+                    }
+                    
+                    const usesNoteList = patch.querySelector('UsesNoteNameList');
+                    if (usesNoteList) {
+                        patchData.note_list_name = usesNoteList.getAttribute('Name');
+                    }
+                    
+                    patches.push(patchData);
+                });
+                
+                const bankObj = { name: bankName, patches, midi_commands: [] };
+                patchBanksByName[bankName] = bankObj;
+                deviceData.patch_banks.push(bankObj);
+            }
+        });
+        
+        // Parse channel name sets
+        xmlDoc.querySelectorAll('ChannelNameSet').forEach(channelNameSet => {
+            const setName = channelNameSet.getAttribute('Name');
+            if (setName) {
+                const availableChannels = [];
+                channelNameSet.querySelectorAll('AvailableChannel').forEach(avail => {
+                    const channel = avail.getAttribute('Channel');
+                    const available = avail.getAttribute('Available');
+                    if (channel) {
+                        availableChannels.push({
+                            channel: parseInt(channel),
+                            available: available === 'true'
+                        });
+                    }
+                });
+                
+                // Get patch banks referenced by this channel name set
+                const patch_banks = [];
+                channelNameSet.querySelectorAll('PatchBank').forEach(pbRef => {
+                    const pbName = pbRef.getAttribute('Name');
+                    if (pbName && patchBanksByName[pbName]) {
+                        patch_banks.push(patchBanksByName[pbName]);
+                    }
+                });
+                
+                deviceData.channel_name_sets.push({
+                    name: setName,
+                    available_channels: availableChannels,
+                    patch_banks
+                });
+            }
+        });
+        
+        // Parse custom device modes
+        xmlDoc.querySelectorAll('CustomDeviceMode').forEach(mode => {
+            const modeName = mode.getAttribute('Name');
+            if (modeName) {
+                const channelNameSets = [];
+                mode.querySelectorAll('ChannelNameSetAssign').forEach(cns => {
+                    const channel = cns.getAttribute('Channel');
+                    const nameSet = cns.getAttribute('NameSet');
+                    if (channel && nameSet) {
+                        channelNameSets.push({
+                            channel: parseInt(channel),
+                            name_set: nameSet
+                        });
+                    }
+                });
+                
+                deviceData.custom_device_modes.push({
+                    name: modeName,
+                    channel_name_set_assigns: channelNameSets
+                });
+            }
+        });
+        
+        return deviceData;
     }
     
     async offerToCreateMidnam(manufacturer, model) {
