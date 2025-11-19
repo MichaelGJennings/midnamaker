@@ -1,7 +1,7 @@
 """API endpoint: /api/midnam_catalog - Get full catalog of MIDNAM files"""
 from http.server import BaseHTTPRequestHandler
 import json
-from api._utils import get_catalog_data, cors_headers
+from ._utils import get_catalog_data, cors_headers
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):

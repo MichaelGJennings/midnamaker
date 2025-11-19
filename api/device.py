@@ -4,7 +4,7 @@ import json
 import xml.etree.ElementTree as ET
 from urllib.parse import urlparse, parse_qs, unquote
 from pathlib import Path
-from api._utils import get_manufacturers_data, get_patchfiles_dir, cors_headers
+from ._utils import get_manufacturers_data, get_patchfiles_dir, cors_headers
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):

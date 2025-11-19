@@ -1,7 +1,7 @@
 """API endpoint: /api/manufacturers - Get list of manufacturers and devices"""
 from http.server import BaseHTTPRequestHandler
 import json
-from api._utils import get_manufacturers_data, cors_headers
+from ._utils import get_manufacturers_data, cors_headers
 
 class handler(BaseHTTPRequestHandler):
     def do_GET(self):
@@ -9,13 +9,18 @@ class handler(BaseHTTPRequestHandler):
         try:
             manufacturers = get_manufacturers_data()
             
+            # Wrap in the format expected by the frontend
+            response_data = {
+                'manufacturers': manufacturers
+            }
+            
             self.send_response(200)
             self.send_header('Content-Type', 'application/json')
             for key, value in cors_headers().items():
                 self.send_header(key, value)
             self.end_headers()
             
-            self.wfile.write(json.dumps(manufacturers).encode())
+            self.wfile.write(json.dumps(response_data).encode())
             
         except Exception as e:
             self.send_response(500)
