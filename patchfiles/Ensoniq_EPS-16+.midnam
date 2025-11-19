@@ -1,73 +1,82 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE MIDINameDocument PUBLIC "-//MIDI Manufacturers Association//DTD MIDINameDocument 1.0//EN" "http://www.midi.org/dtds/MIDINameDocument10.dtd">
-
+<?xml version='1.0' encoding='utf-8'?>
 <MIDINameDocument>
-	<Author>Created by Midnamaker on 2025-11-08</Author>
-	<MasterDeviceNames>
-		<Manufacturer>Ensoniq</Manufacturer>
-		<Model>EPS-16+</Model>
-		<CustomDeviceMode Name="Default">
-			<ChannelNameSetAssignments>
-				<ChannelNameSetAssign Channel="1" NameSet="Name Set 1"/>
-				<ChannelNameSetAssign Channel="2" NameSet="Name Set 1"/>
-				<ChannelNameSetAssign Channel="3" NameSet="Name Set 1"/>
-				<ChannelNameSetAssign Channel="4" NameSet="Name Set 1"/>
-				<ChannelNameSetAssign Channel="5" NameSet="Name Set 1"/>
-				<ChannelNameSetAssign Channel="6" NameSet="Name Set 1"/>
-				<ChannelNameSetAssign Channel="7" NameSet="Name Set 1"/>
-				<ChannelNameSetAssign Channel="8" NameSet="Name Set 1"/>
-				<ChannelNameSetAssign Channel="9" NameSet="Name Set 1"/>
-				<ChannelNameSetAssign Channel="10" NameSet="Name Set 1"/>
-				<ChannelNameSetAssign Channel="11" NameSet="Name Set 1"/>
-				<ChannelNameSetAssign Channel="12" NameSet="Name Set 1"/>
-				<ChannelNameSetAssign Channel="13" NameSet="Name Set 1"/>
-				<ChannelNameSetAssign Channel="14" NameSet="Name Set 1"/>
-				<ChannelNameSetAssign Channel="15" NameSet="Name Set 1"/>
-				<ChannelNameSetAssign Channel="16" NameSet="Name Set 1"/>
-			</ChannelNameSetAssignments>
-		</CustomDeviceMode>
-		<ChannelNameSet Name="Name Set 1">
-			<AvailableForChannels>
-				<AvailableChannel Channel="1" Available="true"/>
-				<AvailableChannel Channel="2" Available="true"/>
-				<AvailableChannel Channel="3" Available="true"/>
-				<AvailableChannel Channel="4" Available="true"/>
-				<AvailableChannel Channel="5" Available="true"/>
-				<AvailableChannel Channel="6" Available="true"/>
-				<AvailableChannel Channel="7" Available="true"/>
-				<AvailableChannel Channel="8" Available="true"/>
-				<AvailableChannel Channel="9" Available="true"/>
-				<AvailableChannel Channel="10" Available="true"/>
-				<AvailableChannel Channel="11" Available="true"/>
-				<AvailableChannel Channel="12" Available="true"/>
-				<AvailableChannel Channel="13" Available="true"/>
-				<AvailableChannel Channel="14" Available="true"/>
-				<AvailableChannel Channel="15" Available="true"/>
-				<AvailableChannel Channel="16" Available="true"/>
-			</AvailableForChannels>
-			<UsesControlNameList Name="MIDI Continuous Controllers"/>
-			<PatchBank Name="Patches">
-				<PatchNameList>
-					<Patch Name="INSTRUMENT 1" Number="0" ProgramChange="0"/>
-					<Patch Name="INSTRUMENT 2" Number="1" ProgramChange="1"/>
-					<Patch Name="INSTRUMENT 3" Number="2" ProgramChange="2"/>
-					<Patch Name="INSTRUMENT 4" Number="3" ProgramChange="3"/>
-					<Patch Name="INSTRUMENT 5" Number="4" ProgramChange="4"/>
-					<Patch Name="INSTRUMENT 6" Number="5" ProgramChange="5"/>
-					<Patch Name="INSTRUMENT 7" Number="6" ProgramChange="6"/>
-					<Patch Name="INSTRUMENT 8" Number="7" ProgramChange="7"/>
-				</PatchNameList>
-			</PatchBank>
-		</ChannelNameSet>
-		<ControlNameList Name="MIDI Continuous Controllers">
-			<Control Type="7bit" Number="1" Name="Mod Wheel"/>
-			<Control Type="7bit" Number="2" Name="Breath Controller"/>
-			<Control Type="7bit" Number="4" Name="Foot Controller"/>
-			<Control Type="7bit" Number="6" Name="Data"/>
-			<Control Type="7bit" Number="7" Name="Channel Volume"/>
-			<Control Type="7bit" Number="70" Name="Patch Select (0-31 = OO, 32-63= O*, 64-95=*O, 96=127=**)"/>
-			<Control Type="7bit" Number="100" Name="Registered Parameter Select"/>
-			<Control Type="7bit" Number="101" Name="Registered Parameter Select"/>
-		</ControlNameList>
-	</MasterDeviceNames>
+  <Author>Created by Midnamaker on 2025-11-08</Author>
+  <MasterDeviceNames>
+    <Manufacturer>Ensoniq</Manufacturer>
+    <Model>EPS-16+</Model>
+    <CustomDeviceMode Name="Default">
+      <ChannelNameSetAssignments>
+        <ChannelNameSetAssign Channel="1" NameSet="Name Set 1" />
+        <ChannelNameSetAssign Channel="2" NameSet="Name Set 1" />
+        <ChannelNameSetAssign Channel="3" NameSet="Name Set 1" />
+        <ChannelNameSetAssign Channel="4" NameSet="Name Set 1" />
+        <ChannelNameSetAssign Channel="5" NameSet="Name Set 1" />
+        <ChannelNameSetAssign Channel="6" NameSet="Name Set 1" />
+        <ChannelNameSetAssign Channel="7" NameSet="Name Set 1" />
+        <ChannelNameSetAssign Channel="8" NameSet="Name Set 1" />
+        <ChannelNameSetAssign Channel="9" NameSet="Name Set 1" />
+        <ChannelNameSetAssign Channel="10" NameSet="Name Set 1" />
+        <ChannelNameSetAssign Channel="11" NameSet="Name Set 1" />
+        <ChannelNameSetAssign Channel="12" NameSet="Name Set 1" />
+        <ChannelNameSetAssign Channel="13" NameSet="Name Set 1" />
+        <ChannelNameSetAssign Channel="14" NameSet="Name Set 1" />
+        <ChannelNameSetAssign Channel="15" NameSet="Name Set 1" />
+        <ChannelNameSetAssign Channel="16" NameSet="Name Set 1" />
+      </ChannelNameSetAssignments>
+    </CustomDeviceMode>
+    <ChannelNameSet Name="Name Set 1">
+      <AvailableForChannels>
+        <AvailableChannel Channel="1" Available="true" />
+        <AvailableChannel Channel="2" Available="true" />
+        <AvailableChannel Channel="3" Available="true" />
+        <AvailableChannel Channel="4" Available="true" />
+        <AvailableChannel Channel="5" Available="true" />
+        <AvailableChannel Channel="6" Available="true" />
+        <AvailableChannel Channel="7" Available="true" />
+        <AvailableChannel Channel="8" Available="true" />
+        <AvailableChannel Channel="9" Available="true" />
+        <AvailableChannel Channel="10" Available="true" />
+        <AvailableChannel Channel="11" Available="true" />
+        <AvailableChannel Channel="12" Available="true" />
+        <AvailableChannel Channel="13" Available="true" />
+        <AvailableChannel Channel="14" Available="true" />
+        <AvailableChannel Channel="15" Available="true" />
+        <AvailableChannel Channel="16" Available="true" />
+      </AvailableForChannels>
+      <UsesControlNameList Name="MIDI Continuous Controllers" />
+      <PatchBank Name="Patches">
+        <PatchNameList>
+          <Patch Name="INSTRUMENT 1" Number="0" ProgramChange="0">
+            <UsesNoteNameList Name="INSTRUMENT 1 Notes" />
+          </Patch>
+          <Patch Name="INSTRUMENT 2" Number="1" ProgramChange="1" />
+          <Patch Name="INSTRUMENT 3" Number="2" ProgramChange="2" />
+          <Patch Name="INSTRUMENT 4" Number="3" ProgramChange="3" />
+          <Patch Name="INSTRUMENT 5" Number="4" ProgramChange="4" />
+          <Patch Name="INSTRUMENT 6" Number="5" ProgramChange="5" />
+          <Patch Name="INSTRUMENT 7" Number="6" ProgramChange="6" />
+          <Patch Name="INSTRUMENT 8" Number="7" ProgramChange="7" />
+        </PatchNameList>
+      </PatchBank>
+    </ChannelNameSet>
+    <ControlNameList Name="MIDI Continuous Controllers">
+      <Control Type="7bit" Number="1" Name="Mod Wheel" />
+      <Control Type="7bit" Number="2" Name="Breath Controller" />
+      <Control Type="7bit" Number="4" Name="Foot Controller" />
+      <Control Type="7bit" Number="6" Name="Data" />
+      <Control Type="7bit" Number="7" Name="Channel Volume" />
+      <Control Type="7bit" Number="70" Name="Patch Select (0-31 = OO, 32-63= O*, 64-95=*O, 96=127=**)" />
+      <Control Type="7bit" Number="100" Name="Registered Parameter Select" />
+      <Control Type="7bit" Number="101" Name="Registered Parameter Select" />
+    </ControlNameList>
+    <CustomNoteNameList>
+      <NoteNameList Name="INSTRUMENT 1 Notes">
+        <Note Number="36" Name="Brush" />
+        <Note Number="37" Name="Tom" />
+        <Note Number="38" Name="Tambourine" />
+        <Note Number="39" Name="Side Stick" />
+        <Note Number="40" Name="Clap" />
+      </NoteNameList>
+    </CustomNoteNameList>
+  </MasterDeviceNames>
 </MIDINameDocument>

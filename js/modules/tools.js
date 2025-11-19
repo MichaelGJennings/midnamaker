@@ -870,6 +870,14 @@ export class ToolsManager {
         }
         
         try {
+            // Check if hosted version - use browser-based file parsing
+            const { isHostedVersion } = await import('../core/hosting.js');
+            if (isHostedVersion()) {
+                await this.uploadFilesHosted();
+                return;
+            }
+            
+            // Local version - use server upload
             const formData = new FormData();
             this.selectedFiles.forEach((file, index) => {
                 formData.append(`file${index}`, file);
@@ -879,6 +887,10 @@ export class ToolsManager {
                 method: 'POST',
                 body: formData
             });
+            
+            if (!response.ok) {
+                throw new Error(`Upload failed: HTTP ${response.status}`);
+            }
             
             const result = await response.json();
             
@@ -913,6 +925,89 @@ export class ToolsManager {
             }
         } catch (error) {
             console.error('Upload error:', error);
+            Utils.showNotification('Upload failed: ' + error.message, 'error');
+            this.logToDebugConsole(`Upload error: ${error.message}`, 'error');
+        } finally {
+            if (uploadBtn) {
+                uploadBtn.disabled = false;
+                uploadBtn.textContent = 'Upload Selected Files';
+            }
+        }
+    }
+    
+    /**
+     * Upload files for hosted version - parse in browser and save to IndexedDB
+     */
+    async uploadFilesHosted() {
+        const uploadBtn = document.getElementById('upload-files-btn');
+        const uploadedFiles = [];
+        const errors = [];
+        
+        try {
+            for (const file of this.selectedFiles) {
+                try {
+                    const fileText = await file.text();
+                    
+                    // Parse XML
+                    const parser = new DOMParser();
+                    const xmlDoc = parser.parseFromString(fileText, 'text/xml');
+                    
+                    // Check for parse errors
+                    const parseError = xmlDoc.querySelector('parsererror');
+                    if (parseError) {
+                        errors.push(`${file.name}: Invalid XML - ${parseError.textContent}`);
+                        continue;
+                    }
+                    
+                    // Extract manufacturer and model
+                    const manufacturer = xmlDoc.querySelector('Manufacturer')?.textContent || 'Unknown';
+                    const model = xmlDoc.querySelector('Model')?.textContent || 'Unknown Device';
+                    
+                    // Build file path identifier
+                    const filePath = `patchfiles/${manufacturer}_${model}.${file.name.endsWith('.middev') ? 'middev' : 'midnam'}`;
+                    
+                    // Save to browser storage
+                    const { browserStorage } = await import('../core/storage.js');
+                    await browserStorage.saveMidnam({
+                        file_path: filePath,
+                        midnam: fileText, // Store raw XML
+                        manufacturer: manufacturer,
+                        model: model
+                    });
+                    
+                    uploadedFiles.push(filePath);
+                    this.logToDebugConsole(`Parsed and saved ${file.name}`, 'success');
+                } catch (error) {
+                    errors.push(`${file.name}: ${error.message}`);
+                    this.logToDebugConsole(`Error processing ${file.name}: ${error.message}`, 'error');
+                }
+            }
+            
+            if (uploadedFiles.length > 0) {
+                Utils.showNotification(`Uploaded ${uploadedFiles.length} file(s) to browser storage`, 'success');
+                
+                // Clear file selection
+                this.selectedFiles = [];
+                const fileInput = document.getElementById('file-upload-input');
+                if (fileInput) fileInput.value = '';
+                this.handleFileSelection([]);
+                
+                // Refresh "My Edits" section if available
+                if (window.myEditsManager) {
+                    window.myEditsManager.refreshMyEdits();
+                }
+                
+                // Note: Catalog won't update automatically in hosted mode since files aren't on server
+                // User can reload the page or manually refresh if needed
+            }
+            
+            if (errors.length > 0) {
+                errors.forEach(error => {
+                    this.logToDebugConsole(`Error: ${error}`, 'error');
+                });
+            }
+        } catch (error) {
+            console.error('Hosted upload error:', error);
             Utils.showNotification('Upload failed: ' + error.message, 'error');
             this.logToDebugConsole(`Upload error: ${error.message}`, 'error');
         } finally {

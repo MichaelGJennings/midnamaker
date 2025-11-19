@@ -1,17 +1,18 @@
 """API endpoint: /api/device/* - Get device details"""
-from http.server import BaseHTTPRequestHandler
 import json
 import xml.etree.ElementTree as ET
 from urllib.parse import urlparse, parse_qs, unquote
 from pathlib import Path
 from ._utils import get_manufacturers_data, get_patchfiles_dir, cors_headers
 
-class handler(BaseHTTPRequestHandler):
-    def do_GET(self):
-        """Handle GET request for device details"""
+def handler(req, res):
+    """Handle GET request for device details"""
+    if req.method == 'GET':
         try:
             # Parse URL to get device ID
-            parsed_url = urlparse(self.path)
+            # Vercel provides the full URL in req.url or we can construct it
+            url = req.url if hasattr(req, 'url') else f"{req.headers.get('x-forwarded-proto', 'https')}://{req.headers.get('host', '')}{req.path}"
+            parsed_url = urlparse(url)
             
             # Extract device ID from path (everything after /api/device/)
             path_parts = parsed_url.path.split('/api/device/')
@@ -53,15 +54,11 @@ class handler(BaseHTTPRequestHandler):
                         break
             
             if not device_data:
-                self.send_response(404)
-                self.send_header('Content-Type', 'application/json')
-                for key, value in cors_headers().items():
-                    self.send_header(key, value)
-                self.end_headers()
-                
-                self.wfile.write(json.dumps({
+                res.status = 404
+                res.headers.update(cors_headers())
+                res.json({
                     'error': f'Device not found: {device_id}'
-                }).encode())
+                })
                 return
             
             # Read and parse the MIDNAM file
@@ -125,6 +122,15 @@ class handler(BaseHTTPRequestHandler):
                         patch_number = patch.get('Number')
                         patch_name = patch.get('Name')
                         program_change = patch.get('ProgramChange')
+                        
+                        # Also check for ProgramChange in PatchMIDICommands (e.g., Alesis D4)
+                        if not program_change:
+                            patch_midi_commands = patch.find('.//PatchMIDICommands')
+                            if patch_midi_commands is not None:
+                                program_change_elem = patch_midi_commands.find('.//ProgramChange')
+                                if program_change_elem is not None:
+                                    program_change = program_change_elem.get('Number')
+                        
                         uses_note_list = patch.find('.//UsesNoteNameList')
                         
                         patch_data = {
@@ -134,7 +140,14 @@ class handler(BaseHTTPRequestHandler):
                         }
                         
                         if program_change:
-                            patch_data['programChange'] = int(program_change)
+                            try:
+                                patch_data['programChange'] = int(program_change)
+                            except (ValueError, TypeError):
+                                # If conversion fails, try to use patch number as fallback
+                                try:
+                                    patch_data['programChange'] = int(patch_number) if patch_number else 0
+                                except (ValueError, TypeError):
+                                    patch_data['programChange'] = 0
                         
                         if uses_note_list is not None:
                             patch_data['note_list_name'] = uses_note_list.get('Name')
@@ -207,29 +220,19 @@ class handler(BaseHTTPRequestHandler):
                     })
             
             # Send successful response
-            self.send_response(200)
-            self.send_header('Content-Type', 'application/json')
-            for key, value in cors_headers().items():
-                self.send_header(key, value)
-            self.end_headers()
-            
-            self.wfile.write(json.dumps(device_details).encode())
+            res.status = 200
+            res.headers.update(cors_headers())
+            res.json(device_details)
             
         except Exception as e:
-            self.send_response(500)
-            self.send_header('Content-Type', 'application/json')
-            for key, value in cors_headers().items():
-                self.send_header(key, value)
-            self.end_headers()
-            
-            self.wfile.write(json.dumps({
+            res.status = 500
+            res.headers.update(cors_headers())
+            res.json({
                 'error': str(e)
-            }).encode())
-    
-    def do_OPTIONS(self):
+            })
+    elif req.method == 'OPTIONS':
         """Handle OPTIONS request for CORS"""
-        self.send_response(200)
-        for key, value in cors_headers().items():
-            self.send_header(key, value)
-        self.end_headers()
+        res.status = 200
+        res.headers.update(cors_headers())
+        res.send()
 

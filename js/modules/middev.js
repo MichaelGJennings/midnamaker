@@ -40,6 +40,12 @@ export class MiddevManager {
             return null;
         }
         
+        // Check if hosted version - use browser storage
+        const { isHostedVersion } = await import('../core/hosting.js');
+        if (isHostedVersion()) {
+            return await this.createManufacturerFileHosted(manufacturerName);
+        }
+        
         try {
             const response = await fetch('/api/middev/create', {
                 method: 'POST',
@@ -68,6 +74,43 @@ export class MiddevManager {
     }
     
     /**
+     * Create manufacturer file in browser storage (hosted version)
+     */
+    async createManufacturerFileHosted(manufacturerName) {
+        try {
+            // Generate basic MIDDEV XML structure
+            const middevXml = `<?xml version='1.0' encoding='utf-8'?>
+<MIDIDevice>
+  <Manufacturer>${manufacturerName.trim()}</Manufacturer>
+  <Devices>
+  </Devices>
+</MIDIDevice>`;
+            
+            const filePath = `patchfiles/${manufacturerName.trim()}.middev`;
+            
+            // Save to browser storage
+            const { browserStorage } = await import('../core/storage.js');
+            const result = await browserStorage.saveMidnam({
+                file_path: filePath,
+                midnam: middevXml,
+                manufacturer: manufacturerName.trim(),
+                model: 'New Manufacturer'
+            });
+            
+            Utils.showNotification(`Created ${filePath} in browser storage`, 'success');
+            
+            return {
+                file_path: filePath,
+                success: true
+            };
+        } catch (error) {
+            console.error('Error creating manufacturer file in browser storage:', error);
+            Utils.showNotification(`Failed to create manufacturer file: ${error.message}`, 'error');
+            return null;
+        }
+    }
+    
+    /**
      * Add a new device to an existing .middev file
      */
     async addDeviceToManufacturer(manufacturerName, deviceModel) {
@@ -79,6 +122,12 @@ export class MiddevManager {
         if (!deviceModel || deviceModel.trim() === '') {
             Utils.showNotification('Device model is required', 'warning');
             return null;
+        }
+        
+        // Check if hosted version - use browser storage
+        const { isHostedVersion } = await import('../core/hosting.js');
+        if (isHostedVersion()) {
+            return await this.addDeviceToManufacturerHosted(manufacturerName, deviceModel);
         }
         
         try {
@@ -104,6 +153,81 @@ export class MiddevManager {
             return result;
         } catch (error) {
             console.error('Error adding device:', error);
+            Utils.showNotification(`Failed to add device: ${error.message}`, 'error');
+            return null;
+        }
+    }
+    
+    /**
+     * Add device to manufacturer file in browser storage (hosted version)
+     */
+    async addDeviceToManufacturerHosted(manufacturerName, deviceModel) {
+        try {
+            const filePath = `patchfiles/${manufacturerName.trim()}.middev`;
+            
+            // Get existing file from browser storage
+            const { browserStorage } = await import('../core/storage.js');
+            const existingFile = await browserStorage.getMidnam(filePath);
+            
+            let middevXml;
+            if (existingFile && existingFile.midnam) {
+                // Parse existing XML and add device
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(existingFile.midnam, 'text/xml');
+                
+                // Check for parse errors
+                const parseError = xmlDoc.querySelector('parsererror');
+                if (parseError) {
+                    throw new Error('Invalid existing MIDDEV file');
+                }
+                
+                // Find Devices element
+                let devicesElem = xmlDoc.querySelector('Devices');
+                if (!devicesElem) {
+                    // Create Devices element if it doesn't exist
+                    devicesElem = xmlDoc.createElement('Devices');
+                    const root = xmlDoc.querySelector('MIDIDevice');
+                    if (root) {
+                        root.appendChild(devicesElem);
+                    } else {
+                        throw new Error('Invalid MIDDEV structure');
+                    }
+                }
+                
+                // Create Device element
+                const deviceElem = xmlDoc.createElement('Device');
+                deviceElem.setAttribute('Name', deviceModel.trim());
+                devicesElem.appendChild(deviceElem);
+                
+                // Convert back to XML string
+                middevXml = new XMLSerializer().serializeToString(xmlDoc);
+            } else {
+                // Create new file
+                middevXml = `<?xml version='1.0' encoding='utf-8'?>
+<MIDIDevice>
+  <Manufacturer>${manufacturerName.trim()}</Manufacturer>
+  <Devices>
+    <Device Name="${deviceModel.trim()}" />
+  </Devices>
+</MIDIDevice>`;
+            }
+            
+            // Save updated file
+            const result = await browserStorage.saveMidnam({
+                file_path: filePath,
+                midnam: middevXml,
+                manufacturer: manufacturerName.trim(),
+                model: deviceModel.trim()
+            });
+            
+            Utils.showNotification(`Added ${deviceModel} to ${manufacturerName} in browser storage`, 'success');
+            
+            return {
+                file_path: filePath,
+                success: true
+            };
+        } catch (error) {
+            console.error('Error adding device in browser storage:', error);
             Utils.showNotification(`Failed to add device: ${error.message}`, 'error');
             return null;
         }

@@ -4,7 +4,7 @@
 // Initialize the application when DOM is loaded
 document.addEventListener('DOMContentLoaded', () => {
     console.log('Main.js DOMContentLoaded triggered');
-    
+
     // Simple initialization - modules should be available by now
     const initializeApp = () => {
         // Create tab manager if available
@@ -15,92 +15,92 @@ document.addEventListener('DOMContentLoaded', () => {
             console.warn('TabManager not available, creating minimal tab functionality');
             // Create a minimal tab manager
             tabManager = {
-                registerTabCallback: () => {},
-                switchTab: () => {},
+                registerTabCallback: () => { },
+                switchTab: () => { },
                 getCurrentTab: () => 'manufacturer',
                 isTabActive: () => false
             };
         }
-    
-    // Register tab callbacks with fallbacks
-    tabManager.registerTabCallback('manufacturer', () => {
-        const mgr = window.manufacturerManager;
-        if (mgr && mgr.loadManufacturers) {
-            mgr.loadManufacturers();
-        }
-    });
-    
-    tabManager.registerTabCallback('device', () => {
-        const mgr = window.deviceManager;
-        if (mgr && mgr.loadDeviceTab) {
-            mgr.loadDeviceTab();
-        }
-    });
-    
-    tabManager.registerTabCallback('patch', () => {
-        const mgr = window.patchManager;
-        if (mgr && mgr.loadPatchTab) {
-            mgr.loadPatchTab();
-        }
-    });
-    
-    tabManager.registerTabCallback('catalog', () => {
-        const mgr = window.catalogManager;
-        if (mgr && mgr.loadCatalogTab) {
-            mgr.loadCatalogTab();
-        }
-    });
-    
-    tabManager.registerTabCallback('tools', () => {
-        const mgr = window.toolsManager;
-        if (mgr && mgr.loadToolsTab) {
-            mgr.loadToolsTab();
-        }
-    });
-    
-    // Initialize main app
-    if (window.App) {
-        window.app = new window.App();
-    } else {
-        console.warn('App not available yet; skipping App initialization for now');
-    }
-    
-    // Ensure globals exist without referencing undeclared identifiers
-    window.manufacturerManager = window.manufacturerManager || null;
-    window.deviceManager = window.deviceManager || null;
-    window.patchManager = window.patchManager || null;
-    window.catalogManager = window.catalogManager || null;
-    window.toolsManager = window.toolsManager || null;
-    window.keyboardManager = window.keyboardManager || null;
-    window.midiManager = window.midiManager || null;
-    window.middevManager = window.middevManager || null;
-    window.tabManager = tabManager;
-    
-    // Add test method for debugging
-    console.log('Creating global test functions...');
-    window.testTooltip = () => {
-        if (patchManager && patchManager.testTooltip) {
-            patchManager.testTooltip();
-        } else {
-            console.log('PatchManager not available for tooltip test');
-        }
-    };
-    window.refreshTooltips = () => {
-        if (patchManager && patchManager.refreshAllNoteDisplayTooltips) {
-            patchManager.refreshAllNoteDisplayTooltips();
-        } else {
-            console.log('PatchManager not available for tooltip refresh');
-        }
-    };
-    window.testMIDIStatus = () => {
-        console.log('MIDI Status:', {
-            enabled: window.midiManager?.isMIDIEnabled(),
-            deviceSelected: window.midiManager?.isDeviceSelected(),
-            combined: patchManager?.getMIDIStatus?.() || 'PatchManager not available'
+
+        // Register tab callbacks with fallbacks
+        tabManager.registerTabCallback('manufacturer', () => {
+            const mgr = window.manufacturerManager;
+            if (mgr && mgr.loadManufacturers) {
+                mgr.loadManufacturers();
+            }
         });
-    };
-    
-        console.log('MIDI Name Editor initialized successfully');
+
+        tabManager.registerTabCallback('device', () => {
+            const mgr = window.deviceManager;
+            if (mgr && mgr.loadDeviceTab) {
+                mgr.loadDeviceTab();
+            }
+        });
+
+        tabManager.registerTabCallback('patch', () => {
+            const mgr = window.patchManager;
+            if (mgr && mgr.loadPatchTab) {
+                mgr.loadPatchTab();
+            }
+        });
+
+        tabManager.registerTabCallback('catalog', () => {
+            const mgr = window.catalogManager;
+            if (mgr && mgr.loadCatalogTab) {
+                mgr.loadCatalogTab();
+            }
+        });
+
+        tabManager.registerTabCallback('tools', () => {
+            const mgr = window.toolsManager;
+            if (mgr && mgr.loadToolsTab) {
+                mgr.loadToolsTab();
+            }
+        });
+
+        // Initialize main app
+        if (window.App) {
+            window.app = new window.App();
+        } else {
+            console.warn('App not available yet; skipping App initialization for now');
+        }
+
+        // Ensure globals exist without referencing undeclared identifiers
+        window.manufacturerManager = window.manufacturerManager || null;
+        window.deviceManager = window.deviceManager || null;
+        window.patchManager = window.patchManager || null;
+        window.catalogManager = window.catalogManager || null;
+        window.toolsManager = window.toolsManager || null;
+        window.keyboardManager = window.keyboardManager || null;
+        window.midiManager = window.midiManager || null;
+        window.middevManager = window.middevManager || null;
+        window.tabManager = tabManager;
+
+        // Add test method for debugging
+        console.log('Creating global test functions...');
+        window.testTooltip = () => {
+            if (patchManager && patchManager.testTooltip) {
+                patchManager.testTooltip();
+            } else {
+                console.log('PatchManager not available for tooltip test');
+            }
+        };
+        window.refreshTooltips = () => {
+            if (patchManager && patchManager.refreshAllNoteDisplayTooltips) {
+                patchManager.refreshAllNoteDisplayTooltips();
+            } else {
+                console.log('PatchManager not available for tooltip refresh');
+            }
+        };
+        window.testMIDIStatus = () => {
+            console.log('MIDI Status:', {
+                enabled: window.midiManager?.isMIDIEnabled(),
+                deviceSelected: window.midiManager?.isDeviceSelected(),
+                combined: patchManager?.getMIDIStatus?.() || 'PatchManager not available'
+            });
+        };
+
+        console.log('Midnamaker initialized successfully');
         console.log('Loaded modules:', {
             TabManager: typeof window.TabManager,
             App: typeof window.App,
@@ -119,7 +119,7 @@ document.addEventListener('DOMContentLoaded', () => {
             testMIDIStatus: typeof window.testMIDIStatus
         });
     };
-    
+
     // Initialize with a slightly longer delay to ensure all modules are loaded
     setTimeout(initializeApp, 50);
 });
