@@ -856,7 +856,7 @@ export class DeviceManager {
         }
     }
 
-    showDownloadModal() {
+    async showDownloadModal() {
         if (!appState.selectedDevice) {
             Utils.showNotification('No device selected', 'warning');
             return;
@@ -895,39 +895,78 @@ export class DeviceManager {
         console.log('Download Modal - MIDNAM filename:', midnamFilename);
         console.log('Download Modal - MIDDEV filename:', middevFilename);
 
-        // MIDNAM file link
-        const midnamUrl = `/api/download/midnam/${encodeURIComponent(deviceId)}?file=${encodeURIComponent(filePath)}`;
-        linksContainer.appendChild(this.createDownloadLinkItem(
-            midnamFilename,
-            'Device patch names and note mappings',
-            midnamUrl
-        ));
+        // Check if hosted version
+        const { isHostedVersion } = await import('../core/hosting.js');
+        const isHosted = isHostedVersion();
 
-        // MIDDEV file link
-        const middevUrl = `/api/download/middev/${encodeURIComponent(manufacturer)}`;
-        linksContainer.appendChild(this.createDownloadLinkItem(
-            middevFilename,
-            'Device metadata and MIDI capabilities',
-            middevUrl
-        ));
+        if (isHosted) {
+            // For hosted version, create client-side downloads
+            // MIDNAM file link
+            linksContainer.appendChild(this.createClientDownloadLinkItem(
+                midnamFilename,
+                'Device patch names and note mappings',
+                async () => this.downloadMidnamClientSide(midnamFilename)
+            ));
 
-        // Separator
-        const separator = document.createElement('div');
-        separator.className = 'download-separator';
-        separator.textContent = '— or download both in one file —';
-        separator.setAttribute('data-testid', 'div_download_separator');
-        linksContainer.appendChild(separator);
+            // MIDDEV file link
+            linksContainer.appendChild(this.createClientDownloadLinkItem(
+                middevFilename,
+                'Device metadata and MIDI capabilities',
+                async () => this.downloadMiddevClientSide(manufacturer, middevFilename)
+            ));
 
-        // ZIP file link
-        const zipUrl = `/api/download/zip/${encodeURIComponent(deviceId)}?file=${encodeURIComponent(filePath)}`;
-        const zipFilename = `${manufacturer.replace(' ', '_')}_${deviceName.replace(' ', '_')}.zip`;
-        const zipItem = this.createDownloadLinkItem(
-            zipFilename,
-            'Both files in a single archive',
-            zipUrl
-        );
-        zipItem.classList.add('download-zip-item');
-        linksContainer.appendChild(zipItem);
+            // Separator
+            const separator = document.createElement('div');
+            separator.className = 'download-separator';
+            separator.textContent = '— or download both in one file —';
+            separator.setAttribute('data-testid', 'div_download_separator');
+            linksContainer.appendChild(separator);
+
+            // ZIP file link
+            const zipFilename = `${manufacturer.replace(' ', '_')}_${deviceName.replace(' ', '_')}.zip`;
+            const zipItem = this.createClientDownloadLinkItem(
+                zipFilename,
+                'Both files in a single archive',
+                async () => this.downloadZipClientSide(manufacturer, deviceName, midnamFilename, middevFilename)
+            );
+            zipItem.classList.add('download-zip-item');
+            linksContainer.appendChild(zipItem);
+        } else {
+            // For local version, use API endpoints
+            // MIDNAM file link
+            const midnamUrl = `/api/download/midnam/${encodeURIComponent(deviceId)}?file=${encodeURIComponent(filePath)}`;
+            linksContainer.appendChild(this.createDownloadLinkItem(
+                midnamFilename,
+                'Device patch names and note mappings',
+                midnamUrl
+            ));
+
+            // MIDDEV file link
+            const middevUrl = `/api/download/middev/${encodeURIComponent(manufacturer)}`;
+            linksContainer.appendChild(this.createDownloadLinkItem(
+                middevFilename,
+                'Device metadata and MIDI capabilities',
+                middevUrl
+            ));
+
+            // Separator
+            const separator = document.createElement('div');
+            separator.className = 'download-separator';
+            separator.textContent = '— or download both in one file —';
+            separator.setAttribute('data-testid', 'div_download_separator');
+            linksContainer.appendChild(separator);
+
+            // ZIP file link
+            const zipUrl = `/api/download/zip/${encodeURIComponent(deviceId)}?file=${encodeURIComponent(filePath)}`;
+            const zipFilename = `${manufacturer.replace(' ', '_')}_${deviceName.replace(' ', '_')}.zip`;
+            const zipItem = this.createDownloadLinkItem(
+                zipFilename,
+                'Both files in a single archive',
+                zipUrl
+            );
+            zipItem.classList.add('download-zip-item');
+            linksContainer.appendChild(zipItem);
+        }
 
         // Show modal
         modal.style.display = 'block';
@@ -966,6 +1005,185 @@ export class DeviceManager {
         item.appendChild(link);
 
         return item;
+    }
+    
+    createClientDownloadLinkItem(filename, description, downloadCallback) {
+        const item = document.createElement('div');
+        item.className = 'download-link-item';
+        item.setAttribute('data-testid', 'itm_download_link');
+
+        const info = document.createElement('div');
+        info.className = 'download-link-info';
+        info.setAttribute('data-testid', 'div_download_link_info');
+
+        const name = document.createElement('div');
+        name.className = 'download-link-name';
+        name.textContent = filename;
+        name.setAttribute('data-testid', 'div_download_filename');
+
+        const desc = document.createElement('div');
+        desc.className = 'download-link-description';
+        desc.textContent = description;
+        desc.setAttribute('data-testid', 'div_download_description');
+
+        info.appendChild(name);
+        info.appendChild(desc);
+
+        const button = document.createElement('button');
+        button.className = 'download-link-button';
+        button.textContent = 'Download';
+        button.setAttribute('data-testid', 'btn_download_file');
+        button.addEventListener('click', async () => {
+            button.disabled = true;
+            button.textContent = 'Downloading...';
+            try {
+                await downloadCallback();
+            } catch (error) {
+                console.error('Download error:', error);
+                Utils.showNotification(`Download failed: ${error.message}`, 'error');
+            } finally {
+                button.disabled = false;
+                button.textContent = 'Download';
+            }
+        });
+
+        item.appendChild(info);
+        item.appendChild(button);
+
+        return item;
+    }
+    
+    async downloadMidnamClientSide(filename) {
+        try {
+            // Get the current MIDNAM XML - either from raw_xml or generate it
+            let midnamXml = appState.currentMidnam?.raw_xml;
+            
+            if (!midnamXml) {
+                // Generate XML from current state if raw_xml not available
+                midnamXml = this.generateMidnamXmlFromState();
+            }
+            
+            // Create and download blob
+            const blob = new Blob([midnamXml], { type: 'application/xml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            Utils.showNotification('MIDNAM file downloaded', 'success');
+        } catch (error) {
+            console.error('Error downloading MIDNAM:', error);
+            throw error;
+        }
+    }
+    
+    async downloadMiddevClientSide(manufacturer, filename) {
+        try {
+            // Generate a basic MIDDEV XML structure
+            const middevXml = `<?xml version='1.0' encoding='utf-8'?>
+<MIDIDevice>
+  <Manufacturer>${Utils.escapeXml(manufacturer)}</Manufacturer>
+  <Devices>
+    <Device Name="${Utils.escapeXml(appState.currentMidnam?.model || 'Unknown Device')}" />
+  </Devices>
+</MIDIDevice>`;
+            
+            // Create and download blob
+            const blob = new Blob([middevXml], { type: 'application/xml' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            Utils.showNotification('MIDDEV file downloaded', 'success');
+        } catch (error) {
+            console.error('Error downloading MIDDEV:', error);
+            throw error;
+        }
+    }
+    
+    async downloadZipClientSide(manufacturer, deviceName, midnamFilename, middevFilename) {
+        try {
+            // Dynamically import JSZip
+            const JSZip = (await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm')).default;
+            
+            const zip = new JSZip();
+            
+            // Get MIDNAM XML
+            let midnamXml = appState.currentMidnam?.raw_xml;
+            if (!midnamXml) {
+                midnamXml = this.generateMidnamXmlFromState();
+            }
+            
+            // Generate MIDDEV XML
+            const middevXml = `<?xml version='1.0' encoding='utf-8'?>
+<MIDIDevice>
+  <Manufacturer>${Utils.escapeXml(manufacturer)}</Manufacturer>
+  <Devices>
+    <Device Name="${Utils.escapeXml(appState.currentMidnam?.model || deviceName)}" />
+  </Devices>
+</MIDIDevice>`;
+            
+            // Add files to ZIP
+            zip.file(midnamFilename, midnamXml);
+            zip.file(middevFilename, middevXml);
+            
+            // Generate ZIP blob
+            const zipBlob = await zip.generateAsync({ type: 'blob' });
+            
+            // Download
+            const url = URL.createObjectURL(zipBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${manufacturer.replace(' ', '_')}_${deviceName.replace(' ', '_')}.zip`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            Utils.showNotification('ZIP file downloaded', 'success');
+        } catch (error) {
+            console.error('Error downloading ZIP:', error);
+            throw error;
+        }
+    }
+    
+    generateMidnamXmlFromState() {
+        // Get current device data from appState
+        const midnam = appState.currentMidnam;
+        if (!midnam) {
+            throw new Error('No device data available');
+        }
+        
+        // If raw_xml exists, use it
+        if (midnam.raw_xml) {
+            return midnam.raw_xml;
+        }
+        
+        // Otherwise, construct from the structured data
+        // This is a simplified version - you might want to make it more comprehensive
+        let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+        xml += '<!DOCTYPE MIDINameDocument PUBLIC "-//MIDI Manufacturers Association//DTD MIDINameDocument 1.0//EN" "http://www.midi.org/dtds/MIDINameDocument10.dtd">\n';
+        xml += '<MIDINameDocument>\n';
+        xml += `  <Author>${Utils.escapeXml(midnam.Author || midnam.author || 'Unknown')}</Author>\n`;
+        xml += '  <MasterDeviceNames>\n';
+        xml += `    <Manufacturer>${Utils.escapeXml(midnam.Manufacturer || midnam.manufacturer)}</Manufacturer>\n`;
+        xml += `    <Model>${Utils.escapeXml(midnam.Model || midnam.model)}</Model>\n`;
+        
+        // Add CustomDeviceModes, ChannelNameSets, PatchBanks, etc. from midnam structure
+        // For now, return a basic structure
+        xml += '  </MasterDeviceNames>\n';
+        xml += '</MIDINameDocument>';
+        
+        return xml;
     }
 
     async saveMidnamStructure() {
