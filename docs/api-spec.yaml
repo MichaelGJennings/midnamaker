@@ -931,10 +931,9 @@ components:
                 example: true
         patch_banks:
           type: array
-          description: Patch banks associated with this channel name set (references by name)
+          description: Patch banks associated with this channel name set (full objects with patches)
           items:
-            type: string
-          example: ["Sounds U0", "Sounds U1"]
+            $ref: '#/components/schemas/PatchBank'
 
     PatchBank:
       type: object
@@ -966,16 +965,23 @@ components:
       properties:
         name:
           type: string
+          description: Patch name
           example: "Genesis"
+        number:
+          type: string
+          description: Patch number (same as Number, for compatibility)
+          example: "000"
         Number:
           type: string
+          description: Patch number (XML attribute format)
           example: "000"
         programChange:
           type: integer
+          description: MIDI program change number
           example: 0
         note_list_name:
           type: string
-          description: Name of the NoteNameList used by this patch
+          description: Name of the NoteNameList used by this patch (for drum patches)
 
     MidnamStructure:
       type: object

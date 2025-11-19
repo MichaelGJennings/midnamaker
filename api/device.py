@@ -115,7 +115,8 @@ class handler(BaseHTTPRequestHandler):
                         'notes': notes
                     })
             
-            # Extract PatchBanks
+            # Extract PatchBanks (collect by name for lookup and also build flat list)
+            patch_banks_by_name = {}
             for patch_bank in root_elem.findall('.//PatchBank'):
                 bank_name = patch_bank.get('Name')
                 if bank_name:
@@ -128,23 +129,38 @@ class handler(BaseHTTPRequestHandler):
                         
                         patch_data = {
                             'number': patch_number,
-                            'name': patch_name
+                            'name': patch_name,
+                            'Number': patch_number
                         }
                         
                         if program_change:
-                            patch_data['program_change'] = program_change
+                            patch_data['programChange'] = int(program_change)
                         
                         if uses_note_list is not None:
-                            patch_data['usesNoteList'] = uses_note_list.get('Name')
+                            patch_data['note_list_name'] = uses_note_list.get('Name')
                         
                         patches.append(patch_data)
                     
-                    device_details['patch_banks'].append({
+                    # Store MIDI commands if present
+                    midi_commands = []
+                    for midi_cmd in patch_bank.findall('.//MIDICommands/*'):
+                        cmd = {
+                            'type': midi_cmd.tag
+                        }
+                        for attr, value in midi_cmd.attrib.items():
+                            cmd[attr.lower()] = value
+                        midi_commands.append(cmd)
+                    
+                    bank_obj = {
                         'name': bank_name,
-                        'patches': patches
-                    })
+                        'patches': patches,
+                        'midi_commands': midi_commands
+                    }
+                    patch_banks_by_name[bank_name] = bank_obj
+                    # Also add to flat list for backward compatibility
+                    device_details['patch_banks'].append(bank_obj)
             
-            # Extract ChannelNameSets
+            # Extract ChannelNameSets with full patch bank objects
             for channel_name_set in root_elem.findall('.//ChannelNameSet'):
                 set_name = channel_name_set.get('Name')
                 if set_name:
@@ -158,11 +174,12 @@ class handler(BaseHTTPRequestHandler):
                                 'available': available == 'true'
                             })
                     
+                    # Get full patch bank objects referenced by this channel name set
                     patch_banks = []
                     for pb_ref in channel_name_set.findall('.//PatchBank'):
                         pb_name = pb_ref.get('Name')
-                        if pb_name:
-                            patch_banks.append(pb_name)
+                        if pb_name and pb_name in patch_banks_by_name:
+                            patch_banks.append(patch_banks_by_name[pb_name])
                     
                     device_details['channel_name_sets'].append({
                         'name': set_name,
