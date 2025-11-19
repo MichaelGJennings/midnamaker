@@ -1,30 +1,57 @@
-.DS_Store
-Alesis D4 - Reference Charts.pdf
-Alesis.middev
-DEP-5.midnam
-DM5.midnam
-DMPro.midnam
-D4.midnam.backup*
-gitold
-*.midnam.backup*
-midnam_catalog_cache.json
-test-failure.png
-
 # Python
 __pycache__/
 *.py[cod]
-*.pyc
-*.pyo
-*.pyd
+*$py.class
+*.so
 .Python
-
-# Pytest
+venv/
+env/
+ENV/
 .pytest_cache/
-.coverage
-htmlcov/
-*.cover
-.hypothesis/
 
-# Test data
-tests/e2e/test_data/test_data.*
-CACHEDIR.TAG
+# Build
+build/
+dist/
+*.egg-info/
+*.spec
+packenv/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+.AppleDouble
+.LSOverride
+
+# Node
+node_modules/
+package-lock.json
+
+# Vercel
+.vercel
+
+# Temporary files
+*.tmp
+*.log
+*.command
+*.backup.*
+midnam_catalog_cache.json
+
+# Test coverage
+htmlcov/
+coverage.xml
+.coverage
+
+# Old git directories
+gitold/
+
+# Keep these
+!patchfiles/
+!dtd/
+!js/
+!css/

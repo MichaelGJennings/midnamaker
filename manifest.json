@@ -1,0 +1,39 @@
+{
+  "name": "Midnamaker",
+  "short_name": "Midnamaker",
+  "description": "MIDI Name Document Editor - Edit and manage MIDI device patch names",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1a1a1a",
+  "theme_color": "#2563eb",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["music", "utilities"],
+  "shortcuts": [
+    {
+      "name": "Manufacturer List",
+      "url": "/#manufacturer",
+      "description": "Browse MIDI device manufacturers"
+    },
+    {
+      "name": "Tools",
+      "url": "/#tools",
+      "description": "MIDI tools and utilities"
+    }
+  ]
+}
+
+

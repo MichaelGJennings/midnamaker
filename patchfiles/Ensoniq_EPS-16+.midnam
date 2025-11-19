@@ -52,69 +52,22 @@
 					<Patch Name="INSTRUMENT 2" Number="1" ProgramChange="1"/>
 					<Patch Name="INSTRUMENT 3" Number="2" ProgramChange="2"/>
 					<Patch Name="INSTRUMENT 4" Number="3" ProgramChange="3"/>
+					<Patch Name="INSTRUMENT 5" Number="4" ProgramChange="4"/>
+					<Patch Name="INSTRUMENT 6" Number="5" ProgramChange="5"/>
+					<Patch Name="INSTRUMENT 7" Number="6" ProgramChange="6"/>
+					<Patch Name="INSTRUMENT 8" Number="7" ProgramChange="7"/>
 				</PatchNameList>
 			</PatchBank>
 		</ChannelNameSet>
 		<ControlNameList Name="MIDI Continuous Controllers">
-			<Control Type="7bit" Number="1" Name="Modulation Wheel or Lever"/>
+			<Control Type="7bit" Number="1" Name="Mod Wheel"/>
 			<Control Type="7bit" Number="2" Name="Breath Controller"/>
-			<Control Type="7bit" Number="3" Name="Undefined"/>
 			<Control Type="7bit" Number="4" Name="Foot Controller"/>
-			<Control Type="7bit" Number="5" Name="Portamento Time"/>
-			<Control Type="7bit" Number="6" Name="Data Entry MSB"/>
+			<Control Type="7bit" Number="6" Name="Data"/>
 			<Control Type="7bit" Number="7" Name="Channel Volume"/>
-			<Control Type="7bit" Number="8" Name="Balance"/>
-			<Control Type="7bit" Number="9" Name="Undefined"/>
-			<Control Type="7bit" Number="10" Name="Pan"/>
-			<Control Type="7bit" Number="11" Name="Expression Controller"/>
-			<Control Type="7bit" Number="12" Name="Effect Control 1"/>
-			<Control Type="7bit" Number="13" Name="Effect Control 2"/>
-			<Control Type="7bit" Number="16" Name="General Purpose Controller 1"/>
-			<Control Type="7bit" Number="17" Name="General Purpose Controller 2"/>
-			<Control Type="7bit" Number="18" Name="General Purpose Controller 3"/>
-			<Control Type="7bit" Number="19" Name="General Purpose Controller 4"/>
-			<Control Type="7bit" Number="33" Name="LSB for Control 1 (Modulation Wheel or Lever) (Fine)"/>
-			<Control Type="7bit" Number="34" Name="LSB for Control 2 (Breath Controller) (Fine)"/>
-			<Control Type="7bit" Number="35" Name="LSB for Control 3 (Undefined) (Fine)"/>
-			<Control Type="7bit" Number="36" Name="LSB for Control 4 (Foot Controller) (Fine)"/>
-			<Control Type="7bit" Number="37" Name="LSB for Control 5 (Portamento Time) (Fine)"/>
-			<Control Type="7bit" Number="38" Name="LSB for Control 6 (Data Entry) (Fine)"/>
-			<Control Type="7bit" Number="39" Name="LSB for Control 7 (Channel Volume) (Fine)"/>
-			<Control Type="7bit" Number="40" Name="LSB for Control 8 (Balance) (Fine)"/>
-			<Control Type="7bit" Number="41" Name="LSB for Control 9 (Undefined) (Fine)"/>
-			<Control Type="7bit" Number="42" Name="LSB for Control 10 (Pan) (Fine)"/>
-			<Control Type="7bit" Number="43" Name="LSB for Control 11 (Expression Controller) (Fine)"/>
-			<Control Type="7bit" Number="44" Name="LSB for Control 12 (Effect control 1) (Fine)"/>
-			<Control Type="7bit" Number="45" Name="LSB for Control 13 (Effect control 2) (Fine)"/>
-			<Control Type="7bit" Number="64" Name="Damper Pedal on/off (Sustain) ≤63 off, ≥64 on"/>
-			<Control Type="7bit" Number="65" Name="Portamento On/Off ≤63 off, ≥64 on"/>
-			<Control Type="7bit" Number="66" Name="Sostenuto On/Off ≤63 off, ≥64 on"/>
-			<Control Type="7bit" Number="67" Name="Soft Pedal On/Off ≤63 off, ≥64 on"/>
-			<Control Type="7bit" Number="68" Name="Legato Footswitch ≤63 Normal, ≥64 Legato"/>
-			<Control Type="7bit" Number="69" Name="Hold 2 ≤63 off, ≥64 on"/>
-			<Control Type="7bit" Number="70" Name="Sound Controller 1 (default: Sound Variation) (Fine)"/>
-			<Control Type="7bit" Number="71" Name="Sound Controller 2 (default: Timbre/Harmonic Intens.) (Fine)"/>
-			<Control Type="7bit" Number="72" Name="Sound Controller 3 (default: Release Time) (Fine)"/>
-			<Control Type="7bit" Number="73" Name="Sound Controller 4 (default: Attack Time) (Fine)"/>
-			<Control Type="7bit" Number="74" Name="Sound Controller 5 (default: Brightness) (Fine)"/>
-			<Control Type="7bit" Number="75" Name="Sound Controller 6 (default: Decay Time) (Fine)"/>
-			<Control Type="7bit" Number="76" Name="Sound Controller 7 (default: Vibrato Rate) (Fine)"/>
-			<Control Type="7bit" Number="77" Name="Sound Controller 8 (default: Vibrato Depth) (Fine)"/>
-			<Control Type="7bit" Number="78" Name="Sound Controller 9 (default: Vibrato Delay) (Fine)"/>
-			<Control Type="7bit" Number="79" Name="Sound Controller 10 (default undefined) (Fine)"/>
-			<Control Type="7bit" Number="80" Name="General Purpose Controller 5 (Fine)"/>
-			<Control Type="7bit" Number="81" Name="General Purpose Controller 6 (Fine)"/>
-			<Control Type="7bit" Number="82" Name="General Purpose Controller 7 (Fine)"/>
-			<Control Type="7bit" Number="83" Name="General Purpose Controller 8 (Fine)"/>
-			<Control Type="7bit" Number="84" Name="Portamento Control (Fine)"/>
-			<Control Type="7bit" Number="88" Name="High Resolution Velocity Prefix (Velocity LSB)"/>
-			<Control Type="7bit" Number="91" Name="Effects 1 Depth (default: Reverb Send Level)"/>
-			<Control Type="7bit" Number="92" Name="Effects 2 Depth"/>
-			<Control Type="7bit" Number="93" Name="Effects 3 Depth (default: Chorus Send Level)"/>
-			<Control Type="7bit" Number="94" Name="Effects 4 Depth"/>
-			<Control Type="7bit" Number="95" Name="Effects 5 Depth"/>
-			<Control Type="7bit" Number="96" Name="Data Increment (Data Entry +1)"/>
-			<Control Type="7bit" Number="97" Name="Data Decrement (Data Entry -1)"/>
+			<Control Type="7bit" Number="70" Name="Patch Select (0-31 = OO, 32-63= O*, 64-95=*O, 96=127=**)"/>
+			<Control Type="7bit" Number="100" Name="Registered Parameter Select"/>
+			<Control Type="7bit" Number="101" Name="Registered Parameter Select"/>
 		</ControlNameList>
 	</MasterDeviceNames>
 </MIDINameDocument>

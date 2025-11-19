@@ -3,6 +3,8 @@ import { modal } from '../components/modal.js';
 import { getMIDIControllerName } from '../constants/midiControllers.js';
 import { appState } from '../core/state.js';
 import { Utils } from '../core/utils.js';
+import { isHostedVersion } from '../core/hosting.js';
+import { browserStorage } from '../core/storage.js';
 import { sendBankSelectMidi, sendProgramChange, testPatch } from '../utils/midiHelpers.js';
 
 export class DeviceManager {
@@ -831,6 +833,47 @@ export class DeviceManager {
             return;
         }
 
+        // Route to appropriate save method based on environment
+        if (isHostedVersion()) {
+            await this.saveMidnamToBrowser(filePath);
+        } else {
+            await this.saveMidnamToServer(filePath);
+        }
+    }
+
+    async saveMidnamToBrowser(filePath) {
+        try {
+            const manufacturer = appState.selectedDevice?.manufacturer || 
+                               appState.currentMidnam?.Manufacturer || 
+                               'Unknown';
+            const model = appState.selectedDevice?.name || 
+                         appState.selectedDevice?.model || 
+                         appState.currentMidnam?.Model || 
+                         'Unknown Device';
+
+            const result = await browserStorage.saveMidnam({
+                file_path: filePath,
+                midnam: appState.currentMidnam,
+                manufacturer: manufacturer,
+                model: model
+            });
+
+            if (result.success) {
+                // Mark as saved globally
+                appState.markAsSaved();
+
+                const action = result.isUpdate ? 'Updated' : 'Saved';
+                this.logToDebugConsole(`✓ ${action} in browser storage: ${filePath}`, 'success');
+                Utils.showNotification(`${action} to browser storage successfully`, 'success');
+            }
+        } catch (error) {
+            console.error('Error saving to browser:', error);
+            this.logToDebugConsole(`✗ Failed to save to browser storage: ${error.message}`, 'error');
+            Utils.showNotification(`Browser save failed: ${error.message}`, 'error');
+        }
+    }
+
+    async saveMidnamToServer(filePath) {
         try {
             const response = await fetch('/api/midnam/save', {
                 method: 'POST',
@@ -877,7 +920,7 @@ export class DeviceManager {
             appState.markAsSaved();
 
             this.logToDebugConsole(`✓ Saved successfully to: ${filePath}`, 'success');
-            Utils.showNotification('Changes saved successfully', 'success');
+            Utils.showNotification('Changes saved to file successfully', 'success');
         } catch (error) {
             console.error('Error saving:', error);
 

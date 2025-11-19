@@ -1,0 +1,60 @@
+{
+  "name": "midnamaker",
+  "version": "1.0.0",
+  "description": "MIDI Name Document Editor",
+  "main": "electron-main.js",
+  "scripts": {
+    "start": "electron .",
+    "build:mac": "electron-builder --mac",
+    "build:win": "electron-builder --win",
+    "build:all": "electron-builder --mac --win"
+  },
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "electron": "^28.0.0",
+    "electron-builder": "^24.9.1"
+  },
+  "build": {
+    "appId": "com.midnamaker.app",
+    "productName": "Midnamaker",
+    "files": [
+      "electron-main.js",
+      "server.py",
+      "css/**/*",
+      "js/**/*",
+      "patchfiles/**/*",
+      "dtd/**/*",
+      "index.html"
+    ],
+    "mac": {
+      "category": "public.app-category.music",
+      "target": [
+        "dmg",
+        "zip"
+      ]
+    },
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ]
+    },
+    "dmg": {
+      "contents": [
+        {
+          "x": 130,
+          "y": 220
+        },
+        {
+          "x": 410,
+          "y": 220,
+          "type": "link",
+          "path": "/Applications"
+        }
+      ]
+    }
+  }
+}
+
+

@@ -271,553 +271,138 @@
     filter: invert(1);
 }
 
-/* Tools section styles */
-.tools-section {
+/* My Edits Section */
+.my-edits-section {
     margin-bottom: 2rem;
-    padding: 1.5rem;
+    padding: 1rem;
     border: 1px solid #ddd;
     border-radius: 8px;
-    background: #fff;
-}
-
-.tools-section h3 {
-    margin-top: 0;
-    margin-bottom: 1rem;
-    color: #495057;
-    font-size: 1.2rem;
-}
-
-.tools-section p {
-    margin-bottom: 1rem;
-    color: #6c757d;
-}
-
-.consistency-results {
-    margin-top: 1rem;
-    padding: 1rem;
-    border-radius: 4px;
-}
-
-.consistency-success {
-    background: #d4edda;
-    color: #155724;
-    padding: 1rem;
-    border-radius: 4px;
-}
-
-.consistency-success h4 {
-    margin-top: 0;
-    margin-bottom: 0.5rem;
-}
-
-.debug-console-display {
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    background: #f8f9fa;
-    height: 400px;
-    overflow: hidden;
-}
-
-.debug-console-output {
-    height: 100%;
-    overflow-y: auto;
-    padding: 1rem;
-    font-family: 'Courier New', monospace;
-    font-size: 0.9rem;
-}
-
-.debug-message {
-    margin-bottom: 0.5rem;
-    padding: 0.25rem 0;
-    border-bottom: 1px solid #e9ecef;
-}
-
-.debug-message:last-child {
-    border-bottom: none;
-}
-
-.debug-log {
-    color: #495057;
-}
-
-.debug-error {
-    color: #dc3545;
-}
-
-.debug-warn {
-    color: #ffc107;
-}
-
-/* Note Name Consistency Tool styles */
-.bank-selector {
-    display: flex;
-    gap: 1rem;
-    align-items: center;
-    margin-bottom: 1rem;
-    flex-wrap: wrap;
-}
-
-.bank-selector label {
-    font-weight: 500;
-    color: #495057;
-}
-
-.bank-selector select {
-    padding: 0.5rem;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 0.9rem;
-}
-
-.index-stats {
-    display: flex;
-    gap: 1.5rem;
-    margin-bottom: 1rem;
-    padding: 0.75rem;
-    background: #f8f9fa;
-    border-radius: 4px;
-    font-size: 0.9rem;
-}
-
-.index-stats span {
-    color: #6c757d;
-}
-
-.index-search {
-    display: flex;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
-}
-
-.index-search input {
-    flex: 1;
-    padding: 0.5rem;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-}
-
-.index-entries {
-    max-height: 500px;
-    overflow-y: auto;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    padding: 0.5rem;
-}
-
-.index-entry {
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-    padding: 0.75rem;
-    border-bottom: 1px solid #e9ecef;
-    cursor: pointer;
-}
-
-.index-entry:last-child {
-    border-bottom: none;
-}
-
-.index-entry:hover {
     background: #f8f9fa;
 }
 
-.index-entry-content {
-    flex: 1;
-    display: flex;
-    align-items: center;
-    gap: 1rem;
-}
-
-.index-entry-name {
-    font-weight: 500;
-    color: #495057;
-}
-
-.usage-indicator {
-    background: #007bff;
-    color: white;
-    padding: 0.25rem 0.5rem;
-    border-radius: 3px;
-    font-size: 0.85rem;
-}
-
-.index-entry-actions {
-    display: flex;
-    gap: 0.5rem;
-}
-
-.usage-dropdown {
-    position: absolute;
-    background: white;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    max-height: 300px;
-    overflow-y: auto;
-    z-index: 1000;
-    margin-top: 0.5rem;
-    min-width: 300px;
-}
-
-.usage-item {
-    padding: 0.75rem;
-    border-bottom: 1px solid #f0f0f0;
-    cursor: pointer;
-}
-
-.usage-item:last-child {
-    border-bottom: none;
-}
-
-.usage-item:hover {
-    background: #f8f9fa;
-}
-
-.usage-item.unused {
-    color: #dc3545;
-    font-style: italic;
-}
-
-.usage-bank {
-    display: block;
-    font-weight: 600;
-    color: #495057;
-    margin-bottom: 0.25rem;
-}
-
-.usage-patch {
-    display: block;
-    color: #6c757d;
-    margin-bottom: 0.25rem;
-}
-
-.usage-note {
-    display: block;
-    font-size: 0.85rem;
-    color: #868e96;
-}
-
-.usage-text {
-    color: #dc3545;
-    font-style: italic;
-}
-
-.add-entry-form {
-    display: flex;
-    gap: 0.5rem;
-}
-
-.add-entry-form input {
-    flex: 1;
-    padding: 0.5rem;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-}
-
-.btn-small {
-    padding: 0.25rem 0.75rem;
-    font-size: 0.85rem;
-}
-
-.btn-success {
-    background: #28a745;
-    color: white;
-    border: 1px solid #28a745;
-}
-
-.btn-success:hover {
-    background: #218838;
-    border-color: #1e7e34;
-}
-
-.console-controls {
-    display: flex;
-    gap: 0.5rem;
-    margin-top: 0.5rem;
-}
-
-.debug-console-header {
+.my-edits-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 0.5rem;
 }
 
-.debug-console-header h3 {
+.my-edits-header h3 {
     margin: 0;
-}
-
-/* Upload UI Styles */
-.tool-section {
-    margin-bottom: 2rem;
-    padding: 1.5rem;
-    border: 1px solid #ddd;
-    border-radius: 8px;
-    background: #fff;
-}
-
-.tool-section h3 {
-    margin-top: 0;
-    margin-bottom: 1rem;
-    color: #2c3e50;
-    font-size: 1.3rem;
-}
-
-.tool-description {
-    margin-bottom: 1rem;
-    color: #6c757d;
-    line-height: 1.6;
-}
-
-.upload-area {
-    padding: 1rem;
-    border: 2px dashed #ddd;
-    border-radius: 8px;
-    background: #f8f9fa;
-    text-align: center;
-}
-
-.file-upload-list {
-    margin: 1rem 0;
-    padding: 0;
-    text-align: left;
-}
-
-.file-upload-item {
+    color: #495057;
     display: flex;
     align-items: center;
-    justify-content: space-between;
-    padding: 0.75rem;
-    margin-bottom: 0.5rem;
+    gap: 0.5rem;
+}
+
+.my-edits-actions {
+    display: flex;
+    gap: 0.5rem;
+}
+
+.my-edits-stats {
+    margin: 0.75rem 0;
+    padding: 0.5rem;
     background: white;
-    border: 1px solid #ddd;
     border-radius: 4px;
-}
-
-.file-upload-item-name {
-    flex: 1;
-    font-weight: 500;
-    color: #495057;
-}
-
-.file-upload-item-size {
-    color: #6c757d;
-    font-size: 0.85rem;
-    margin: 0 1rem;
-}
-
-.file-upload-item-remove {
-    padding: 0.25rem 0.5rem;
-    background: #dc3545;
-    color: white;
-    border: none;
-    border-radius: 3px;
-    cursor: pointer;
-    font-size: 0.85rem;
-}
-
-.file-upload-item-remove:hover {
-    background: #c82333;
-}
-
-.install-info {
-    padding: 1rem;
-    background: #f8f9fa;
-    border-left: 4px solid #3498db;
-    border-radius: 4px;
-}
-
-.install-info ul {
-    margin: 1rem 0;
-    padding-left: 1.5rem;
-}
-
-.install-info li {
-    margin-bottom: 0.75rem;
-    line-height: 1.6;
-}
-
-.install-info code {
-    background: #e9ecef;
-    padding: 0.2rem 0.4rem;
-    border-radius: 3px;
-    font-family: 'Courier New', monospace;
     font-size: 0.9rem;
-    color: #e83e8c;
-}
-
-.install-note {
-    margin-top: 1rem;
-    padding: 0.75rem;
-    background: #fff3cd;
-    border: 1px solid #ffc107;
-    border-radius: 4px;
-    color: #856404;
-}
-
-.install-note strong {
-    color: #664d03;
-}
-
-/* MIDI SysEx Tool Styles */
-.sysex-input-container {
-    margin-bottom: 1.5rem;
-}
-
-.sysex-input-container label {
-    display: block;
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-    color: #495057;
-}
-
-.sysex-input-wrapper {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-}
-
-.sysex-prefix,
-.sysex-suffix {
-    font-family: 'Courier New', monospace;
-    font-weight: bold;
-    font-size: 1.1rem;
-    color: #28a745;
-    padding: 0.5rem;
-    background: #f8f9fa;
-    border: 1px solid #dee2e6;
-    border-radius: 4px;
-    min-width: 3rem;
+    color: #666;
     text-align: center;
 }
 
-.sysex-input-wrapper input {
-    flex: 1;
-    font-family: 'Courier New', monospace;
-    padding: 0.5rem;
-    border: 1px solid #ced4da;
+.my-edits-list {
+    background: white;
     border-radius: 4px;
-    font-size: 1rem;
-}
-
-.sysex-input-wrapper input:focus {
-    outline: none;
-    border-color: #80bdff;
-    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-}
-
-.sysex-validation-message {
-    margin-top: 0.5rem;
-    font-size: 0.9rem;
-    min-height: 1.5rem;
-}
-
-.sysex-validation-message.error {
-    color: #dc3545;
-}
-
-.sysex-validation-message.success {
-    color: #28a745;
-}
-
-.sysex-manufacturer-selector {
-    margin-bottom: 1.5rem;
-}
-
-.sysex-manufacturer-selector label {
-    display: block;
-    font-weight: 600;
-    margin-bottom: 0.5rem;
-    color: #495057;
-}
-
-.sysex-id-controls {
-    display: flex;
-    gap: 0.5rem;
-    position: relative;
-}
-
-.sysex-id-controls input {
-    flex: 1;
-    padding: 0.5rem;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
-}
-
-.sysex-id-controls input:focus {
-    outline: none;
-    border-color: #80bdff;
-    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
-}
-
-.sysex-manufacturer-dropdown {
-    position: absolute;
-    top: 100%;
-    left: 0;
-    right: 100px; /* Leave space for Insert button */
-    max-height: 300px;
+    min-height: 100px;
+    max-height: 400px;
     overflow-y: auto;
-    background: white;
-    border: 1px solid #ced4da;
-    border-radius: 4px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-    z-index: 1000;
-    margin-top: 0.25rem;
 }
 
-.manufacturer-option {
-    padding: 0.75rem;
-    cursor: pointer;
+.my-edits-empty {
+    padding: 2rem;
+    text-align: center;
+    color: #666;
+}
+
+.my-edits-empty .hint {
+    font-size: 0.9rem;
+    color: #999;
+    margin-top: 0.5rem;
+}
+
+.my-edits-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
     border-bottom: 1px solid #e9ecef;
+    transition: background-color 0.2s;
 }
 
-.manufacturer-option:last-child {
+.my-edits-item:last-child {
     border-bottom: none;
 }
 
-.manufacturer-option:hover {
-    background: #f8f9fa;
+.my-edits-item:hover {
+    background-color: #f8f9fa;
 }
 
-.manufacturer-name {
+.my-edits-item-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.my-edits-item-title {
     font-weight: 600;
     color: #333;
     margin-bottom: 0.25rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-.device-name {
-    font-size: 0.9rem;
-    color: #666;
-    margin-bottom: 0.25rem;
-}
-
-.manufacturer-id {
-    font-family: 'Courier New', monospace;
+.my-edits-item-meta {
     font-size: 0.85rem;
+    color: #666;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.my-edits-item-meta .manufacturer {
     color: #007bff;
 }
 
-.sysex-id-display {
-    margin-top: 0.5rem;
-    padding: 0.5rem;
-    background: #f8f9fa;
-    border-radius: 4px;
-    font-family: 'Courier New', monospace;
-    min-height: 2rem;
-    color: #495057;
+.my-edits-item-meta .separator {
+    color: #ccc;
 }
 
-.sysex-actions {
+.my-edits-item-meta .timestamp {
+    color: #999;
+}
+
+.my-edits-item-actions {
     display: flex;
     gap: 0.5rem;
-    margin-top: 1rem;
+    flex-shrink: 0;
+    margin-left: 1rem;
 }
 
-.sysex-send-btn {
-    cursor: pointer;
-}
-
-.sysex-send-btn:disabled {
-    cursor: not-allowed !important;
-    opacity: 0.6;
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .my-edits-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.75rem;
+    }
+    
+    .my-edits-item-actions {
+        width: 100%;
+        margin-left: 0;
+        justify-content: flex-end;
+    }
+    
+    .my-edits-item-meta {
+        flex-wrap: wrap;
+    }
 }

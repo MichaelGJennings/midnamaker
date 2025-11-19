@@ -1,6 +1,7 @@
 // Patch module
 import { appState } from '../core/state.js';
 import { Utils } from '../core/utils.js';
+import { isHostedVersion } from '../core/hosting.js';
 import { testPatch as testPatchHelper } from '../utils/midiHelpers.js';
 import { modal } from '../components/modal.js';
 import { midiManager } from './midi.js';
@@ -1644,6 +1645,67 @@ export class PatchManager {
                 ? appState.currentMidnam.file_path
                 : 'unknown file';
         
+        // Route to appropriate save method based on environment
+        if (isHostedVersion()) {
+            await this.savePatchHosted(originalName, updatedName, updatedNumber, noteData, filePath);
+        } else {
+            await this.savePatchToServer(originalName, updatedName, updatedNumber, noteData, filePath);
+        }
+    }
+
+    async savePatchHosted(originalName, updatedName, updatedNumber, noteData, filePath) {
+        try {
+            // Update the original name to the new name for future saves
+            if (appState.selectedPatch) {
+                appState.selectedPatch.originalName = updatedName;
+                appState.selectedPatch.name = updatedName;
+                appState.selectedPatch.number = updatedNumber;
+            }
+            
+            // Update the note list in appState.currentMidnam to reflect saved changes
+            const noteListName = appState.selectedPatch.usesNoteList || appState.selectedPatch.note_list_name;
+            if (noteListName && appState.currentMidnam && appState.currentMidnam.note_lists) {
+                const noteList = appState.currentMidnam.note_lists.find(nl => nl.name === noteListName);
+                if (noteList) {
+                    // Update the notes in the cached note list
+                    noteList.notes = noteData.map(note => ({
+                        number: note.number,
+                        name: note.name
+                    }));
+                }
+            }
+            
+            // Update the patch in the cached patch_banks data
+            if (appState.currentMidnam && appState.currentMidnam.patch_banks && appState.selectedPatchBank) {
+                const bank = appState.currentMidnam.patch_banks.find(b => b.name === appState.selectedPatchBank.name);
+                if (bank) {
+                    const patchIndex = bank.patches.findIndex(p => p.name === originalName);
+                    if (patchIndex !== -1) {
+                        bank.patches[patchIndex].name = updatedName;
+                        bank.patches[patchIndex].number = updatedNumber;
+                    }
+                }
+            }
+            
+            // Mark as having changes so global save will work
+            appState.trackChange('patch_edit', { patch: updatedName });
+            
+            // Now save the entire MIDNAM structure to browser storage
+            if (window.deviceManager && window.deviceManager.saveMidnamStructure) {
+                await window.deviceManager.saveMidnamStructure();
+            } else {
+                throw new Error('Device manager not available');
+            }
+            
+            this.logToDebugConsole(`✓ Patch saved successfully to browser storage`, 'success');
+        } catch (error) {
+            console.error('Error saving patch to browser:', error);
+            this.logToDebugConsole(`✗ Failed to save patch: ${error.message}`, 'error');
+            Utils.showNotification(`Save failed: ${error.message}`, 'error');
+        }
+    }
+
+    async savePatchToServer(originalName, updatedName, updatedNumber, noteData, filePath) {
         try {
             const response = await fetch('/api/patch/save', {
                 method: 'POST',
@@ -1738,7 +1800,7 @@ export class PatchManager {
             appState.markAsSaved();
             
             this.logToDebugConsole(`✓ Patch saved successfully to: ${filePath}`, 'success');
-            Utils.showNotification('Patch saved successfully', 'success');
+            Utils.showNotification('Patch saved to file successfully', 'success');
         } catch (error) {
             console.error('Error saving patch:', error);
             

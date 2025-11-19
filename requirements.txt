@@ -1,3 +1,2 @@
-# Core application dependencies
-lxml>=4.9.0
-
+# Python dependencies for Vercel deployment
+lxml==5.3.0

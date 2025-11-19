@@ -1,4 +1,84 @@
 /* Core CSS - Base styles and layout */
+
+/* Hosted Version Banner */
+.hosted-banner {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 12px 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    animation: slideDown 0.3s ease-out;
+}
+
+.hosted-banner-content {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.hosted-banner-icon {
+    font-size: 24px;
+    flex-shrink: 0;
+}
+
+.hosted-banner-text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.hosted-banner-text strong {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.hosted-banner-text span {
+    font-size: 13px;
+    opacity: 0.95;
+}
+
+.hosted-banner-close {
+    background: rgba(255,255,255,0.2);
+    border: none;
+    color: white;
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    cursor: pointer;
+    font-size: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+    flex-shrink: 0;
+}
+
+.hosted-banner-close:hover {
+    background: rgba(255,255,255,0.3);
+}
+
+@keyframes slideDown {
+    from {
+        transform: translateY(-100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+@media (max-width: 768px) {
+    .hosted-banner-text span {
+        display: none;
+    }
+}
+
 * {
     margin: 0;
     padding: 0;
