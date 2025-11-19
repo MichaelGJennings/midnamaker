@@ -26,6 +26,9 @@ def handler(req, res):
             specific_file = query_params.get('file', [None])[0]
             if specific_file:
                 specific_file = unquote(specific_file)
+                # Normalize Vercel paths - remove /var/task/ prefix if present
+                if specific_file.startswith('/var/task/'):
+                    specific_file = specific_file.replace('/var/task/', '')
             
             # Find the device in manufacturers data
             manufacturers_data = get_manufacturers_data()
@@ -36,9 +39,17 @@ def handler(req, res):
                 for manufacturer, devices in manufacturers_data.items():
                     for device in devices:
                         if device['id'] == device_id:
-                            # Check if file path matches
-                            file_path = Path(device['file_path'])
-                            if str(file_path) == specific_file or file_path.name == Path(specific_file).name:
+                            # Normalize both paths for comparison
+                            device_file_path = str(device['file_path'])
+                            # Remove /var/task/ prefix if present in device path
+                            if device_file_path.startswith('/var/task/'):
+                                device_file_path = device_file_path.replace('/var/task/', '')
+                            
+                            # Compare normalized paths or just filenames
+                            if (device_file_path == specific_file or 
+                                Path(device_file_path).name == Path(specific_file).name or
+                                device_file_path.endswith(specific_file) or
+                                specific_file.endswith(device_file_path)):
                                 device_data = device
                                 break
                     if device_data:
@@ -63,6 +74,25 @@ def handler(req, res):
             
             # Read and parse the MIDNAM file
             file_path = Path(device_data['file_path'])
+            
+            # Handle Vercel's file system - try multiple path variations
+            if not file_path.exists():
+                # Try with patchfiles_dir prefix if it's just a filename
+                patchfiles_dir = get_patchfiles_dir()
+                if not str(file_path).startswith(str(patchfiles_dir)):
+                    alt_path = patchfiles_dir / file_path.name
+                    if alt_path.exists():
+                        file_path = alt_path
+            
+            if not file_path.exists():
+                res.status = 500
+                res.headers.update(cors_headers())
+                res.json({
+                    'error': f'File not found: {file_path}',
+                    'device_file_path': device_data['file_path'],
+                    'resolved_path': str(file_path)
+                })
+                return
             
             with open(file_path, 'r', encoding='utf-8') as f:
                 midnam_content = f.read()
@@ -235,4 +265,3 @@ def handler(req, res):
         res.status = 200
         res.headers.update(cors_headers())
         res.send()
-
