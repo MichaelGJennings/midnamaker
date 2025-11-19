@@ -1062,10 +1062,34 @@ export class DeviceManager {
             // Get the current MIDNAM XML - either from raw_xml or generate it
             let midnamXml = appState.currentMidnam?.raw_xml;
             
+            console.log('Download MIDNAM - raw_xml exists:', !!midnamXml);
+            console.log('Download MIDNAM - raw_xml type:', typeof midnamXml);
+            
+            if (!midnamXml) {
+                // Check if device is in browser storage
+                const { isHostedVersion } = await import('../core/hosting.js');
+                if (isHostedVersion() && appState.selectedDevice?.file_path) {
+                    const { browserStorage } = await import('../core/storage.js');
+                    const storedFile = await browserStorage.getMidnam(appState.selectedDevice.file_path);
+                    if (storedFile && storedFile.midnam) {
+                        midnamXml = storedFile.midnam;
+                        console.log('Download MIDNAM - Retrieved from browser storage');
+                    }
+                }
+            }
+            
             if (!midnamXml) {
                 // Generate XML from current state if raw_xml not available
                 midnamXml = this.generateMidnamXmlFromState();
+                console.log('Download MIDNAM - Generated from state');
             }
+            
+            // Ensure it's a string
+            if (typeof midnamXml !== 'string') {
+                throw new Error('MIDNAM XML is not a string');
+            }
+            
+            console.log('Download MIDNAM - XML length:', midnamXml.length);
             
             // Create and download blob
             const blob = new Blob([midnamXml], { type: 'application/xml' });
@@ -1123,9 +1147,35 @@ export class DeviceManager {
             
             // Get MIDNAM XML
             let midnamXml = appState.currentMidnam?.raw_xml;
+            
+            console.log('Download ZIP - raw_xml exists:', !!midnamXml);
+            console.log('Download ZIP - raw_xml type:', typeof midnamXml);
+            
+            if (!midnamXml) {
+                // Check if device is in browser storage
+                const { isHostedVersion } = await import('../core/hosting.js');
+                if (isHostedVersion() && appState.selectedDevice?.file_path) {
+                    const { browserStorage } = await import('../core/storage.js');
+                    const storedFile = await browserStorage.getMidnam(appState.selectedDevice.file_path);
+                    if (storedFile && storedFile.midnam) {
+                        midnamXml = storedFile.midnam;
+                        console.log('Download ZIP - Retrieved MIDNAM from browser storage');
+                    }
+                }
+            }
+            
             if (!midnamXml) {
                 midnamXml = this.generateMidnamXmlFromState();
+                console.log('Download ZIP - Generated MIDNAM from state');
             }
+            
+            // Ensure it's a string
+            if (typeof midnamXml !== 'string') {
+                console.error('Download ZIP - MIDNAM XML type:', typeof midnamXml, midnamXml);
+                throw new Error(`MIDNAM XML is not a string, it's ${typeof midnamXml}`);
+            }
+            
+            console.log('Download ZIP - MIDNAM XML length:', midnamXml.length);
             
             // Generate MIDDEV XML
             const middevXml = `<?xml version='1.0' encoding='utf-8'?>
@@ -1135,6 +1185,8 @@ export class DeviceManager {
     <Device Name="${Utils.escapeXml(appState.currentMidnam?.model || deviceName)}" />
   </Devices>
 </MIDIDevice>`;
+            
+            console.log('Download ZIP - MIDDEV XML length:', middevXml.length);
             
             // Add files to ZIP
             zip.file(midnamFilename, midnamXml);
@@ -1332,6 +1384,22 @@ export class DeviceManager {
 
         this.logToDebugConsole(`Starting validation for: ${filePath}`, 'info');
 
+        // Check if hosted version
+        const { isHostedVersion } = await import('../core/hosting.js');
+        
+        if (isHostedVersion()) {
+            // Client-side validation for hosted version
+            try {
+                await this.validateDeviceClientSide(filePath);
+            } catch (error) {
+                console.error('Error validating file:', error);
+                this.logToDebugConsole(`Validation error: ${error.message}`, 'error');
+                Utils.showNotification('Failed to validate file', 'error');
+            }
+            return;
+        }
+
+        // Server-side validation for local version
         try {
             const response = await fetch('/api/validate', {
                 method: 'POST',
@@ -1374,6 +1442,94 @@ export class DeviceManager {
             console.error('Error validating file:', error);
             this.logToDebugConsole(`Validation error: ${error.message}`, 'error');
             Utils.showNotification('Failed to validate file', 'error');
+        }
+    }
+    
+    async validateDeviceClientSide(filePath) {
+        // Get the XML content
+        let xmlContent = appState.currentMidnam?.raw_xml;
+        
+        if (!xmlContent) {
+            // Try to get from browser storage
+            const { browserStorage } = await import('../core/storage.js');
+            const storedFile = await browserStorage.getMidnam(filePath);
+            if (storedFile && storedFile.midnam) {
+                xmlContent = storedFile.midnam;
+            }
+        }
+        
+        if (!xmlContent) {
+            throw new Error('No XML content available for validation');
+        }
+        
+        this.logToDebugConsole('Performing client-side XML validation...', 'info');
+        
+        // Parse XML using DOMParser
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(xmlContent, 'text/xml');
+        
+        // Check for parse errors
+        const parseError = xmlDoc.querySelector('parsererror');
+        
+        if (parseError) {
+            // Extract error details
+            const errorText = parseError.textContent || parseError.innerText || 'Unknown XML error';
+            const errors = [];
+            
+            // Try to extract line and column info if available
+            const lineMatch = errorText.match(/line (\d+)/i);
+            const colMatch = errorText.match(/column (\d+)/i);
+            
+            errors.push({
+                line: lineMatch ? parseInt(lineMatch[1]) : 'unknown',
+                column: colMatch ? parseInt(colMatch[1]) : 'unknown',
+                message: errorText
+            });
+            
+            this.setValidationState('invalid');
+            this.logToDebugConsole('✗ Validation FAILED', 'error');
+            this.logToDebugConsole(`Found ${errors.length} error(s):`, 'error');
+            
+            errors.forEach((error, index) => {
+                this.logToDebugConsole(
+                    `  Error ${index + 1}: Line ${error.line}, Column ${error.column} - ${error.message}`,
+                    'error'
+                );
+            });
+            
+            Utils.showNotification('Validation failed - see debug console', 'error');
+        } else {
+            // Basic structure validation
+            const warnings = [];
+            
+            // Check for required elements
+            const manufacturer = xmlDoc.querySelector('Manufacturer');
+            const model = xmlDoc.querySelector('Model');
+            const masterDeviceNames = xmlDoc.querySelector('MasterDeviceNames');
+            
+            if (!manufacturer) {
+                warnings.push('Missing <Manufacturer> element');
+            }
+            if (!model) {
+                warnings.push('Missing <Model> element');
+            }
+            if (!masterDeviceNames) {
+                warnings.push('Missing <MasterDeviceNames> element');
+            }
+            
+            if (warnings.length > 0) {
+                this.setValidationState('invalid');
+                this.logToDebugConsole('✗ Validation completed with warnings', 'error');
+                warnings.forEach(warning => {
+                    this.logToDebugConsole(`  Warning: ${warning}`, 'error');
+                });
+                Utils.showNotification('Validation completed with warnings', 'warning');
+            } else {
+                this.setValidationState('validated');
+                this.logToDebugConsole('✓ Validation PASSED', 'success');
+                this.logToDebugConsole('XML is well-formed with required elements', 'success');
+                Utils.showNotification('File validated successfully', 'success');
+            }
         }
     }
 
