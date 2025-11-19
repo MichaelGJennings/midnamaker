@@ -72,6 +72,11 @@ export class Utils {
         return text.replace(/[&<>"']/g, function(m) { return map[m]; });
     }
     
+    static escapeXml(text) {
+        // XML escaping is the same as HTML escaping
+        return this.escapeHtml(text);
+    }
+    
     static generateId() {
         return Math.random().toString(36).substr(2, 9);
     }

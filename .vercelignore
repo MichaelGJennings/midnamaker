@@ -1,0 +1,64 @@
+# Vercel deployment - ignore these files/directories
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# Testing
+tests/
+pytest.ini
+.pytest_cache/
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
+*.app
+
+# Desktop app files
+app.py
+electron-main.js
+package.json
+package-lock.json
+node_modules/
+midnamaker.spec
+launch-midnamaker.command
+generate_icons.py
+
+# Documentation (keep minimal)
+BUILD.md
+DESKTOP_APP_STATUS.md
+README_DESKTOP.md
+
+# Backup files
+*.backup.*
+patchfiles/*.backup.*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Keep these:
+# - patchfiles/ (MIDNAM library)
+# - dtd/ (validation)
+# - js/, css/ (frontend)
+# - index.html, manifest.json (app)
+# - api/ (serverless functions)
+
+

@@ -18,7 +18,7 @@ If you have set your output device to your MIDI device, you can use a few conven
 * Clicking the note number in the Note Editor will play that note on your device. This is super helpful for double-checking that, for example, the drums are what you think they are, or even for auditioning sounds. 
 * Clicking the patch number for each patch will load that patch on your device, changing patch banks if necessary. 
 * You can also issue Bank Select messages to select any of your banks – though frequently devices won't do anything visible on Bank Select until there's a subsequent Program Change.
-* The Tools tab has a little Sysex tool you can use to squirt short SysEx messages at your MIDI device.
+* The Tools tab has a little Sysex tool you can use to squirt short SysEx messages at your MIDI device.  This may not work if your permissions do not enable sysex for this tool.  You can check if it's set up in the JavaScript Console by entering `toolsManager.checkSysExSupport()` and it'll tell you what's up.
 
 For now, these functions are hard-coded for MIDI channel 1.
 
@@ -26,11 +26,13 @@ Save your changes with the button at the top. A backup of the old version of the
 
 
 ### Advanced Tips
-This app has been designed to support efficient keyboard data entry.  For example, when entering a lot of patch names, fields are intelligently auto-filled, a dropdown appears with the items that have been used before, and there are some keyboard controls. The Tab and Enter keys do different things; tab moves from field to field, but Enter either jumps to a likely control to be used or, if focus is already on such a control, it executes its function (i.e. adds a new row and focuses the new name field).
+This app has been designed to support efficient keyboard data entry.  For example, when entering a lot of patch names, fields are intelligently auto-filled, a dropdown appears with the items that have been used before, and there are some keyboard controls. The Tab and Enter keys do different things; tab moves from field to field, but Enter either jumps to a likely control to be used or, if focus is already on such a control, it executes its function (i.e. adds a new row and focuses the new name field).  
 
 The dropdown can make things very fast and consistent if you're reusing names or portions of names. As you type it progresively shortens the list. This is especially useful for drum module note names, for example. The Tools tab contains a "Note Name Consistency Tool" which can be used to control what appears in the note name field dropdown.  You can delete items that you don't want to see in the dropdowns here, but it's important to note that if the item is used somewhere, it will come back the next time you edit that device bank.  To fix that, select the item in the tool and a popup will appear.  If it's unused, you can delete it, otherwise you can jump to the Note Name editor where it's used and fix it there.  This is a good way to ensure consistency if that matters to you.
 
 The Catalog tab just displays what Midnamaker understands about the devices in .middev files and their associated .midnam files, based on what's in the patchlists folder.  You can't really do much, and it's only really there for debugging purposes, but it's kind of interesting so I left it visible.
+
+If you need to fix the MIDI settings for the site to enable all the MIDI features: In Chrome's Security settings is a Site Settings section.  In there is an item *View permissions and data stored across sites*.  Under `localhost` look for `localhost:8000` -- the MIDI permissions are in there.
 
 ## Getting Started
 
