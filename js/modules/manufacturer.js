@@ -615,6 +615,44 @@ export class ManufacturerManager {
             }
         });
 
+        // Parse SupportsStandardDeviceMode
+        const supportsStandardMode = xmlDoc.querySelector('SupportsStandardDeviceMode');
+        if (supportsStandardMode) {
+            deviceData.supportsStandardDeviceMode = true;
+            deviceData.standardDeviceModeName = supportsStandardMode.getAttribute('Name') || 'General MIDI';
+        }
+
+        // Parse ControlNameLists
+        deviceData.control_lists = [];
+        xmlDoc.querySelectorAll('ControlNameList').forEach(controlList => {
+            const name = controlList.getAttribute('Name');
+            if (name) {
+                const controls = [];
+                controlList.querySelectorAll('Control').forEach(control => {
+                    const type = control.getAttribute('Type') || '7bit';
+                    const number = control.getAttribute('Number');
+                    const controlName = control.getAttribute('Name');
+                    if (number && controlName) {
+                        controls.push({
+                            type: type,
+                            number: parseInt(number),
+                            name: controlName
+                        });
+                    }
+                });
+                deviceData.control_lists.push({ name, controls });
+            }
+        });
+
+        // Parse which ControlNameList is active (referenced by ChannelNameSet)
+        const firstChannelNameSet = xmlDoc.querySelector('ChannelNameSet');
+        if (firstChannelNameSet) {
+            const usesControlList = firstChannelNameSet.querySelector('UsesControlNameList');
+            if (usesControlList) {
+                deviceData.activeControlListName = usesControlList.getAttribute('Name');
+            }
+        }
+
         return deviceData;
     }
 
