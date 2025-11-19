@@ -1,11 +1,11 @@
-# Makefile for MIDI Name Editor Testing
+# Makefile for Midnamaker Testing
 # Provides convenient commands for running tests and development tasks
 
 .PHONY: help install test test-unit test-integration test-e2e test-all test-coverage test-fast lint format clean
 
 # Default target
 help:
-	@echo "MIDI Name Editor - Available Commands:"
+	@echo "Midnamaker - Available Commands:"
 	@echo ""
 	@echo "Testing:"
 	@echo "  make test          - Run all tests"

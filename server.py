@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Simple HTTP server for the MIDI Name Editor
+Simple HTTP server for Midnamaker
 Run with: python3 server.py
 Then open: http://localhost:8000/index.html
 """

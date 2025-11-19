@@ -1,4 +1,4 @@
-# MIDI Name Editor Refactoring Summary
+# Midnamaker Refactoring Summary
 
 ## Overview
 The monolithic `midi_name_editor.html` file (7,166 lines) has been successfully refactored into a modular, maintainable structure. The refactoring separates concerns into logical modules while preserving all functionality.

@@ -1,4 +1,4 @@
-# MIDI Name Editor
+# Midnamaker - A MIDI Name Document Editor
 
 Ever tried to use patch changes, controller moves, drum sequences in your MIDI sequencing but all the patch names, note names, controller names etc. are generic?  Midnam files were a standard way of describing a device's particular banks, patches, controllers names and even note names.  In some DAWs (notably Pro Tools and Digital Performer), these files provide automatic access to patch banks and individual patch names within the DAW.  Pro Tools even shows you individual note names in piano roll editors (think drum kits or noteswitches). (Hey MOTU! Add support for this!)
 

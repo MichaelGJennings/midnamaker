@@ -1,6 +1,6 @@
-# Testing Framework for MIDI Name Editor
+# Testing Framework for Midnamaker
 
-This document describes the comprehensive testing framework implemented for the MIDI Name Editor application.
+This document describes the comprehensive testing framework implemented for the Midnamaker application.
 
 ## Overview
 

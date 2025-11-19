@@ -1,16 +1,17 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="MIDI Name Document Editor - Edit and manage MIDI device patch names">
     <meta name="theme-color" content="#2563eb">
-    <title>MIDI Name Editor</title>
-    
+    <title>Midnamaker</title>
+
     <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json">
     <link rel="icon" type="image/svg+xml" href="/icon.svg">
-    
+
     <!-- Core CSS -->
     <link rel="stylesheet" href="css/core.css">
     <link rel="stylesheet" href="css/midi.css">
@@ -20,10 +21,11 @@
     <link rel="stylesheet" href="css/catalog.css">
     <link rel="stylesheet" href="css/tools.css">
 </head>
+
 <body>
     <div class="header" data-testid="sec_header">
         <h1 data-testid="hdr_app_title">Midnamaker: A MIDNAM file editor</h1>
-        
+
         <!-- Global MIDI Controls - Embedded in Header -->
         <div class="global-midi-controls" id="global-midi-controls" data-testid="sec_global_midi_controls">
             <div class="midi-toggle" id="midi-toggle" data-testid="tgl_midi">
@@ -34,7 +36,8 @@
                 <select id="midi-device-select" class="midi-device-select" disabled data-testid="sel_midi_device">
                     <option value="" data-testid="opt_midi_device_placeholder">Select a MIDI Device</option>
                 </select>
-                <div class="midi-device-info" id="midi-device-info" data-testid="div_midi_device_info">Not connected</div>
+                <div class="midi-device-info" id="midi-device-info" data-testid="div_midi_device_info">Not connected
+                </div>
             </div>
         </div>
     </div>
@@ -51,23 +54,30 @@
     <div class="tab-content active" id="manufacturer-tab" data-testid="sec_manufacturer_tab">
         <div class="manufacturer-tab-container" data-testid="sec_manufacturer_container">
             <!-- Collapsible Manufacturer Section -->
-            <div class="manufacturer-section-collapsible" id="manufacturer-section-collapsible" data-testid="sec_manufacturer_collapsible">
-                <div class="manufacturer-section-header" id="manufacturer-section-header" data-testid="hdr_manufacturer_section">
+            <div class="manufacturer-section-collapsible" id="manufacturer-section-collapsible"
+                data-testid="sec_manufacturer_collapsible">
+                <div class="manufacturer-section-header" id="manufacturer-section-header"
+                    data-testid="hdr_manufacturer_section">
                     <h3 data-testid="hdr_manufacturer_title">Select Manufacturer</h3>
                     <div class="manufacturer-header-actions" data-testid="grp_manufacturer_actions">
-                        <button type="button" class="btn btn-small btn-primary" id="add-manufacturer-btn" title="Create new manufacturer file" data-testid="btn_add_manufacturer">+</button>
-                        <button type="button" class="btn-toggle-manufacturer-list" id="toggle-manufacturer-list" style="display: none;" data-testid="btn_toggle_manufacturer_list">
+                        <button type="button" class="btn btn-small btn-primary" id="add-manufacturer-btn"
+                            title="Create new manufacturer file" data-testid="btn_add_manufacturer">+</button>
+                        <button type="button" class="btn-toggle-manufacturer-list" id="toggle-manufacturer-list"
+                            style="display: none;" data-testid="btn_toggle_manufacturer_list">
                             <span class="toggle-icon" data-testid="icn_toggle_manufacturer">▼</span>
                         </button>
                     </div>
                 </div>
-                
-                <div class="manufacturer-section-content" id="manufacturer-section-content" data-testid="sec_manufacturer_content">
+
+                <div class="manufacturer-section-content" id="manufacturer-section-content"
+                    data-testid="sec_manufacturer_content">
                     <!-- Search/Filter Section -->
                     <div class="manufacturer-filter-section" data-testid="sec_manufacturer_filter">
-                        <input type="text" id="manufacturer-filter" class="manufacturer-filter-input" placeholder="Filter manufacturers..." autocomplete="off" data-testid="npt_manufacturer_filter">
+                        <input type="text" id="manufacturer-filter" class="manufacturer-filter-input"
+                            placeholder="Filter manufacturers..." autocomplete="off"
+                            data-testid="npt_manufacturer_filter">
                     </div>
-                    
+
                     <!-- Manufacturer List -->
                     <div class="manufacturer-list-container" data-testid="sec_manufacturer_list_container">
                         <div id="manufacturer-list" class="manufacturer-list" data-testid="lst_manufacturers">
@@ -76,14 +86,17 @@
                     </div>
                 </div>
             </div>
-            
+
             <!-- Device List (shown when manufacturer is selected) -->
-            <div class="device-list-container" id="device-list-container" style="display: none;" data-testid="sec_device_list_container">
+            <div class="device-list-container" id="device-list-container" style="display: none;"
+                data-testid="sec_device_list_container">
                 <div class="device-list-header" data-testid="hdr_device_list">
                     <h3 id="selected-manufacturer-name" data-testid="hdr_selected_manufacturer">Devices</h3>
                     <div class="device-header-actions" data-testid="grp_device_list_actions">
-                        <button type="button" class="btn btn-small btn-primary" id="add-device-btn" title="Add new device to manufacturer" data-testid="btn_add_device">+</button>
-                        <button type="button" class="btn btn-small btn-secondary" id="clear-manufacturer-selection" data-testid="btn_change_manufacturer">Change Manufacturer</button>
+                        <button type="button" class="btn btn-small btn-primary" id="add-device-btn"
+                            title="Add new device to manufacturer" data-testid="btn_add_device">+</button>
+                        <button type="button" class="btn btn-small btn-secondary" id="clear-manufacturer-selection"
+                            data-testid="btn_change_manufacturer">Change Manufacturer</button>
                     </div>
                 </div>
                 <div id="device-list" class="device-list" data-testid="lst_devices">
@@ -99,19 +112,26 @@
             <h2 id="device-title" data-testid="hdr_device_title">Select a Device</h2>
             <div class="device-actions" data-testid="grp_device_actions">
                 <div class="split-button-group" data-testid="grp_save_device_split">
-                    <button type="button" class="btn btn-primary split-button-main" id="save-device-btn" disabled data-testid="btn_save_device">Saved</button>
-                    <button type="button" class="btn btn-primary split-button-dropdown" id="save-device-dropdown-btn" data-testid="btn_save_device_dropdown">▼</button>
-                    <div class="split-button-menu" id="save-device-menu" style="display: none;" data-testid="drp_save_device_menu">
-                        <button type="button" class="menu-item" id="save-device-only" data-testid="btn_save_device_only">Save Changes</button>
-                        <button type="button" class="menu-item" id="save-device-download" data-testid="btn_save_device_download">Download Files</button>
+                    <button type="button" class="btn btn-primary split-button-main" id="save-device-btn" disabled
+                        data-testid="btn_save_device">Saved</button>
+                    <button type="button" class="btn btn-primary split-button-dropdown" id="save-device-dropdown-btn"
+                        data-testid="btn_save_device_dropdown">▼</button>
+                    <div class="split-button-menu" id="save-device-menu" style="display: none;"
+                        data-testid="drp_save_device_menu">
+                        <button type="button" class="menu-item" id="save-device-only"
+                            data-testid="btn_save_device_only">Save Changes</button>
+                        <button type="button" class="menu-item" id="save-device-download"
+                            data-testid="btn_save_device_download">Download Files</button>
                     </div>
                 </div>
-                <button type="button" class="btn btn-secondary" id="validate-device-btn" disabled data-testid="btn_validate_device">Validate</button>
+                <button type="button" class="btn btn-secondary" id="validate-device-btn" disabled
+                    data-testid="btn_validate_device">Validate</button>
             </div>
         </div>
-        
+
         <div class="device-content" id="device-content" data-testid="sec_device_content">
-            <div class="empty-state" data-testid="msg_device_empty">Please select a device from the Manufacturer tab</div>
+            <div class="empty-state" data-testid="msg_device_empty">Please select a device from the Manufacturer tab
+            </div>
         </div>
     </div>
 
@@ -121,16 +141,21 @@
             <h2 id="patch-title" data-testid="hdr_patch_title">Patch Editor</h2>
             <div class="patch-actions" data-testid="grp_patch_actions">
                 <div class="split-button-group" data-testid="grp_save_patch_split">
-                    <button type="button" class="btn btn-primary split-button-main" id="save-patch-btn" disabled data-testid="btn_save_patch">Saved</button>
-                    <button type="button" class="btn btn-primary split-button-dropdown" id="save-patch-dropdown-btn" data-testid="btn_save_patch_dropdown">▼</button>
-                    <div class="split-button-menu" id="save-patch-menu" style="display: none;" data-testid="drp_save_patch_menu">
-                        <button type="button" class="menu-item" id="save-patch-only" data-testid="btn_save_patch_only">Save Changes</button>
-                        <button type="button" class="menu-item" id="save-patch-download" data-testid="btn_save_patch_download">Download Files</button>
+                    <button type="button" class="btn btn-primary split-button-main" id="save-patch-btn" disabled
+                        data-testid="btn_save_patch">Saved</button>
+                    <button type="button" class="btn btn-primary split-button-dropdown" id="save-patch-dropdown-btn"
+                        data-testid="btn_save_patch_dropdown">▼</button>
+                    <div class="split-button-menu" id="save-patch-menu" style="display: none;"
+                        data-testid="drp_save_patch_menu">
+                        <button type="button" class="menu-item" id="save-patch-only"
+                            data-testid="btn_save_patch_only">Save Changes</button>
+                        <button type="button" class="menu-item" id="save-patch-download"
+                            data-testid="btn_save_patch_download">Download Files</button>
                     </div>
                 </div>
             </div>
         </div>
-        
+
         <div class="patch-content" id="patch-content" data-testid="sec_patch_content">
             <div class="empty-state" data-testid="msg_patch_empty">Select a patch from the Device tab to edit</div>
         </div>
@@ -141,11 +166,13 @@
         <div class="catalog-header" data-testid="hdr_catalog">
             <h2 data-testid="hdr_catalog_title">MIDI Name Catalog</h2>
             <div class="catalog-actions" data-testid="grp_catalog_actions">
-                <button type="button" class="btn btn-primary" id="refresh-catalog-btn" data-testid="btn_refresh_catalog">Refresh Catalog</button>
-                <button type="button" class="btn btn-secondary" id="analyze-catalog-btn" data-testid="btn_analyze_catalog">Analyze</button>
+                <button type="button" class="btn btn-primary" id="refresh-catalog-btn"
+                    data-testid="btn_refresh_catalog">Refresh Catalog</button>
+                <button type="button" class="btn btn-secondary" id="analyze-catalog-btn"
+                    data-testid="btn_analyze_catalog">Analyze</button>
             </div>
         </div>
-        
+
         <div class="catalog-content" id="catalog-content" data-testid="sec_catalog_content">
             <div class="loading" id="catalog-loading" data-testid="msg_catalog_loading">Loading catalog...</div>
             <div class="catalog-status" id="catalog-status" data-testid="div_catalog_status"></div>
@@ -156,43 +183,49 @@
     <div class="tab-content" id="tools-tab" data-testid="sec_tools_tab">
         <div class="tools-content" id="tools-content" data-testid="sec_tools_content">
             <!-- My Edits Section (Browser Storage) -->
-            <div class="tool-section my-edits-section" id="my-edits-section" style="display: none;" data-testid="sec_my_edits">
+            <div class="tool-section my-edits-section" id="my-edits-section" style="display: none;"
+                data-testid="sec_my_edits">
                 <div class="my-edits-header" data-testid="hdr_my_edits">
                     <h3 data-testid="hdr_my_edits_title">💾 My Edits</h3>
                     <div class="my-edits-actions" data-testid="grp_my_edits_actions">
-                        <button type="button" class="btn btn-tiny btn-secondary" id="refresh-my-edits-btn" title="Refresh list" data-testid="btn_refresh_my_edits">⟳</button>
-                        <button type="button" class="btn btn-tiny btn-danger" id="clear-my-edits-btn" title="Clear all saved edits" data-testid="btn_clear_my_edits">Clear All</button>
+                        <button type="button" class="btn btn-tiny btn-secondary" id="refresh-my-edits-btn"
+                            title="Refresh list" data-testid="btn_refresh_my_edits">⟳</button>
+                        <button type="button" class="btn btn-tiny btn-danger" id="clear-my-edits-btn"
+                            title="Clear all saved edits" data-testid="btn_clear_my_edits">Clear All</button>
                     </div>
                 </div>
                 <p class="tool-description" data-testid="div_my_edits_description">
                     Files you've saved to browser storage. These persist across sessions but are local to this browser.
                 </p>
                 <div class="my-edits-stats" id="my-edits-stats" data-testid="div_my_edits_stats">
-                    <span id="my-edits-count" data-testid="spn_my_edits_count">0 files saved</span> • 
+                    <span id="my-edits-count" data-testid="spn_my_edits_count">0 files saved</span> •
                     <span id="my-edits-size" data-testid="spn_my_edits_size">0 KB</span>
                 </div>
                 <div class="my-edits-list" id="my-edits-list" data-testid="lst_my_edits">
                     <div class="loading" data-testid="msg_my_edits_loading">Loading saved edits...</div>
                 </div>
             </div>
-            
+
             <!-- File Upload Section -->
             <div class="tool-section" data-testid="sec_tool_upload">
                 <h3 data-testid="hdr_upload_files">Upload Files</h3>
                 <p class="tool-description" data-testid="div_upload_description">
-                    Upload .midnam and .middev files to add them to the catalog. 
-                    This is useful if you're running the app in a hosted environment or want to import files from elsewhere.
+                    Upload .midnam and .middev files to add them to the catalog.
+                    This is useful if you're running the app in a hosted environment or want to import files from
+                    elsewhere.
                 </p>
                 <div class="upload-area" data-testid="sec_upload_area">
-                    <input type="file" id="file-upload-input" accept=".midnam,.middev" multiple style="display: none;" data-testid="npt_file_upload">
+                    <input type="file" id="file-upload-input" accept=".midnam,.middev" multiple style="display: none;"
+                        data-testid="npt_file_upload">
                     <button type="button" class="btn btn-primary" id="file-upload-btn" data-testid="btn_choose_files">
                         <span data-testid="icn_file_upload">📁</span> Choose Files to Upload
                     </button>
                     <div id="file-upload-list" class="file-upload-list" data-testid="lst_upload_files"></div>
-                    <button type="button" class="btn btn-success" id="upload-files-btn" style="display: none;" data-testid="btn_upload_files">Upload Selected Files</button>
+                    <button type="button" class="btn btn-success" id="upload-files-btn" style="display: none;"
+                        data-testid="btn_upload_files">Upload Selected Files</button>
                 </div>
             </div>
-            
+
             <!-- Installation Instructions Section -->
             <div class="tool-section" data-testid="sec_tool_install_instructions">
                 <h3 data-testid="hdr_install_instructions">Installation Instructions</h3>
@@ -203,23 +236,27 @@
                 <div class="install-info" data-testid="sec_install_info">
                     <p data-testid="div_install_locations_intro">Common installation locations:</p>
                     <ul data-testid="lst_install_locations">
-                        <li data-testid="itm_install_macos"><strong>macOS:</strong> <code>~/Library/Audio/MIDI Devices/</code></li>
-                        <li data-testid="itm_install_windows"><strong>Windows:</strong> <code>C:\ProgramData\Avid\Audio\MIDIDevices\</code> or DAW-specific directories</li>
-                        <li data-testid="itm_install_linux"><strong>Linux:</strong> Varies by DAW (check your DAW documentation)</li>
+                        <li data-testid="itm_install_macos"><strong>macOS:</strong>
+                            <code>~/Library/Audio/MIDI Devices/</code></li>
+                        <li data-testid="itm_install_windows"><strong>Windows:</strong>
+                            <code>C:\ProgramData\Avid\Audio\MIDIDevices\</code> or DAW-specific directories</li>
+                        <li data-testid="itm_install_linux"><strong>Linux:</strong> Varies by DAW (check your DAW
+                            documentation)</li>
                     </ul>
                     <p class="install-note" data-testid="div_install_note">
-                        <strong>Note:</strong> For specific installation instructions, please search for 
-                        "<em>[Your DAW Name] MIDNAM installation</em>" online, as the exact process depends on 
+                        <strong>Note:</strong> For specific installation instructions, please search for
+                        "<em>[Your DAW Name] MIDNAM installation</em>" online, as the exact process depends on
                         your specific software and operating system configuration.
                     </p>
                 </div>
             </div>
-            
+
             <!-- Debug Console Section -->
             <div class="tool-section" data-testid="sec_tool_debug">
                 <div class="debug-console-header" data-testid="hdr_debug_console">
                     <h3 data-testid="hdr_debug_title">Debug Console</h3>
-                    <button type="button" class="btn btn-tiny btn-secondary" id="clear-console-btn" data-testid="btn_clear_console">Clear</button>
+                    <button type="button" class="btn btn-tiny btn-secondary" id="clear-console-btn"
+                        data-testid="btn_clear_console">Clear</button>
                 </div>
                 <div class="debug-console" id="debug-console" data-testid="div_debug_console"></div>
             </div>
@@ -231,14 +268,17 @@
         <div class="modal-content" id="modal" data-testid="mdl_generic">
             <div class="modal-header" data-testid="hdr_modal">
                 <h3 id="modal-title" data-testid="hdr_modal_title">Modal Title</h3>
-                <button type="button" class="modal-close" id="modal-close" data-testid="btn_modal_close">&times;</button>
+                <button type="button" class="modal-close" id="modal-close"
+                    data-testid="btn_modal_close">&times;</button>
             </div>
             <div class="modal-body" id="modal-body" data-testid="div_modal_body">
                 Modal content goes here
             </div>
             <div class="modal-footer" id="modal-footer" data-testid="ftr_modal">
-                <button type="button" class="btn btn-secondary" id="modal-cancel" data-testid="btn_modal_cancel">Cancel</button>
-                <button type="button" class="btn btn-primary" id="modal-confirm" data-testid="btn_modal_confirm">Confirm</button>
+                <button type="button" class="btn btn-secondary" id="modal-cancel"
+                    data-testid="btn_modal_cancel">Cancel</button>
+                <button type="button" class="btn btn-primary" id="modal-confirm"
+                    data-testid="btn_modal_confirm">Confirm</button>
             </div>
         </div>
     </div>
@@ -247,17 +287,20 @@
     <div id="keyboard-tooltip" class="keyboard-tooltip" style="display: none;" data-testid="ttp_keyboard"></div>
 
     <!-- Disambiguation Modal -->
-    <div id="disambiguation-modal" class="modal-overlay" style="display: none;" data-testid="mdl_disambiguation_overlay">
+    <div id="disambiguation-modal" class="modal-overlay" style="display: none;"
+        data-testid="mdl_disambiguation_overlay">
         <div class="modal-content" data-testid="mdl_disambiguation">
             <div class="modal-header" data-testid="hdr_disambiguation">
                 <h3 data-testid="hdr_disambiguation_title">Multiple Devices Found</h3>
             </div>
             <div class="modal-body" data-testid="div_disambiguation_body">
-                <p data-testid="div_disambiguation_message">Multiple devices found for this manufacturer. Please select one:</p>
+                <p data-testid="div_disambiguation_message">Multiple devices found for this manufacturer. Please select
+                    one:</p>
                 <div id="disambiguation-list" data-testid="lst_disambiguation"></div>
             </div>
             <div class="modal-footer" data-testid="ftr_disambiguation">
-                <button type="button" class="btn btn-secondary" id="disambiguation-cancel" data-testid="btn_disambiguation_cancel">Cancel</button>
+                <button type="button" class="btn btn-secondary" id="disambiguation-cancel"
+                    data-testid="btn_disambiguation_cancel">Cancel</button>
             </div>
         </div>
     </div>
@@ -267,14 +310,16 @@
         <div class="modal-content" data-testid="mdl_download">
             <div class="modal-header" data-testid="hdr_download">
                 <h3 data-testid="hdr_download_title">Download Files</h3>
-                <button type="button" class="modal-close" id="download-modal-close" data-testid="btn_download_close">&times;</button>
+                <button type="button" class="modal-close" id="download-modal-close"
+                    data-testid="btn_download_close">&times;</button>
             </div>
             <div class="modal-body" id="download-modal-body" data-testid="div_download_body">
                 <p class="download-instructions" data-testid="div_download_instructions">
-                    Click the links below to download your files. After downloading, you'll need to install them in your DAW.
+                    Click the links below to download your files. After downloading, you'll need to install them in your
+                    DAW.
                 </p>
                 <p class="install-note-small" data-testid="div_download_note">
-                    <strong>Note:</strong> Installation locations vary by operating system and DAW. 
+                    <strong>Note:</strong> Installation locations vary by operating system and DAW.
                     See the <strong>Tools</strong> tab for more information about installation.
                 </p>
                 <div id="download-links" class="download-links" data-testid="lst_download_links">
@@ -282,7 +327,8 @@
                 </div>
             </div>
             <div class="modal-footer" data-testid="ftr_download">
-                <button type="button" class="btn btn-secondary" id="download-modal-cancel" data-testid="btn_download_cancel">Close</button>
+                <button type="button" class="btn btn-secondary" id="download-modal-cancel"
+                    data-testid="btn_download_cancel">Close</button>
             </div>
         </div>
     </div>
@@ -297,12 +343,12 @@
     <script type="module" src="js/core/state.js"></script>
     <script type="module" src="js/core/utils.js"></script>
     <script type="module" src="js/core/storage.js"></script>
-    
+
     <!-- Component Modules -->
     <script type="module" src="js/components/tabs.js"></script>
     <script type="module" src="js/components/modal.js"></script>
     <script type="module" src="js/components/keyboard.js"></script>
-    
+
     <!-- Feature Modules -->
     <script type="module" src="js/modules/midi.js"></script>
     <script type="module" src="js/modules/middev.js"></script>
@@ -312,8 +358,9 @@
     <script type="module" src="js/modules/catalog.js"></script>
     <script type="module" src="js/modules/tools.js"></script>
     <script type="module" src="js/modules/myedits.js"></script>
-    
+
     <!-- Application Bootstrap -->
     <script type="module" src="js/main.js"></script>
 </body>
+
 </html>

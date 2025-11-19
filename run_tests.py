@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Test Runner Script for MIDI Name Editor
+Test Runner Script for Midnamaker
 Provides convenient commands for running different types of tests
 """
 
@@ -131,7 +131,7 @@ def format_code():
 
 def main():
     """Main test runner"""
-    parser = argparse.ArgumentParser(description="MIDI Name Editor Test Runner")
+    parser = argparse.ArgumentParser(description="Midnamaker Test Runner")
     parser.add_argument("command", nargs="?", default="all", 
                        choices=["install", "unit", "integration", "e2e", "all", 
                                "coverage", "fast", "lint", "format", "specific"],
@@ -146,7 +146,7 @@ def main():
     project_dir = Path(__file__).parent
     os.chdir(project_dir)
     
-    print("🎵 MIDI Name Editor Test Runner")
+    print("🎵 Midnamaker Test Runner")
     print(f"Working directory: {os.getcwd()}")
     
     success = True
