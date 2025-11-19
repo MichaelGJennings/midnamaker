@@ -994,7 +994,7 @@ export class ToolsManager {
                 
                 // Refresh "My Edits" section if available
                 if (window.myEditsManager) {
-                    window.myEditsManager.refreshMyEdits();
+                    await window.myEditsManager.loadSavedEdits();
                 }
                 
                 // Note: Catalog won't update automatically in hosted mode since files aren't on server
