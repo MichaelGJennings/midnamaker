@@ -3,6 +3,8 @@
  * Detects if running on Vercel/hosted and shows appropriate messages
  */
 
+import { appState } from './state.js';
+
 export function isHostedVersion() {
     // Detect if we're on Vercel or other hosting platform
     const hostname = window.location.hostname;
@@ -12,6 +14,110 @@ export function isHostedVersion() {
         hostname.includes('vercel.com') ||
         (hostname !== 'localhost' && hostname !== '127.0.0.1')
     );
+}
+
+/**
+ * Initialize beforeunload warning to prevent data loss
+ */
+export function initDataLossWarning() {
+    window.addEventListener('beforeunload', (e) => {
+        // Check if hosted version and has user data
+        if (isHostedVersion()) {
+            const hasUnsavedChanges = appState.pendingChanges?.hasUnsavedChanges;
+            const hasUserCreatedDevices = hasUserDataInCatalog();
+            
+            if (hasUnsavedChanges || hasUserCreatedDevices) {
+                e.preventDefault();
+                e.returnValue = ''; // Modern browsers ignore custom messages
+                return ''; // For older browsers
+            }
+        }
+    });
+}
+
+/**
+ * Check if catalog contains user-created devices
+ */
+function hasUserDataInCatalog() {
+    if (!appState.catalog) return false;
+    
+    // Check if any device in catalog is user-created by checking IndexedDB
+    // User-created devices are stored in browser storage
+    return checkBrowserStorageExists();
+}
+
+/**
+ * Check if browser storage has any saved files
+ */
+async function checkBrowserStorageExists() {
+    try {
+        const { browserStorage } = await import('./storage.js');
+        const stats = await browserStorage.getStats();
+        return stats.count > 0;
+    } catch (error) {
+        return false;
+    }
+}
+
+/**
+ * Cache user data to localStorage for recovery
+ */
+export async function cacheUserData() {
+    if (!isHostedVersion()) return;
+    
+    try {
+        const { browserStorage } = await import('./storage.js');
+        const stats = await browserStorage.getStats();
+        
+        const cacheData = {
+            timestamp: Date.now(),
+            fileCount: stats.count,
+            totalSize: stats.totalSize,
+            hasUnsavedChanges: appState.pendingChanges?.hasUnsavedChanges || false
+        };
+        
+        localStorage.setItem('midnamaker_cache', JSON.stringify(cacheData));
+    } catch (error) {
+        console.error('[Hosting] Error caching user data:', error);
+    }
+}
+
+/**
+ * Restore user data from localStorage cache if available
+ */
+export async function restoreUserDataCache() {
+    if (!isHostedVersion()) return null;
+    
+    try {
+        const cachedData = localStorage.getItem('midnamaker_cache');
+        if (!cachedData) return null;
+        
+        const cache = JSON.parse(cachedData);
+        
+        // Check if cache is recent (within last hour)
+        const cacheAge = Date.now() - cache.timestamp;
+        if (cacheAge > 3600000) { // 1 hour
+            localStorage.removeItem('midnamaker_cache');
+            return null;
+        }
+        
+        return cache;
+    } catch (error) {
+        console.error('[Hosting] Error restoring cache:', error);
+        return null;
+    }
+}
+
+/**
+ * Periodically cache user data
+ */
+export function startPeriodicCaching() {
+    if (!isHostedVersion()) return;
+    
+    // Cache every 30 seconds
+    setInterval(() => {
+        cacheUserData();
+    }, 30000);
 }
 
 export function initHostingNotification() {
@@ -38,6 +144,17 @@ export function initHostingNotification() {
     
     // Update save button tooltips for hosted mode
     updateSaveButtonsForHostedMode();
+    
+    // Initialize data loss prevention
+    initDataLossWarning();
+    startPeriodicCaching();
+    
+    // Try to restore cache on load
+    restoreUserDataCache().then(cache => {
+        if (cache && cache.fileCount > 0) {
+            console.log('[Hosting] Found cached user data:', cache);
+        }
+    });
 }
 
 function updateSaveButtonsForHostedMode() {
@@ -76,5 +193,4 @@ export function showHostedModeMessage(action) {
     
     return message;
 }
-
 
