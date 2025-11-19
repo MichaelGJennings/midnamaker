@@ -1300,6 +1300,8 @@ export class DeviceManager {
             }
 
             this.logToDebugConsole(`Saving XML (${midnamXml.length} chars) to browser storage`, 'info');
+            console.log('[Save] Saving to browser storage:', filePath);
+            console.log('[Save] XML preview:', midnamXml.substring(0, 200));
 
             const result = await browserStorage.saveMidnam({
                 file_path: filePath,
@@ -1308,10 +1310,19 @@ export class DeviceManager {
                 model: model
             });
 
+            console.log('[Save] Result:', result);
+
             if (result.success) {
                 // Update raw_xml in appState to reflect what we just saved
                 if (appState.currentMidnam && typeof appState.currentMidnam === 'object') {
                     appState.currentMidnam.raw_xml = midnamXml;
+                }
+                
+                // Update the catalog entry to ensure it has the latest data
+                const deviceId = `${manufacturer}|${model}`;
+                if (appState.catalog[deviceId]) {
+                    appState.catalog[deviceId].fromBrowserStorage = true;
+                    console.log('[Save] Updated catalog entry for:', deviceId);
                 }
                 
                 // Mark as saved globally
@@ -1320,6 +1331,14 @@ export class DeviceManager {
                 const action = result.isUpdate ? 'Updated' : 'Saved';
                 this.logToDebugConsole(`✓ ${action} in browser storage: ${filePath}`, 'success');
                 Utils.showNotification(`${action} to browser storage successfully`, 'success');
+                
+                // Verify the save by reading it back
+                const verification = await browserStorage.getMidnam(filePath);
+                console.log('[Save] Verification - file exists:', !!verification);
+                if (verification) {
+                    console.log('[Save] Verification - XML length:', verification.midnam?.length);
+                    console.log('[Save] Verification - XML preview:', verification.midnam?.substring(0, 200));
+                }
             }
         } catch (error) {
             console.error('Error saving to browser:', error);

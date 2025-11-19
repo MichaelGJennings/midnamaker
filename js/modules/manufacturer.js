@@ -144,6 +144,17 @@ export class ManufacturerManager {
             const { browserStorage } = await import('../core/storage.js');
             const allFiles = await browserStorage.getAllMidnams();
 
+            console.log('[Catalog Merge] Retrieved', allFiles.length, 'files from browser storage');
+            allFiles.forEach((file, idx) => {
+                console.log(`[Catalog Merge] File ${idx + 1}:`, {
+                    manufacturer: file.manufacturer,
+                    model: file.model,
+                    path: file.file_path,
+                    xmlLength: file.midnam?.length,
+                    timestamp: new Date(file.timestamp).toISOString()
+                });
+            });
+
             // Create a copy of the base catalog
             const mergedCatalog = { ...baseCatalog };
 
@@ -158,15 +169,15 @@ export class ManufacturerManager {
                         files: [{ path: file.file_path }],
                         fromBrowserStorage: true // Mark as user-created
                     };
+                    console.log('[Catalog Merge] Added to catalog:', deviceId);
                 }
             });
 
-            console.log('[ManufacturerManager] Merged browser storage:',
-                allFiles.length, 'user files into catalog');
+            console.log('[Catalog Merge] Total devices in merged catalog:', Object.keys(mergedCatalog).length);
 
             return mergedCatalog;
         } catch (error) {
-            console.error('[ManufacturerManager] Error merging browser storage:', error);
+            console.error('[Catalog Merge] Error merging browser storage:', error);
             return baseCatalog;
         }
     }
@@ -383,10 +394,20 @@ export class ManufacturerManager {
 
             // Check if this is a browser storage device
             const catalogEntry = appState.catalog[deviceId];
+            console.log('[Load Device] Loading:', deviceId);
+            console.log('[Load Device] File path:', deviceInfo.file_path);
+            console.log('[Load Device] From browser storage:', !!catalogEntry?.fromBrowserStorage);
+
             if (catalogEntry && catalogEntry.fromBrowserStorage) {
                 // Load from browser storage
                 const { browserStorage } = await import('../core/storage.js');
                 const storedFile = await browserStorage.getMidnam(deviceInfo.file_path);
+
+                console.log('[Load Device] Retrieved from storage:', !!storedFile);
+                if (storedFile) {
+                    console.log('[Load Device] XML length:', storedFile.midnam?.length);
+                    console.log('[Load Device] XML preview:', storedFile.midnam?.substring(0, 200));
+                }
 
                 if (!storedFile) {
                     Utils.showNotification(`Device "${model}" not found in browser storage`, 'warning');
@@ -395,6 +416,7 @@ export class ManufacturerManager {
 
                 // Parse the XML to create deviceData structure
                 deviceData = await this.parseDeviceXML(storedFile.midnam, deviceId, manufacturer, model, deviceInfo.file_path);
+                console.log('[Load Device] Parsed - patch banks:', deviceData.patch_banks?.length);
             } else {
                 // Fetch device details from API for built-in devices
                 const response = await fetch(`/api/device/${encodeURIComponent(deviceId)}?file=${encodeURIComponent(deviceInfo.file_path)}`);
