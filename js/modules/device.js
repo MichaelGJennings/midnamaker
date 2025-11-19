@@ -207,9 +207,9 @@ export class DeviceManager {
         // Download action (no save required)
         const saveDownloadBtn = document.getElementById('save-device-download');
         if (saveDownloadBtn) {
-            saveDownloadBtn.addEventListener('click', () => {
+            saveDownloadBtn.addEventListener('click', async () => {
                 if (dropdownMenu) dropdownMenu.style.display = 'none';
-                this.showDownloadModal();
+                await this.showDownloadModal();
             });
         }
 
@@ -898,8 +898,12 @@ export class DeviceManager {
         // Check if hosted version
         const { isHostedVersion } = await import('../core/hosting.js');
         const isHosted = isHostedVersion();
+        
+        console.log('Download Modal - Is Hosted:', isHosted);
+        console.log('Download Modal - Hostname:', window.location.hostname);
 
         if (isHosted) {
+            console.log('Download Modal - Using client-side downloads');
             // For hosted version, create client-side downloads
             // MIDNAM file link
             linksContainer.appendChild(this.createClientDownloadLinkItem(
