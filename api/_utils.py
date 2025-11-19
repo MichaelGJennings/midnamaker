@@ -75,6 +75,32 @@ def get_manufacturers_data():
     
     return result
 
+def get_catalog_data():
+    """Build catalog in the format expected by the frontend"""
+    patchfiles_dir = get_patchfiles_dir()
+    catalog = {}
+    
+    # Scan for .midnam files
+    for midnam_file in patchfiles_dir.glob('*.midnam'):
+        devices = extract_device_info(midnam_file)
+        
+        for device in devices:
+            device_key = device['id']  # Already in "Manufacturer|Model" format
+            
+            if device_key not in catalog:
+                catalog[device_key] = {
+                    'manufacturer': device['manufacturer'],
+                    'model': device['model'],
+                    'type': 'Synth',  # Default type
+                    'files': []
+                }
+            
+            catalog[device_key]['files'].append({
+                'path': device['file_path']
+            })
+    
+    return catalog
+
 def cors_headers():
     """Standard CORS headers for API responses"""
     return {

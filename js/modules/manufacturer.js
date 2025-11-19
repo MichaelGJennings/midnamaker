@@ -84,8 +84,13 @@ export class ManufacturerManager {
         if (!container) return;
         
         try {
-            // Load catalog to get manufacturer data (add cache-busting parameter)
-            const response = await fetch(`/midnam_catalog?t=${Date.now()}`);
+            // Load catalog to get manufacturer data
+            // Try /api/midnam_catalog first (Vercel), fall back to /midnam_catalog (local)
+            let response = await fetch(`/api/midnam_catalog?t=${Date.now()}`);
+            if (!response.ok && response.status === 404) {
+                // Fall back to local endpoint
+                response = await fetch(`/midnam_catalog?t=${Date.now()}`);
+            }
             if (!response.ok) throw new Error('Failed to load catalog');
             
             const catalog = await response.json();

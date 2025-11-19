@@ -6,6 +6,30 @@ info:
     
     MIDNAMaker is an editor for creating and managing MIDI device definitions that follow
     the MIDI Manufacturers Association's MIDI Name Document specification.
+    
+    ## Deployment Modes
+    
+    MIDNAMaker supports two deployment modes:
+    
+    **Local Server** (full functionality):
+    - File save operations to disk
+    - Full read/write access to MIDNAM files
+    - Cache management
+    - File uploads
+    
+    **Vercel Hosted** (read-only serverless):
+    - Browse 470+ MIDNAM files
+    - Edit and download files
+    - Browser-based storage (IndexedDB) for temporary saves
+    - No server-side file modifications
+    
+    ## Browser Storage (Hosted Mode)
+    
+    When deployed on Vercel, the application uses browser-based IndexedDB storage to save edits locally:
+    - Saves persist across browser sessions
+    - Stored per-domain (not synced across devices)
+    - Users can load, download, or delete saved edits
+    - "My Edits" section in Tools tab manages browser-saved files
   version: 1.0.0
   contact:
     name: MIDNAMaker
@@ -15,6 +39,8 @@ info:
 servers:
   - url: http://localhost:8000
     description: Local development server
+  - url: https://your-project.vercel.app
+    description: Vercel hosted deployment (read-only)
 
 tags:
   - name: Manufacturers
@@ -80,8 +106,12 @@ paths:
     get:
       tags:
         - Manufacturers
-      summary: Get MIDNAM file catalog
-      description: Returns a cached catalog of all .midnam files with device information
+      summary: Get MIDNAM file catalog (local)
+      description: |
+        Returns a catalog of all .midnam files with device information.
+        Local server endpoint that returns cached catalog keyed by "Manufacturer|Model".
+        
+        **Note**: When deployed on Vercel, use `/api/midnam_catalog` instead.
       operationId: getMidnamCatalog
       responses:
         '200':
@@ -90,29 +120,69 @@ paths:
             application/json:
               schema:
                 type: object
-                properties:
-                  manufacturers:
-                    type: object
-                    additionalProperties:
-                      type: array
-                      items:
-                        $ref: '#/components/schemas/Device'
+                additionalProperties:
+                  $ref: '#/components/schemas/CatalogDevice'
+              example:
+                "Ensoniq|TS-10":
+                  manufacturer: "Ensoniq"
+                  model: "TS-10"
+                  type: "Synth"
+                  files:
+                    - path: "patchfiles/Ensoniq_TS_10_12.midnam"
+
+  /api/midnam_catalog:
+    get:
+      tags:
+        - Manufacturers
+      summary: Get MIDNAM file catalog (Vercel)
+      description: |
+        Returns a catalog of all .midnam files with device information.
+        Serverless function endpoint for hosted deployments (Vercel).
+        Returns the same format as `/midnam_catalog`.
+      operationId: getMidnamCatalogApi
+      responses:
+        '200':
+          description: Successful response with catalog data
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties:
+                  $ref: '#/components/schemas/CatalogDevice'
+              example:
+                "Ensoniq|TS-10":
+                  manufacturer: "Ensoniq"
+                  model: "TS-10"
+                  type: "Synth"
+                  files:
+                    - path: "patchfiles/Ensoniq_TS_10_12.midnam"
 
   /api/device/{deviceId}:
     get:
       tags:
         - Devices
       summary: Get device details
-      description: Returns detailed information about a specific device including all patches, banks, and configurations
+      description: |
+        Returns detailed information about a specific device including all patches, banks, and configurations.
+        
+        **Available in both local and Vercel deployments.**
+        
+        The endpoint parses the MIDNAM file and extracts:
+        - Device metadata (manufacturer, model, author)
+        - Raw XML content
+        - Note name lists
+        - Patch banks with patches
+        - Channel name sets
+        - Custom device modes
       operationId: getDeviceDetails
       parameters:
         - name: deviceId
           in: path
           required: true
-          description: Device identifier in format "Manufacturer|Model"
+          description: Device identifier in format "Manufacturer|Model" (URL encoded)
           schema:
             type: string
-          example: "Ensoniq|TS-10"
+          example: "Ensoniq%7CTS-10"
         - name: file
           in: query
           required: false
@@ -130,10 +200,23 @@ paths:
         '404':
           description: Device not found
           content:
-            text/plain:
+            application/json:
               schema:
-                type: string
-              example: "Device not found: Ensoniq|TS-10"
+                type: object
+                properties:
+                  error:
+                    type: string
+              example:
+                error: "Device not found: Ensoniq|TS-10"
+        '500':
+          description: Server error
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
 
   /analyze_file/{filePath}:
     get:
@@ -291,7 +374,11 @@ paths:
       tags:
         - MIDNAM Files
       summary: Save patch changes
-      description: Saves changes to individual patches within a MIDNAM file
+      description: |
+        Saves changes to individual patches within a MIDNAM file.
+        
+        **⚠️ Local server only** - Not available in Vercel deployment.
+        When hosted, the frontend uses browser-based IndexedDB storage instead.
       operationId: savePatch
       requestBody:
         required: true
@@ -346,6 +433,9 @@ paths:
         - ControlNameLists
         
         Creates an automatic timestamped backup before saving.
+        
+        **⚠️ Local server only** - Not available in Vercel deployment.
+        When hosted, the frontend uses browser-based IndexedDB storage instead.
       operationId: saveMidnamStructure
       requestBody:
         required: true
@@ -710,47 +800,92 @@ components:
           enum: [midnam, middev]
           description: Source file type
 
-    DeviceDetails:
+    CatalogDevice:
       type: object
+      description: Device entry in catalog keyed by "Manufacturer|Model"
       properties:
-        id:
+        manufacturer:
           type: string
-          description: Device identifier
-        name:
+          description: Manufacturer name
+          example: "Ensoniq"
+        model:
           type: string
           description: Device model name
+          example: "TS-10"
         type:
           type: string
           description: Device type
+          example: "Synth"
+        files:
+          type: array
+          description: List of files containing this device
+          items:
+            type: object
+            properties:
+              path:
+                type: string
+                description: Path to the MIDNAM file
+                example: "patchfiles/Ensoniq_TS_10_12.midnam"
+
+    DeviceDetails:
+      type: object
+      description: Complete device information including parsed MIDNAM data
+      properties:
+        id:
+          type: string
+          description: Device identifier in format "Manufacturer|Model"
+          example: "Ensoniq|TS-10"
+        Manufacturer:
+          type: string
+          description: Manufacturer name
+          example: "Ensoniq"
+        Model:
+          type: string
+          description: Device model name
+          example: "TS-10"
+        Author:
+          type: string
+          description: Author of the MIDNAM file
+          example: "John Doe"
         file_path:
           type: string
           description: Path to the device file
-        manufacturer_id:
-          type: string
-          description: MIDI manufacturer ID
-        family_id:
-          type: string
-        device_id:
-          type: string
-        midnam_content:
-          type: string
-          description: Complete XML content of the MIDNAM file
+          example: "patchfiles/Ensoniq_TS_10_12.midnam"
         raw_xml:
           type: string
-          description: Raw XML content (alias of midnam_content)
-        custom_device_modes:
+          description: Complete XML content of the MIDNAM file
+        note_lists:
           type: array
+          description: Note name lists defined in the device
           items:
-            $ref: '#/components/schemas/CustomDeviceMode'
-        channel_name_sets:
-          type: array
-          items:
-            $ref: '#/components/schemas/ChannelNameSet'
+            type: object
+            properties:
+              name:
+                type: string
+              notes:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    number:
+                      type: integer
+                    name:
+                      type: string
         patch_banks:
           type: array
-          description: Flat list of all patch banks (for backward compatibility)
+          description: Patch banks defined in the device
           items:
             $ref: '#/components/schemas/PatchBank'
+        channel_name_sets:
+          type: array
+          description: Channel name sets defining available channels
+          items:
+            $ref: '#/components/schemas/ChannelNameSet'
+        custom_device_modes:
+          type: array
+          description: Custom device modes with channel assignments
+          items:
+            $ref: '#/components/schemas/CustomDeviceMode'
 
     CustomDeviceMode:
       type: object
@@ -758,37 +893,48 @@ components:
         name:
           type: string
           example: "Mode 2"
-        channel_assignments:
+        channel_name_set_assigns:
           type: array
+          description: Channel to name set assignments
           items:
             type: object
             properties:
               channel:
-                type: string
+                type: integer
+                description: MIDI channel number
+                example: 1
               name_set:
                 type: string
+                description: Name of the ChannelNameSet
+                example: "Name Set 1"
 
     ChannelNameSet:
       type: object
       properties:
         name:
           type: string
+          description: Name of the channel name set
           example: "Name Set 1"
         available_channels:
           type: array
+          description: List of available MIDI channels
           items:
             type: object
             properties:
               channel:
-                type: string
-                example: "1"
+                type: integer
+                description: MIDI channel number (1-16)
+                example: 1
               available:
                 type: boolean
+                description: Whether this channel is available
                 example: true
         patch_banks:
           type: array
+          description: Patch banks associated with this channel name set (references by name)
           items:
-            $ref: '#/components/schemas/PatchBank'
+            type: string
+          example: ["Sounds U0", "Sounds U1"]
 
     PatchBank:
       type: object
@@ -905,4 +1051,17 @@ components:
                     name:
                       type: string
 
-
+externalDocs:
+  description: |
+    Additional documentation for MIDNAMaker features and deployment:
+    
+    - Browser Storage Implementation (docs/BROWSER_STORAGE_IMPLEMENTATION.md) - Details on IndexedDB storage used in Vercel deployments
+    - MIDNAM Reload API (docs/RELOAD_API_SUMMARY.md) - Details on the /api/midnam/reload endpoint
+    - Vercel Deployment (VERCEL_DEPLOYMENT.md and README_VERCEL.md) - Deployment instructions
+    - Testing Documentation (docs/TESTING.md) - API testing examples
+    
+    Browser Storage (Client-Side):
+    When deployed on Vercel, MIDNAMaker uses browser IndexedDB for temporary saves.
+    The storage module (js/core/storage.js) provides methods to save, load, and manage MIDNAM files locally.
+    The "My Edits" section in the Tools tab provides UI for managing browser-saved files.
+  url: https://github.com/yourusername/midnamaker/tree/main/docs
