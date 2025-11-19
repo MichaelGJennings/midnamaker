@@ -126,9 +126,9 @@ export class PatchManager {
         // Download action (no save required)
         const saveDownloadBtn = document.getElementById('save-patch-download');
         if (saveDownloadBtn) {
-            saveDownloadBtn.addEventListener('click', () => {
+            saveDownloadBtn.addEventListener('click', async () => {
                 if (dropdownMenu) dropdownMenu.style.display = 'none';
-                this.showDownloadModal();
+                await this.showDownloadModal();
             });
         }
         
@@ -1843,81 +1843,13 @@ export class PatchManager {
         }
     }
     
-    showDownloadModal() {
-        if (!appState.selectedDevice) {
-            Utils.showNotification('No device selected', 'warning');
-            return;
+    async showDownloadModal() {
+        // Delegate to device manager's download modal which handles both local and hosted
+        if (window.deviceManager && window.deviceManager.showDownloadModal) {
+            await window.deviceManager.showDownloadModal();
+        } else {
+            Utils.showNotification('Download functionality not available', 'error');
         }
-        
-        const modal = document.getElementById('download-modal');
-        const linksContainer = document.getElementById('download-links');
-        
-        if (!modal || !linksContainer) return;
-        
-        // Clear previous links
-        linksContainer.innerHTML = '';
-        
-        const deviceId = appState.selectedDevice.id;
-        const filePath = appState.selectedDevice.file_path;
-        const manufacturer = deviceId.split('|')[0];
-        const deviceName = deviceId.split('|')[1] || 'Unknown Device';
-        
-        // Debug logging
-        console.log('Download Modal - Device ID:', deviceId);
-        console.log('Download Modal - File Path:', filePath);
-        console.log('Download Modal - Manufacturer:', manufacturer);
-        console.log('Download Modal - Device Name:', deviceName);
-        
-        // Validate file path
-        if (!filePath) {
-            Utils.showNotification('Error: No file path available for this device', 'error');
-            console.error('Missing file_path in selectedDevice:', appState.selectedDevice);
-            return;
-        }
-        
-        // Create download links
-        const midnamFilename = filePath.split('/').pop();
-        const middevFilename = `${manufacturer.replace(' ', '_')}.middev`;
-        
-        console.log('Download Modal - MIDNAM filename:', midnamFilename);
-        console.log('Download Modal - MIDDEV filename:', middevFilename);
-        
-        // MIDNAM file link
-        const midnamUrl = `/api/download/midnam/${encodeURIComponent(deviceId)}?file=${encodeURIComponent(filePath)}`;
-        linksContainer.appendChild(this.createDownloadLinkItem(
-            midnamFilename,
-            'Device patch names and note mappings',
-            midnamUrl
-        ));
-        
-        // MIDDEV file link
-        const middevUrl = `/api/download/middev/${encodeURIComponent(manufacturer)}`;
-        linksContainer.appendChild(this.createDownloadLinkItem(
-            middevFilename,
-            'Device metadata and MIDI capabilities',
-            middevUrl
-        ));
-        
-        // Separator
-        const separator = document.createElement('div');
-        separator.className = 'download-separator';
-        separator.textContent = '— or download both in one file —';
-        separator.setAttribute('data-testid', 'div_download_separator');
-        linksContainer.appendChild(separator);
-        
-        // ZIP file link
-        const zipUrl = `/api/download/zip/${encodeURIComponent(deviceId)}?file=${encodeURIComponent(filePath)}`;
-        const zipFilename = `${manufacturer.replace(' ', '_')}_${deviceName.replace(' ', '_')}.zip`;
-        const zipItem = this.createDownloadLinkItem(
-            zipFilename,
-            'Both files in a single archive',
-            zipUrl
-        );
-        zipItem.classList.add('download-zip-item');
-        linksContainer.appendChild(zipItem);
-        
-        // Show modal
-        modal.style.display = 'block';
     }
     
     createDownloadLinkItem(filename, description, url) {
