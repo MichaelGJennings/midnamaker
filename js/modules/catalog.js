@@ -55,7 +55,11 @@ export class CatalogManager {
         try {
             this.isLoading = true;
             
-            const response = await fetch('/midnam_catalog');
+            // Try Vercel API endpoint first, fallback to local server endpoint
+            let response = await fetch('/api/midnam_catalog');
+            if (!response.ok && response.status === 404) {
+                response = await fetch('/midnam_catalog');
+            }
             if (!response.ok) throw new Error('Failed to fetch catalog');
             
             const data = await response.json();
