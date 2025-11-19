@@ -1362,6 +1362,7 @@ export class DeviceManager {
         const channelNameSets = midnam.channelNameSets || midnam.channel_name_sets || [];
         const customDeviceModes = midnam.customDeviceModes || midnam.custom_device_modes || [];
         const noteLists = midnam.noteNameLists || midnam.note_lists || [];
+        const controlLists = midnam.controlNameLists || midnam.control_lists || [];
 
         console.log('[Serialize] Input structure:', {
             hasManufacturer: !!midnam.Manufacturer,
@@ -1370,6 +1371,8 @@ export class DeviceManager {
             channelNameSetCount: channelNameSets.length,
             customDeviceModeCount: customDeviceModes.length,
             noteListCount: noteLists.length,
+            controlListCount: controlLists.length,
+            activeControlList: midnam.activeControlListName,
             usingPatchList: !!midnam.patchList,
             usingPatchBanks: !!midnam.patch_banks
         });
@@ -1392,6 +1395,12 @@ export class DeviceManager {
                 hasMidiCommands: !!(bank.midi_commands && bank.midi_commands.length > 0)
             });
         });
+
+        // Add SupportsStandardDeviceMode if enabled
+        if (midnam.supportsStandardDeviceMode && midnam.standardDeviceModeName) {
+            xml += `    <SupportsStandardDeviceMode Name="${Utils.escapeXml(midnam.standardDeviceModeName)}" />\n`;
+            console.log('[Serialize] Added StandardDeviceMode:', midnam.standardDeviceModeName);
+        }
 
         // Add CustomDeviceModes
         if (customDeviceModes.length > 0) {
@@ -1417,6 +1426,12 @@ export class DeviceManager {
                     xml += `        <AvailableChannel Channel="${ac.channel}" Available="${ac.available ? 'true' : 'false'}" />\n`;
                 });
                 xml += '      </AvailableForChannels>\n';
+
+                // Add UsesControlNameList if there's an active control list
+                const activeControlList = midnam.activeControlListName;
+                if (activeControlList && controlLists.length > 0) {
+                    xml += `      <UsesControlNameList Name="${Utils.escapeXml(activeControlList)}" />\n`;
+                }
 
                 // Reference PatchBanks - need to list the bank names that belong to this ChannelNameSet
                 // Find all patchLists that reference this ChannelNameSet
@@ -1481,6 +1496,22 @@ export class DeviceManager {
                     xml += `      <Note Number="${note.number}" Name="${Utils.escapeXml(note.name)}" />\n`;
                 });
                 xml += '    </NoteNameList>\n';
+            });
+        }
+
+        // Add ControlNameLists
+        if (controlLists.length > 0) {
+            console.log('[Serialize] Processing control lists:', controlLists.length);
+            controlLists.forEach(controlList => {
+                xml += `    <ControlNameList Name="${Utils.escapeXml(controlList.name)}">\n`;
+                const controls = controlList.controls || [];
+                controls.forEach(control => {
+                    const controlType = control.type || control.Type || '7bit';
+                    const controlNumber = control.number || control.Number;
+                    const controlName = control.name || control.Name || 'Unnamed Control';
+                    xml += `      <Control Type="${Utils.escapeXml(controlType)}" Number="${controlNumber}" Name="${Utils.escapeXml(controlName)}" />\n`;
+                });
+                xml += '    </ControlNameList>\n';
             });
         }
 
