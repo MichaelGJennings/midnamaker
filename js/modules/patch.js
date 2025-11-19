@@ -1688,7 +1688,7 @@ export class PatchManager {
             }
             
             // Mark as having changes so global save will work
-            appState.trackChange('patch_edit', { patch: updatedName });
+            appState.markAsChanged();
             
             // Now save the entire MIDNAM structure to browser storage
             if (window.deviceManager && window.deviceManager.saveMidnamStructure) {
