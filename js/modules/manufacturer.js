@@ -535,7 +535,25 @@ export class ManufacturerManager {
                     patches.push(patchData);
                 });
 
-                const bankObj = { name: bankName, patches, midi_commands: [] };
+                // Parse MIDI Commands for this bank
+                const midi_commands = [];
+                const midiCommandsElem = patchBank.querySelector('MIDICommands');
+                if (midiCommandsElem) {
+                    // Get all child elements (ControlChange, ProgramChange, etc.)
+                    Array.from(midiCommandsElem.children).forEach(cmd => {
+                        const cmdType = cmd.tagName;
+                        const cmdData = { type: cmdType };
+
+                        // Extract all attributes
+                        Array.from(cmd.attributes).forEach(attr => {
+                            cmdData[attr.name.toLowerCase()] = attr.value;
+                        });
+
+                        midi_commands.push(cmdData);
+                    });
+                }
+
+                const bankObj = { name: bankName, patches, midi_commands };
                 patchBanksByName[bankName] = bankObj;
                 deviceData.patch_banks.push(bankObj);
             }
