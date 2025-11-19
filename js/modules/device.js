@@ -19,6 +19,153 @@ export class DeviceManager {
 
     init() {
         this.setupEventListeners();
+        this.setupRenameListener();
+    }
+    
+    setupRenameListener() {
+        // Use event delegation for dynamically added rename button
+        document.addEventListener('click', async (e) => {
+            if (e.target && (e.target.id === 'btn-edit-model' || e.target.closest('#btn-edit-model'))) {
+                await this.promptRenameDevice();
+            }
+        });
+    }
+    
+    async promptRenameDevice() {
+        if (!appState.selectedDevice || !appState.currentMidnam) {
+            Utils.showNotification('No device selected', 'warning');
+            return;
+        }
+        
+        const currentModel = appState.currentMidnam.model;
+        const manufacturer = appState.currentMidnam.manufacturer;
+        const oldDeviceId = `${manufacturer}|${currentModel}`;
+        
+        const newModel = prompt(`Rename device "${currentModel}" to:`, currentModel);
+        
+        if (!newModel || newModel === currentModel) {
+            return; // User cancelled or no change
+        }
+        
+        if (!newModel.trim()) {
+            Utils.showNotification('Device name cannot be empty', 'warning');
+            return;
+        }
+        
+        try {
+            await this.renameDevice(manufacturer, currentModel, newModel.trim());
+            Utils.showNotification(`Device renamed to "${newModel.trim()}"`, 'success');
+        } catch (error) {
+            console.error('Error renaming device:', error);
+            Utils.showNotification(`Failed to rename device: ${error.message}`, 'error');
+        }
+    }
+    
+    async renameDevice(manufacturer, oldModel, newModel) {
+        const oldDeviceId = `${manufacturer}|${oldModel}`;
+        const newDeviceId = `${manufacturer}|${newModel}`;
+        
+        // Check if hosted version
+        const { isHostedVersion } = await import('../core/hosting.js');
+        
+        if (isHostedVersion()) {
+            // Update browser storage
+            const { browserStorage } = await import('../core/storage.js');
+            
+            // Get the existing file
+            const oldFilePath = appState.selectedDevice.file_path;
+            const storedFile = await browserStorage.getMidnam(oldFilePath);
+            
+            if (!storedFile) {
+                throw new Error('Device file not found in browser storage');
+            }
+            
+            // Parse and update the XML
+            const parser = new DOMParser();
+            const xmlDoc = parser.parseFromString(storedFile.midnam, 'text/xml');
+            
+            const modelElem = xmlDoc.querySelector('Model');
+            if (modelElem) {
+                modelElem.textContent = newModel;
+            }
+            
+            // Serialize back to XML
+            const updatedXml = new XMLSerializer().serializeToString(xmlDoc);
+            
+            // Create new file path
+            const newFilePath = oldFilePath.replace(oldModel, newModel);
+            
+            // Delete old entry
+            await browserStorage.deleteMidnam(oldFilePath);
+            
+            // Save with new name
+            await browserStorage.saveMidnam({
+                file_path: newFilePath,
+                midnam: updatedXml,
+                manufacturer: manufacturer,
+                model: newModel
+            });
+            
+            // Update catalog
+            if (appState.catalog[oldDeviceId]) {
+                delete appState.catalog[oldDeviceId];
+            }
+            
+            appState.catalog[newDeviceId] = {
+                manufacturer: manufacturer,
+                model: newModel,
+                type: 'Synth',
+                files: [{ path: newFilePath }],
+                fromBrowserStorage: true
+            };
+            
+            // Update appState
+            appState.selectedDevice.id = newDeviceId;
+            appState.selectedDevice.name = newModel;
+            appState.selectedDevice.file_path = newFilePath;
+            appState.currentMidnam.model = newModel;
+            
+            // Refresh manufacturer list to show new name
+            if (window.manufacturerManager) {
+                await window.manufacturerManager.refreshManufacturerListDynamic();
+            }
+            
+        } else {
+            // Local version - call API to rename
+            const response = await fetch('/api/middev/rename-device', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    manufacturer: manufacturer,
+                    old_model: oldModel,
+                    new_model: newModel,
+                    file_path: appState.selectedDevice.file_path
+                })
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to rename device');
+            }
+            
+            const result = await response.json();
+            
+            // Update appState with new values
+            appState.selectedDevice.id = newDeviceId;
+            appState.selectedDevice.name = newModel;
+            appState.selectedDevice.file_path = result.new_file_path || appState.selectedDevice.file_path;
+            appState.currentMidnam.model = newModel;
+            
+            // Refresh manufacturer list
+            if (window.manufacturerManager) {
+                await window.manufacturerManager.renderManufacturerList();
+            }
+        }
+        
+        // Re-render the device to show new name
+        this.renderDeviceConfiguration();
     }
 
     setupEventListeners() {
@@ -211,7 +358,11 @@ export class DeviceManager {
                     </div>
                     <div class="info-item" data-testid="sec_model_info">
                         <div class="info-label" data-testid="lbl_model">Model</div>
-                        <div class="info-value" data-testid="div_model_value">${Utils.escapeHtml(midnam.model || 'Unknown')}</div>
+                        <div class="info-value-with-action">
+                            <div class="info-value" data-testid="div_model_value">${Utils.escapeHtml(midnam.model || 'Unknown')}</div>
+                            <button type="button" class="btn-icon btn-edit-model" id="btn-edit-model" 
+                                title="Rename device" data-testid="btn_edit_model">✏️</button>
+                        </div>
                     </div>
                     <div class="info-item" data-testid="sec_version_info">
                         <div class="info-label" data-testid="lbl_version">Version</div>
