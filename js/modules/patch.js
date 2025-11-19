@@ -1209,7 +1209,27 @@ export class PatchManager {
             appState.selectedPatch.note_list_name = noteListName;
         }
 
+        // Initialize note_lists array if it doesn't exist
+        if (!appState.currentMidnam.note_lists) {
+            appState.currentMidnam.note_lists = [];
+        }
+        if (!appState.currentMidnam.noteNameLists) {
+            appState.currentMidnam.noteNameLists = [];
+        }
+
+        // Create the note list data structure (initially empty)
+        const newNoteList = {
+            name: noteListName,
+            notes: []
+        };
+
+        // Add to both possible property names (API format and edit format)
+        appState.currentMidnam.note_lists.push(newNoteList);
+        appState.currentMidnam.noteNameLists.push(newNoteList);
+
         // Log the creation
+        console.log('[Note List] Created new note list:', noteListName);
+        console.log('[Note List] Total note lists:', appState.currentMidnam.note_lists.length);
         this.logToDebugConsole(`Created new note list: "${noteListName}"`, 'info');
         this.markPatchChanged();
     }
@@ -1664,14 +1684,53 @@ export class PatchManager {
 
             // Update the note list in appState.currentMidnam to reflect saved changes
             const noteListName = appState.selectedPatch.usesNoteList || appState.selectedPatch.note_list_name;
-            if (noteListName && appState.currentMidnam && appState.currentMidnam.note_lists) {
-                const noteList = appState.currentMidnam.note_lists.find(nl => nl.name === noteListName);
-                if (noteList) {
-                    // Update the notes in the cached note list
-                    noteList.notes = noteData.map(note => ({
-                        number: note.number,
-                        name: note.name
-                    }));
+            console.log('[Patch Save] Note list name:', noteListName);
+            console.log('[Patch Save] Note data count:', noteData.length);
+
+            if (noteListName && appState.currentMidnam) {
+                // Update in note_lists (API format)
+                if (appState.currentMidnam.note_lists) {
+                    let noteList = appState.currentMidnam.note_lists.find(nl => nl.name === noteListName);
+                    if (noteList) {
+                        // Update the notes in the cached note list
+                        noteList.notes = noteData.map(note => ({
+                            number: note.number,
+                            name: note.name
+                        }));
+                        console.log('[Patch Save] Updated existing note_lists entry');
+                    } else {
+                        console.log('[Patch Save] Note list not found in note_lists, creating...');
+                        noteList = {
+                            name: noteListName,
+                            notes: noteData.map(note => ({
+                                number: note.number,
+                                name: note.name
+                            }))
+                        };
+                        appState.currentMidnam.note_lists.push(noteList);
+                    }
+                }
+
+                // Also update in noteNameLists (edit format) to keep them in sync
+                if (appState.currentMidnam.noteNameLists) {
+                    let noteList = appState.currentMidnam.noteNameLists.find(nl => nl.name === noteListName);
+                    if (noteList) {
+                        noteList.notes = noteData.map(note => ({
+                            number: note.number,
+                            name: note.name
+                        }));
+                        console.log('[Patch Save] Updated existing noteNameLists entry');
+                    } else {
+                        console.log('[Patch Save] Note list not found in noteNameLists, creating...');
+                        noteList = {
+                            name: noteListName,
+                            notes: noteData.map(note => ({
+                                number: note.number,
+                                name: note.name
+                            }))
+                        };
+                        appState.currentMidnam.noteNameLists.push(noteList);
+                    }
                 }
             }
 
