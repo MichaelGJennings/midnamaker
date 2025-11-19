@@ -1,10 +1,10 @@
 // Device module
 import { modal } from '../components/modal.js';
 import { getMIDIControllerName } from '../constants/midiControllers.js';
-import { appState } from '../core/state.js';
-import { Utils } from '../core/utils.js';
 import { isHostedVersion } from '../core/hosting.js';
+import { appState } from '../core/state.js';
 import { browserStorage } from '../core/storage.js';
+import { Utils } from '../core/utils.js';
 import { sendBankSelectMidi, sendProgramChange, testPatch } from '../utils/midiHelpers.js';
 
 export class DeviceManager {
@@ -21,7 +21,7 @@ export class DeviceManager {
         this.setupEventListeners();
         this.setupRenameListener();
     }
-    
+
     setupRenameListener() {
         // Use event delegation for dynamically added rename button
         document.addEventListener('click', async (e) => {
@@ -30,28 +30,28 @@ export class DeviceManager {
             }
         });
     }
-    
+
     async promptRenameDevice() {
         if (!appState.selectedDevice || !appState.currentMidnam) {
             Utils.showNotification('No device selected', 'warning');
             return;
         }
-        
+
         const currentModel = appState.currentMidnam.model;
         const manufacturer = appState.currentMidnam.manufacturer;
         const oldDeviceId = `${manufacturer}|${currentModel}`;
-        
+
         const newModel = prompt(`Rename device "${currentModel}" to:`, currentModel);
-        
+
         if (!newModel || newModel === currentModel) {
             return; // User cancelled or no change
         }
-        
+
         if (!newModel.trim()) {
             Utils.showNotification('Device name cannot be empty', 'warning');
             return;
         }
-        
+
         try {
             await this.renameDevice(manufacturer, currentModel, newModel.trim());
             Utils.showNotification(`Device renamed to "${newModel.trim()}"`, 'success');
@@ -60,44 +60,44 @@ export class DeviceManager {
             Utils.showNotification(`Failed to rename device: ${error.message}`, 'error');
         }
     }
-    
+
     async renameDevice(manufacturer, oldModel, newModel) {
         const oldDeviceId = `${manufacturer}|${oldModel}`;
         const newDeviceId = `${manufacturer}|${newModel}`;
-        
+
         // Check if hosted version
         const { isHostedVersion } = await import('../core/hosting.js');
-        
+
         if (isHostedVersion()) {
             // Update browser storage
             const { browserStorage } = await import('../core/storage.js');
-            
+
             // Get the existing file
             const oldFilePath = appState.selectedDevice.file_path;
             const storedFile = await browserStorage.getMidnam(oldFilePath);
-            
+
             if (!storedFile) {
                 throw new Error('Device file not found in browser storage');
             }
-            
+
             // Parse and update the XML
             const parser = new DOMParser();
             const xmlDoc = parser.parseFromString(storedFile.midnam, 'text/xml');
-            
+
             const modelElem = xmlDoc.querySelector('Model');
             if (modelElem) {
                 modelElem.textContent = newModel;
             }
-            
+
             // Serialize back to XML
             const updatedXml = new XMLSerializer().serializeToString(xmlDoc);
-            
+
             // Create new file path
             const newFilePath = oldFilePath.replace(oldModel, newModel);
-            
+
             // Delete old entry
             await browserStorage.deleteMidnam(oldFilePath);
-            
+
             // Save with new name
             await browserStorage.saveMidnam({
                 file_path: newFilePath,
@@ -105,12 +105,12 @@ export class DeviceManager {
                 manufacturer: manufacturer,
                 model: newModel
             });
-            
+
             // Update catalog
             if (appState.catalog[oldDeviceId]) {
                 delete appState.catalog[oldDeviceId];
             }
-            
+
             appState.catalog[newDeviceId] = {
                 manufacturer: manufacturer,
                 model: newModel,
@@ -118,18 +118,18 @@ export class DeviceManager {
                 files: [{ path: newFilePath }],
                 fromBrowserStorage: true
             };
-            
+
             // Update appState
             appState.selectedDevice.id = newDeviceId;
             appState.selectedDevice.name = newModel;
             appState.selectedDevice.file_path = newFilePath;
             appState.currentMidnam.model = newModel;
-            
+
             // Refresh manufacturer list to show new name
             if (window.manufacturerManager) {
                 await window.manufacturerManager.refreshManufacturerListDynamic();
             }
-            
+
         } else {
             // Local version - call API to rename
             const response = await fetch('/api/middev/rename-device', {
@@ -144,26 +144,26 @@ export class DeviceManager {
                     file_path: appState.selectedDevice.file_path
                 })
             });
-            
+
             if (!response.ok) {
                 const errorData = await response.json();
                 throw new Error(errorData.error || 'Failed to rename device');
             }
-            
+
             const result = await response.json();
-            
+
             // Update appState with new values
             appState.selectedDevice.id = newDeviceId;
             appState.selectedDevice.name = newModel;
             appState.selectedDevice.file_path = result.new_file_path || appState.selectedDevice.file_path;
             appState.currentMidnam.model = newModel;
-            
+
             // Refresh manufacturer list
             if (window.manufacturerManager) {
                 await window.manufacturerManager.renderManufacturerList();
             }
         }
-        
+
         // Re-render the device to show new name
         this.renderDeviceConfiguration();
     }
@@ -898,7 +898,7 @@ export class DeviceManager {
         // Check if hosted version
         const { isHostedVersion } = await import('../core/hosting.js');
         const isHosted = isHostedVersion();
-        
+
         console.log('Download Modal - Is Hosted:', isHosted);
         console.log('Download Modal - Hostname:', window.location.hostname);
 
@@ -1010,7 +1010,7 @@ export class DeviceManager {
 
         return item;
     }
-    
+
     createClientDownloadLinkItem(filename, description, downloadCallback) {
         const item = document.createElement('div');
         item.className = 'download-link-item';
@@ -1056,21 +1056,21 @@ export class DeviceManager {
 
         return item;
     }
-    
+
     async downloadMidnamClientSide(filename) {
         try {
             // Get the current MIDNAM XML - either from raw_xml or generate it
             let midnamXml = appState.currentMidnam?.raw_xml;
-            
+
             console.log('Download MIDNAM - raw_xml exists:', !!midnamXml);
             console.log('Download MIDNAM - raw_xml type:', typeof midnamXml);
-            
+
             // If raw_xml is an object, serialize it
             if (midnamXml && typeof midnamXml === 'object') {
                 console.log('Download MIDNAM - raw_xml is object, serializing...');
                 midnamXml = this.serializeMidnamToXML(midnamXml);
             }
-            
+
             if (!midnamXml || typeof midnamXml !== 'string') {
                 // Check if device is in browser storage
                 const { isHostedVersion } = await import('../core/hosting.js');
@@ -1080,7 +1080,7 @@ export class DeviceManager {
                     if (storedFile && storedFile.midnam) {
                         midnamXml = storedFile.midnam;
                         console.log('Download MIDNAM - Retrieved from browser storage');
-                        
+
                         // If stored as object, serialize it
                         if (typeof midnamXml === 'object') {
                             console.log('Download MIDNAM - Stored as object, serializing...');
@@ -1089,21 +1089,21 @@ export class DeviceManager {
                     }
                 }
             }
-            
+
             if (!midnamXml || typeof midnamXml !== 'string') {
                 // Generate XML from current state
                 console.log('Download MIDNAM - Generating from currentMidnam');
                 midnamXml = this.serializeMidnamToXML(appState.currentMidnam);
             }
-            
+
             // Final check
             if (typeof midnamXml !== 'string') {
                 console.error('Download MIDNAM - Final type check failed:', typeof midnamXml);
                 throw new Error(`MIDNAM XML is not a string, it's ${typeof midnamXml}`);
             }
-            
+
             console.log('Download MIDNAM - XML length:', midnamXml.length);
-            
+
             // Create and download blob
             const blob = new Blob([midnamXml], { type: 'application/xml' });
             const url = URL.createObjectURL(blob);
@@ -1114,14 +1114,14 @@ export class DeviceManager {
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-            
+
             Utils.showNotification('MIDNAM file downloaded', 'success');
         } catch (error) {
             console.error('Error downloading MIDNAM:', error);
             throw error;
         }
     }
-    
+
     async downloadMiddevClientSide(manufacturer, filename) {
         try {
             // Generate a basic MIDDEV XML structure
@@ -1132,7 +1132,7 @@ export class DeviceManager {
     <Device Name="${Utils.escapeXml(appState.currentMidnam?.model || 'Unknown Device')}" />
   </Devices>
 </MIDIDevice>`;
-            
+
             // Create and download blob
             const blob = new Blob([middevXml], { type: 'application/xml' });
             const url = URL.createObjectURL(blob);
@@ -1143,33 +1143,33 @@ export class DeviceManager {
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-            
+
             Utils.showNotification('MIDDEV file downloaded', 'success');
         } catch (error) {
             console.error('Error downloading MIDDEV:', error);
             throw error;
         }
     }
-    
+
     async downloadZipClientSide(manufacturer, deviceName, midnamFilename, middevFilename) {
         try {
             // Dynamically import JSZip
             const JSZip = (await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm')).default;
-            
+
             const zip = new JSZip();
-            
+
             // Get MIDNAM XML
             let midnamXml = appState.currentMidnam?.raw_xml;
-            
+
             console.log('Download ZIP - raw_xml exists:', !!midnamXml);
             console.log('Download ZIP - raw_xml type:', typeof midnamXml);
-            
+
             // If raw_xml is an object, serialize it
             if (midnamXml && typeof midnamXml === 'object') {
                 console.log('Download ZIP - raw_xml is object, serializing...');
                 midnamXml = this.serializeMidnamToXML(midnamXml);
             }
-            
+
             if (!midnamXml || typeof midnamXml !== 'string') {
                 // Check if device is in browser storage
                 const { isHostedVersion } = await import('../core/hosting.js');
@@ -1179,7 +1179,7 @@ export class DeviceManager {
                     if (storedFile && storedFile.midnam) {
                         midnamXml = storedFile.midnam;
                         console.log('Download ZIP - Retrieved MIDNAM from browser storage');
-                        
+
                         // If stored as object, serialize it
                         if (typeof midnamXml === 'object') {
                             console.log('Download ZIP - Stored as object, serializing...');
@@ -1188,21 +1188,21 @@ export class DeviceManager {
                     }
                 }
             }
-            
+
             if (!midnamXml || typeof midnamXml !== 'string') {
                 // Generate XML from current state
                 console.log('Download ZIP - Generating from currentMidnam');
                 midnamXml = this.serializeMidnamToXML(appState.currentMidnam);
             }
-            
+
             // Final check
             if (typeof midnamXml !== 'string') {
                 console.error('Download ZIP - MIDNAM XML type:', typeof midnamXml, midnamXml);
                 throw new Error(`MIDNAM XML is not a string, it's ${typeof midnamXml}`);
             }
-            
+
             console.log('Download ZIP - MIDNAM XML length:', midnamXml.length);
-            
+
             // Generate MIDDEV XML
             const middevXml = `<?xml version='1.0' encoding='utf-8'?>
 <MIDIDevice>
@@ -1211,16 +1211,16 @@ export class DeviceManager {
     <Device Name="${Utils.escapeXml(appState.currentMidnam?.model || deviceName)}" />
   </Devices>
 </MIDIDevice>`;
-            
+
             console.log('Download ZIP - MIDDEV XML length:', middevXml.length);
-            
+
             // Add files to ZIP
             zip.file(midnamFilename, midnamXml);
             zip.file(middevFilename, middevXml);
-            
+
             // Generate ZIP blob
             const zipBlob = await zip.generateAsync({ type: 'blob' });
-            
+
             // Download
             const url = URL.createObjectURL(zipBlob);
             const a = document.createElement('a');
@@ -1230,26 +1230,26 @@ export class DeviceManager {
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
-            
+
             Utils.showNotification('ZIP file downloaded', 'success');
         } catch (error) {
             console.error('Error downloading ZIP:', error);
             throw error;
         }
     }
-    
+
     generateMidnamXmlFromState() {
         // Get current device data from appState
         const midnam = appState.currentMidnam;
         if (!midnam) {
             throw new Error('No device data available');
         }
-        
+
         // If raw_xml exists and is a string, use it
         if (midnam.raw_xml && typeof midnam.raw_xml === 'string') {
             return midnam.raw_xml;
         }
-        
+
         // Otherwise, serialize the full structure
         return this.serializeMidnamToXML(midnam);
     }
@@ -1280,22 +1280,29 @@ export class DeviceManager {
 
     async saveMidnamToBrowser(filePath) {
         try {
-            const manufacturer = appState.selectedDevice?.manufacturer || 
-                               appState.currentMidnam?.Manufacturer || 
-                               'Unknown';
-            const model = appState.selectedDevice?.name || 
-                         appState.selectedDevice?.model || 
-                         appState.currentMidnam?.Model || 
-                         'Unknown Device';
+            const manufacturer = appState.selectedDevice?.manufacturer ||
+                appState.currentMidnam?.Manufacturer ||
+                'Unknown';
+            const model = appState.selectedDevice?.name ||
+                appState.selectedDevice?.model ||
+                appState.currentMidnam?.Model ||
+                'Unknown Device';
 
             // Convert currentMidnam object to XML string
+            // ALWAYS serialize from the current object structure to capture all edits
             let midnamXml;
             if (typeof appState.currentMidnam === 'string') {
                 midnamXml = appState.currentMidnam;
-            } else if (appState.currentMidnam?.raw_xml && typeof appState.currentMidnam.raw_xml === 'string') {
-                midnamXml = appState.currentMidnam.raw_xml;
             } else {
                 // Generate XML from the currentMidnam object structure
+                // This ensures all edits (patches, banks, etc.) are included
+                console.log('[Save] Serializing currentMidnam object to XML');
+                console.log('[Save] Current state:', {
+                    manufacturer: appState.currentMidnam.Manufacturer,
+                    model: appState.currentMidnam.Model,
+                    patchBankCount: appState.currentMidnam.patch_banks?.length,
+                    channelNameSetCount: appState.currentMidnam.channel_name_sets?.length
+                });
                 midnamXml = this.serializeMidnamToXML(appState.currentMidnam);
             }
 
@@ -1317,21 +1324,21 @@ export class DeviceManager {
                 if (appState.currentMidnam && typeof appState.currentMidnam === 'object') {
                     appState.currentMidnam.raw_xml = midnamXml;
                 }
-                
+
                 // Update the catalog entry to ensure it has the latest data
                 const deviceId = `${manufacturer}|${model}`;
                 if (appState.catalog[deviceId]) {
                     appState.catalog[deviceId].fromBrowserStorage = true;
                     console.log('[Save] Updated catalog entry for:', deviceId);
                 }
-                
+
                 // Mark as saved globally
                 appState.markAsSaved();
 
                 const action = result.isUpdate ? 'Updated' : 'Saved';
                 this.logToDebugConsole(`✓ ${action} in browser storage: ${filePath}`, 'success');
                 Utils.showNotification(`${action} to browser storage successfully`, 'success');
-                
+
                 // Verify the save by reading it back
                 const verification = await browserStorage.getMidnam(filePath);
                 console.log('[Save] Verification - file exists:', !!verification);
@@ -1346,8 +1353,18 @@ export class DeviceManager {
             Utils.showNotification(`Browser save failed: ${error.message}`, 'error');
         }
     }
-    
+
     serializeMidnamToXML(midnam) {
+        console.log('[Serialize] Starting serialization');
+        console.log('[Serialize] Input structure:', {
+            hasManufacturer: !!midnam.Manufacturer,
+            hasModel: !!midnam.Model,
+            patchBankCount: midnam.patch_banks?.length || 0,
+            channelNameSetCount: midnam.channel_name_sets?.length || 0,
+            customDeviceModeCount: midnam.custom_device_modes?.length || 0,
+            noteListCount: midnam.note_lists?.length || 0
+        });
+
         // Build complete MIDNAM XML from the object structure
         let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
         xml += '<!DOCTYPE MIDINameDocument PUBLIC "-//MIDI Manufacturers Association//DTD MIDINameDocument 1.0//EN" "http://www.midi.org/dtds/MIDINameDocument10.dtd">\n';
@@ -1356,7 +1373,17 @@ export class DeviceManager {
         xml += '  <MasterDeviceNames>\n';
         xml += `    <Manufacturer>${Utils.escapeXml(midnam.Manufacturer || midnam.manufacturer)}</Manufacturer>\n`;
         xml += `    <Model>${Utils.escapeXml(midnam.Model || midnam.model)}</Model>\n`;
-        
+
+        console.log('[Serialize] Processing patch banks:', midnam.patch_banks?.length);
+        if (midnam.patch_banks) {
+            midnam.patch_banks.forEach((bank, idx) => {
+                console.log(`[Serialize] Bank ${idx}:`, {
+                    name: bank.name,
+                    patchCount: bank.patches?.length
+                });
+            });
+        }
+
         // Add CustomDeviceModes
         if (midnam.custom_device_modes && midnam.custom_device_modes.length > 0) {
             midnam.custom_device_modes.forEach(mode => {
@@ -1371,7 +1398,7 @@ export class DeviceManager {
                 xml += '    </CustomDeviceMode>\n';
             });
         }
-        
+
         // Add ChannelNameSets
         if (midnam.channel_name_sets && midnam.channel_name_sets.length > 0) {
             midnam.channel_name_sets.forEach(cns => {
@@ -1383,7 +1410,7 @@ export class DeviceManager {
                     });
                 }
                 xml += '      </AvailableForChannels>\n';
-                
+
                 // Reference PatchBanks
                 if (cns.patch_banks) {
                     cns.patch_banks.forEach(pb => {
@@ -1394,16 +1421,16 @@ export class DeviceManager {
                         }
                     });
                 }
-                
+
                 xml += '    </ChannelNameSet>\n';
             });
         }
-        
+
         // Add PatchBanks
         if (midnam.patch_banks && midnam.patch_banks.length > 0) {
             midnam.patch_banks.forEach(bank => {
                 xml += `    <PatchBank Name="${Utils.escapeXml(bank.name)}">\n`;
-                
+
                 // Add MIDI Commands if present
                 if (bank.midi_commands && bank.midi_commands.length > 0) {
                     xml += '      <MIDICommands>\n';
@@ -1416,16 +1443,16 @@ export class DeviceManager {
                     });
                     xml += '      </MIDICommands>\n';
                 }
-                
+
                 xml += '      <PatchNameList>\n';
                 if (bank.patches && bank.patches.length > 0) {
                     bank.patches.forEach(patch => {
                         const patchNumber = patch.Number || patch.number;
                         const patchName = patch.name || 'Unnamed';
                         const programChange = patch.programChange !== undefined ? patch.programChange : patchNumber;
-                        
+
                         xml += `        <Patch Number="${patchNumber}" Name="${Utils.escapeXml(patchName)}" ProgramChange="${programChange}"`;
-                        
+
                         if (patch.note_list_name) {
                             xml += '>\n';
                             xml += `          <UsesNoteNameList Name="${Utils.escapeXml(patch.note_list_name)}" />\n`;
@@ -1439,7 +1466,7 @@ export class DeviceManager {
                 xml += '    </PatchBank>\n';
             });
         }
-        
+
         // Add NoteNameLists
         if (midnam.note_lists && midnam.note_lists.length > 0) {
             midnam.note_lists.forEach(noteList => {
@@ -1452,10 +1479,10 @@ export class DeviceManager {
                 xml += '    </NoteNameList>\n';
             });
         }
-        
+
         xml += '  </MasterDeviceNames>\n';
         xml += '</MIDINameDocument>\n';
-        
+
         return xml;
     }
 
@@ -1547,7 +1574,7 @@ export class DeviceManager {
 
         // Check if hosted version
         const { isHostedVersion } = await import('../core/hosting.js');
-        
+
         if (isHostedVersion()) {
             // Client-side validation for hosted version
             try {
@@ -1605,11 +1632,11 @@ export class DeviceManager {
             Utils.showNotification('Failed to validate file', 'error');
         }
     }
-    
+
     async validateDeviceClientSide(filePath) {
         // Get the XML content
         let xmlContent = appState.currentMidnam?.raw_xml;
-        
+
         if (!xmlContent) {
             // Try to get from browser storage
             const { browserStorage } = await import('../core/storage.js');
@@ -1618,56 +1645,56 @@ export class DeviceManager {
                 xmlContent = storedFile.midnam;
             }
         }
-        
+
         if (!xmlContent) {
             throw new Error('No XML content available for validation');
         }
-        
+
         this.logToDebugConsole('Performing client-side XML validation...', 'info');
-        
+
         // Parse XML using DOMParser
         const parser = new DOMParser();
         const xmlDoc = parser.parseFromString(xmlContent, 'text/xml');
-        
+
         // Check for parse errors
         const parseError = xmlDoc.querySelector('parsererror');
-        
+
         if (parseError) {
             // Extract error details
             const errorText = parseError.textContent || parseError.innerText || 'Unknown XML error';
             const errors = [];
-            
+
             // Try to extract line and column info if available
             const lineMatch = errorText.match(/line (\d+)/i);
             const colMatch = errorText.match(/column (\d+)/i);
-            
+
             errors.push({
                 line: lineMatch ? parseInt(lineMatch[1]) : 'unknown',
                 column: colMatch ? parseInt(colMatch[1]) : 'unknown',
                 message: errorText
             });
-            
+
             this.setValidationState('invalid');
             this.logToDebugConsole('✗ Validation FAILED', 'error');
             this.logToDebugConsole(`Found ${errors.length} error(s):`, 'error');
-            
+
             errors.forEach((error, index) => {
                 this.logToDebugConsole(
                     `  Error ${index + 1}: Line ${error.line}, Column ${error.column} - ${error.message}`,
                     'error'
                 );
             });
-            
+
             Utils.showNotification('Validation failed - see debug console', 'error');
         } else {
             // Basic structure validation
             const warnings = [];
-            
+
             // Check for required elements
             const manufacturer = xmlDoc.querySelector('Manufacturer');
             const model = xmlDoc.querySelector('Model');
             const masterDeviceNames = xmlDoc.querySelector('MasterDeviceNames');
-            
+
             if (!manufacturer) {
                 warnings.push('Missing <Manufacturer> element');
             }
@@ -1677,7 +1704,7 @@ export class DeviceManager {
             if (!masterDeviceNames) {
                 warnings.push('Missing <MasterDeviceNames> element');
             }
-            
+
             if (warnings.length > 0) {
                 this.setValidationState('invalid');
                 this.logToDebugConsole('✗ Validation completed with warnings', 'error');
