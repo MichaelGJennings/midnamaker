@@ -1356,13 +1356,22 @@ export class DeviceManager {
 
     serializeMidnamToXML(midnam) {
         console.log('[Serialize] Starting serialization');
+
+        // Check both edited (patchList/channelNameSets) and API (patch_banks/channel_name_sets) structures
+        const patchLists = midnam.patchList || midnam.patch_banks || [];
+        const channelNameSets = midnam.channelNameSets || midnam.channel_name_sets || [];
+        const customDeviceModes = midnam.customDeviceModes || midnam.custom_device_modes || [];
+        const noteLists = midnam.noteNameLists || midnam.note_lists || [];
+
         console.log('[Serialize] Input structure:', {
             hasManufacturer: !!midnam.Manufacturer,
             hasModel: !!midnam.Model,
-            patchBankCount: midnam.patch_banks?.length || 0,
-            channelNameSetCount: midnam.channel_name_sets?.length || 0,
-            customDeviceModeCount: midnam.custom_device_modes?.length || 0,
-            noteListCount: midnam.note_lists?.length || 0
+            patchListCount: patchLists.length,
+            channelNameSetCount: channelNameSets.length,
+            customDeviceModeCount: customDeviceModes.length,
+            noteListCount: noteLists.length,
+            usingPatchList: !!midnam.patchList,
+            usingPatchBanks: !!midnam.patch_banks
         });
 
         // Build complete MIDNAM XML from the object structure
@@ -1374,61 +1383,58 @@ export class DeviceManager {
         xml += `    <Manufacturer>${Utils.escapeXml(midnam.Manufacturer || midnam.manufacturer)}</Manufacturer>\n`;
         xml += `    <Model>${Utils.escapeXml(midnam.Model || midnam.model)}</Model>\n`;
 
-        console.log('[Serialize] Processing patch banks:', midnam.patch_banks?.length);
-        if (midnam.patch_banks) {
-            midnam.patch_banks.forEach((bank, idx) => {
-                console.log(`[Serialize] Bank ${idx}:`, {
-                    name: bank.name,
-                    patchCount: bank.patches?.length
-                });
+        console.log('[Serialize] Processing patch lists/banks:', patchLists.length);
+        patchLists.forEach((bank, idx) => {
+            const patches = bank.patch || bank.patches || [];
+            console.log(`[Serialize] Bank ${idx}:`, {
+                name: bank.name,
+                patchCount: patches.length,
+                hasMidiCommands: !!(bank.midi_commands && bank.midi_commands.length > 0)
             });
-        }
+        });
 
         // Add CustomDeviceModes
-        if (midnam.custom_device_modes && midnam.custom_device_modes.length > 0) {
-            midnam.custom_device_modes.forEach(mode => {
+        if (customDeviceModes.length > 0) {
+            customDeviceModes.forEach(mode => {
                 xml += `    <CustomDeviceMode Name="${Utils.escapeXml(mode.name)}">\n`;
                 xml += '      <ChannelNameSetAssignments>\n';
-                if (mode.channel_name_set_assigns) {
-                    mode.channel_name_set_assigns.forEach(assign => {
-                        xml += `        <ChannelNameSetAssign Channel="${assign.channel}" NameSet="${Utils.escapeXml(assign.name_set)}" />\n`;
-                    });
-                }
+                const assigns = mode.channel_name_set_assigns || mode.channelNameSetAssigns || [];
+                assigns.forEach(assign => {
+                    xml += `        <ChannelNameSetAssign Channel="${assign.channel}" NameSet="${Utils.escapeXml(assign.name_set || assign.nameSet)}" />\n`;
+                });
                 xml += '      </ChannelNameSetAssignments>\n';
                 xml += '    </CustomDeviceMode>\n';
             });
         }
 
         // Add ChannelNameSets
-        if (midnam.channel_name_sets && midnam.channel_name_sets.length > 0) {
-            midnam.channel_name_sets.forEach(cns => {
+        if (channelNameSets.length > 0) {
+            channelNameSets.forEach(cns => {
                 xml += `    <ChannelNameSet Name="${Utils.escapeXml(cns.name)}">\n`;
                 xml += '      <AvailableForChannels>\n';
-                if (cns.available_channels) {
-                    cns.available_channels.forEach(ac => {
-                        xml += `        <AvailableChannel Channel="${ac.channel}" Available="${ac.available ? 'true' : 'false'}" />\n`;
-                    });
-                }
+                const availableChannels = cns.available_channels || cns.availableChannels || [];
+                availableChannels.forEach(ac => {
+                    xml += `        <AvailableChannel Channel="${ac.channel}" Available="${ac.available ? 'true' : 'false'}" />\n`;
+                });
                 xml += '      </AvailableForChannels>\n';
 
-                // Reference PatchBanks
-                if (cns.patch_banks) {
-                    cns.patch_banks.forEach(pb => {
-                        if (typeof pb === 'string') {
-                            xml += `      <PatchBank Name="${Utils.escapeXml(pb)}" />\n`;
-                        } else if (pb.name) {
-                            xml += `      <PatchBank Name="${Utils.escapeXml(pb.name)}" />\n`;
-                        }
-                    });
-                }
+                // Reference PatchBanks - need to list the bank names that belong to this ChannelNameSet
+                // Find all patchLists that reference this ChannelNameSet
+                const banksForThisNameSet = patchLists.filter(bank =>
+                    (bank.channelNameSet || bank.channel_name_set) === cns.name
+                );
+
+                banksForThisNameSet.forEach(bank => {
+                    xml += `      <PatchBank Name="${Utils.escapeXml(bank.name)}" />\n`;
+                });
 
                 xml += '    </ChannelNameSet>\n';
             });
         }
 
-        // Add PatchBanks
-        if (midnam.patch_banks && midnam.patch_banks.length > 0) {
-            midnam.patch_banks.forEach(bank => {
+        // Add PatchBanks (actual patch bank definitions)
+        if (patchLists.length > 0) {
+            patchLists.forEach(bank => {
                 xml += `    <PatchBank Name="${Utils.escapeXml(bank.name)}">\n`;
 
                 // Add MIDI Commands if present
@@ -1445,37 +1451,35 @@ export class DeviceManager {
                 }
 
                 xml += '      <PatchNameList>\n';
-                if (bank.patches && bank.patches.length > 0) {
-                    bank.patches.forEach(patch => {
-                        const patchNumber = patch.Number || patch.number;
-                        const patchName = patch.name || 'Unnamed';
-                        const programChange = patch.programChange !== undefined ? patch.programChange : patchNumber;
+                const patches = bank.patch || bank.patches || [];
+                patches.forEach(patch => {
+                    const patchNumber = patch.Number || patch.number;
+                    const patchName = patch.name || 'Unnamed';
+                    const programChange = patch.programChange !== undefined ? patch.programChange : patchNumber;
 
-                        xml += `        <Patch Number="${patchNumber}" Name="${Utils.escapeXml(patchName)}" ProgramChange="${programChange}"`;
+                    xml += `        <Patch Number="${patchNumber}" Name="${Utils.escapeXml(patchName)}" ProgramChange="${programChange}"`;
 
-                        if (patch.note_list_name) {
-                            xml += '>\n';
-                            xml += `          <UsesNoteNameList Name="${Utils.escapeXml(patch.note_list_name)}" />\n`;
-                            xml += '        </Patch>\n';
-                        } else {
-                            xml += ' />\n';
-                        }
-                    });
-                }
+                    if (patch.note_list_name || patch.noteListName) {
+                        xml += '>\n';
+                        xml += `          <UsesNoteNameList Name="${Utils.escapeXml(patch.note_list_name || patch.noteListName)}" />\n`;
+                        xml += '        </Patch>\n';
+                    } else {
+                        xml += ' />\n';
+                    }
+                });
                 xml += '      </PatchNameList>\n';
                 xml += '    </PatchBank>\n';
             });
         }
 
         // Add NoteNameLists
-        if (midnam.note_lists && midnam.note_lists.length > 0) {
-            midnam.note_lists.forEach(noteList => {
+        if (noteLists.length > 0) {
+            noteLists.forEach(noteList => {
                 xml += `    <NoteNameList Name="${Utils.escapeXml(noteList.name)}">\n`;
-                if (noteList.notes && noteList.notes.length > 0) {
-                    noteList.notes.forEach(note => {
-                        xml += `      <Note Number="${note.number}" Name="${Utils.escapeXml(note.name)}" />\n`;
-                    });
-                }
+                const notes = noteList.notes || noteList.noteEntries || [];
+                notes.forEach(note => {
+                    xml += `      <Note Number="${note.number}" Name="${Utils.escapeXml(note.name)}" />\n`;
+                });
                 xml += '    </NoteNameList>\n';
             });
         }
