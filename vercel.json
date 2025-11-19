@@ -8,6 +8,10 @@
   ],
   "routes": [
     {
+      "src": "/api/device/(.*)",
+      "dest": "/api/device"
+    },
+    {
       "src": "/api/(.*)",
       "dest": "/api/$1"
     },
