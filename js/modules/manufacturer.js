@@ -323,7 +323,21 @@ export class ManufacturerManager {
             // Parse device ID
             const [manufacturer, model] = deviceId.split('|');
 
-            // Check if there are multiple files for this device
+            // Check if device exists in browser storage first (for hosted version)
+            const { isHostedVersion } = await import('../core/hosting.js');
+            const catalogEntry = appState.catalog[deviceId];
+
+            if (catalogEntry && catalogEntry.fromBrowserStorage) {
+                // Device exists in browser storage - load it directly
+                const deviceInfo = {
+                    file_path: catalogEntry.files[0].path,
+                    id: deviceId
+                };
+                await this.loadDeviceFile(deviceInfo, deviceId, manufacturer, model);
+                return;
+            }
+
+            // Check if there are multiple files for this device in API
             // Get manufacturer data to find all devices with this ID
             const manufacturerResponse = await fetch('/api/manufacturers');
             if (!manufacturerResponse.ok) {
