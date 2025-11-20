@@ -58,14 +58,19 @@
             <div class="overview-section" data-testid="sec_overview">
                 <h2 data-testid="hdr_overview">Overview</h2>
                 <p data-testid="div_overview_content">
-                <p>It's a pain when your DAW displays things from your MIDI devices that don't match the names in the
-                    device itself. It is creatively disruptive to have to remember that continuous controller 70 is
-                    actually polyphonic aftertouch, or Bank 1 in the DAW corresponds to "User Bank" on your device. Or
-                    when trying to set up patch changes and you have to remember that patch change 12 is the drum kit
-                    patch. And few things are as frustrating as seeing the piano keys at the left of your drum editor,
-                    and instead of displaying "Big Kick", "Gated Snare" etc., you're just seeing pitch names like "D#1".
-                    Sure, you can manually type the names in, but what about the other tracks that aren't using that
-                    template?</p>
+                <p><strong>It's a pain when your DAW displays things from your MIDI devices that don't match the names
+                        in the
+                        device itself. It is creatively disruptive to have to remember that the patch select buttons
+                        equate
+                        to continuous controller 70, or Bank 1 in the DAW corresponds to "User Bank" on your device. Or
+                        when trying to set up patch changes and you have to remember that patch change 12 is the drum
+                        kit
+                        patch. And few things are as frustrating as seeing the piano keys at the left of your drum
+                        editor,
+                        and instead of displaying "Big Kick", "Gated Snare" etc., you're just seeing pitch names like
+                        "D#1".
+                        Sure, you can manually type the names in, but what about the other tracks that aren't using that
+                        template?</strong></p>
 
                 <p>The MIDI Name Document is a standard way of describing a device's particular banks, patches,
                     controller names and even note names. In some DAWs (notably Pro Tools and Digital Performer), these
@@ -84,19 +89,23 @@
                     one from the catalog. You can also create a new .midnam file from scratch by simply defining a new
                     device for a manufacturer, or even an entirely new manufacturer.</p>
 
-                <p>Once you've loaded a device on this tab, you can edit the device's patch names on the
-                    <em>Device</em> tab. You can add or rename new patch banks,, add or rename patches, and specify
-                    continuous controller names. You can also add more technical details like Channel Name Sets and MIDI
-                    assignments, specify support for General MIDI and more.
+                <p>Once you've loaded a device on this <span class="tab-name">Load File</span> tab, you can edit the
+                    device's patch names on the
+                    <span class="tab-name">Device</span> tab. You can add or rename new patch banks, add or rename
+                    patches, and specify continuous controller names. You can also add more technical details like
+                    Channel Name Sets and
+                    MIDI assignments, specify support for General MIDI and more.
                 </p>
 
-                <p>The <em>Patch</em> tab shows details about an individual patch, including providing an editor for
+                <p>The <span class="tab-name">Patch</span> tab shows details about an individual patch, including
+                    providing an editor for
                     note name lists for drum kits and the like.</p>
 
                 <p>When you're finished you can save your changes to the .midnam file, and download the updated file on
-                    the <em>Generate</em> tab to install into your DAW.</p>
+                    the <span class="tab-name">Generate</span> tab to install into your DAW.</p>
 
-                <p>The <em>Tools</em> page has miscellaneous advanced features like a catalog viewer, a note name
+                <p>The <span class="tab-name">Tools</span> tab has miscellaneous advanced features like a catalog
+                    viewer, a note name
                     consistency tool, and a debug console.</p>
 
                 <p>This is a Web application that runs entirely in your browser. It does not store any data on the
@@ -106,8 +115,9 @@
                 <p>This application is open source and available on GitHub. You can find the source code and contribute
                     to the project at https://github.com/midnamaker/midnamaker.</p>
 
-                <p>This application is not affiliated with any commercial entity. It is a personal project and is not
-                    intended for commercial use.</p>
+                <p><em>This application is not affiliated with any commercial entity. It is a personal project and is
+                        not
+                        intended for commercial use.</em></p>
 
                 </p>
             </div>
@@ -284,7 +294,7 @@
                 </p>
                 <label class="checkbox-label" data-testid="lbl_enable_catalog">
                     <input type="checkbox" id="enable-catalog-checkbox" data-testid="chk_enable_catalog">
-                    <span>Enable Catalog Viewer</span>
+                    <span class="tab-name">Enable Catalog Viewer</span>
                 </label>
             </div>
 
@@ -317,23 +327,26 @@
                 <h3 data-testid="hdr_install_instructions">Installation Instructions</h3>
                 <p class="tool-description" data-testid="div_install_description">
                     After downloading your .midnam and .middev files, you'll need to install them in your DAW.
-                    <strong>The installation process varies by operating system and DAW environment.</strong>
+                    <span class="tab-name">The installation process varies by operating system and DAW
+                        environment.</span>
                 </p>
                 <div class="install-info" data-testid="sec_install_info">
                     <p data-testid="div_install_locations_intro">Common installation locations:</p>
                     <ul data-testid="lst_install_locations">
-                        <li data-testid="itm_install_macos"><strong>macOS:</strong>
+                        <li data-testid="itm_install_macos"><span class="tab-name">macOS:</span>
                             <code>~/Library/Audio/MIDI Devices/</code>
                         </li>
-                        <li data-testid="itm_install_windows"><strong>Windows:</strong>
+                        <li data-testid="itm_install_windows"><span class="tab-name">Windows:</span>
                             <code>C:\ProgramData\Avid\Audio\MIDIDevices\</code> or DAW-specific directories
                         </li>
-                        <li data-testid="itm_install_linux"><strong>Linux:</strong> Varies by DAW (check your DAW
+                        <li data-testid="itm_install_linux"><span class="tab-name">Linux:</span> Varies by DAW (check
+                            your DAW
                             documentation)</li>
                     </ul>
                     <p class="install-note" data-testid="div_install_note">
-                        <strong>Note:</strong> For specific installation instructions, please search for
-                        "<em>[Your DAW Name] MIDNAM installation</em>" online, as the exact process depends on
+                        <span class="tab-name">Note:</span> For specific installation instructions, please search for
+                        "<span class="tab-name">[Your DAW Name] MIDNAM installation</span>" online, as the exact process
+                        depends on
                         your specific software and operating system configuration.
                     </p>
                 </div>
@@ -407,8 +420,8 @@
                     DAW.
                 </p>
                 <p class="install-note-small" data-testid="div_download_note">
-                    <strong>Note:</strong> Installation locations vary by operating system and DAW.
-                    See the <strong>Tools</strong> tab for more information about installation.
+                    <span class="tab-name">Note:</span> Installation locations vary by operating system and DAW.
+                    See the <span class="tab-name">Tools</span> tab for more information about installation.
                 </p>
                 <div id="download-links" class="download-links" data-testid="lst_download_links">
                     <!-- Links will be populated dynamically -->
