@@ -506,58 +506,65 @@ export class ManufacturerManager {
             }
         });
 
-        // Parse patch banks
+        // Parse patch banks (only direct children of MasterDeviceNames, not references in ChannelNameSet)
         const patchBanksByName = {};
-        xmlDoc.querySelectorAll('PatchBank').forEach(patchBank => {
-            const bankName = patchBank.getAttribute('Name');
-            if (bankName) {
-                const patches = [];
-                patchBank.querySelectorAll('Patch').forEach(patch => {
-                    const patchNumber = patch.getAttribute('Number');
-                    const patchName = patch.getAttribute('Name');
-                    const programChange = patch.getAttribute('ProgramChange');
+        const masterDeviceNames = xmlDoc.querySelector('MasterDeviceNames');
+        if (masterDeviceNames) {
+            // Get only direct PatchBank children (not nested ones in ChannelNameSet)
+            Array.from(masterDeviceNames.children).forEach(child => {
+                if (child.tagName !== 'PatchBank') return;
 
-                    const patchData = {
-                        number: patchNumber,
-                        name: patchName,
-                        Number: patchNumber
-                    };
+                const patchBank = child;
+                const bankName = patchBank.getAttribute('Name');
+                if (bankName) {
+                    const patches = [];
+                    patchBank.querySelectorAll('Patch').forEach(patch => {
+                        const patchNumber = patch.getAttribute('Number');
+                        const patchName = patch.getAttribute('Name');
+                        const programChange = patch.getAttribute('ProgramChange');
 
-                    if (programChange) {
-                        patchData.programChange = parseInt(programChange);
-                    }
+                        const patchData = {
+                            number: patchNumber,
+                            name: patchName,
+                            Number: patchNumber
+                        };
 
-                    const usesNoteList = patch.querySelector('UsesNoteNameList');
-                    if (usesNoteList) {
-                        patchData.note_list_name = usesNoteList.getAttribute('Name');
-                    }
+                        if (programChange) {
+                            patchData.programChange = parseInt(programChange);
+                        }
 
-                    patches.push(patchData);
-                });
+                        const usesNoteList = patch.querySelector('UsesNoteNameList');
+                        if (usesNoteList) {
+                            patchData.note_list_name = usesNoteList.getAttribute('Name');
+                        }
 
-                // Parse MIDI Commands for this bank
-                const midi_commands = [];
-                const midiCommandsElem = patchBank.querySelector('MIDICommands');
-                if (midiCommandsElem) {
-                    // Get all child elements (ControlChange, ProgramChange, etc.)
-                    Array.from(midiCommandsElem.children).forEach(cmd => {
-                        const cmdType = cmd.tagName;
-                        const cmdData = { type: cmdType };
-
-                        // Extract all attributes
-                        Array.from(cmd.attributes).forEach(attr => {
-                            cmdData[attr.name.toLowerCase()] = attr.value;
-                        });
-
-                        midi_commands.push(cmdData);
+                        patches.push(patchData);
                     });
-                }
 
-                const bankObj = { name: bankName, patches, midi_commands };
-                patchBanksByName[bankName] = bankObj;
-                deviceData.patch_banks.push(bankObj);
-            }
-        });
+                    // Parse MIDI Commands for this bank
+                    const midi_commands = [];
+                    const midiCommandsElem = patchBank.querySelector('MIDICommands');
+                    if (midiCommandsElem) {
+                        // Get all child elements (ControlChange, ProgramChange, etc.)
+                        Array.from(midiCommandsElem.children).forEach(cmd => {
+                            const cmdType = cmd.tagName;
+                            const cmdData = { type: cmdType };
+
+                            // Extract all attributes
+                            Array.from(cmd.attributes).forEach(attr => {
+                                cmdData[attr.name.toLowerCase()] = attr.value;
+                            });
+
+                            midi_commands.push(cmdData);
+                        });
+                    }
+
+                    const bankObj = { name: bankName, patches, midi_commands };
+                    patchBanksByName[bankName] = bankObj;
+                    deviceData.patch_banks.push(bankObj);
+                }
+            });
+        }
 
         // Parse channel name sets
         xmlDoc.querySelectorAll('ChannelNameSet').forEach(channelNameSet => {

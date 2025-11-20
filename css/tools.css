@@ -1,4 +1,162 @@
 /* Tools Tab Styles */
+
+/* Catalog Control */
+.checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    font-size: 1rem;
+    color: #333;
+}
+
+.checkbox-label input[type="checkbox"] {
+    width: 1.2rem;
+    height: 1.2rem;
+    cursor: pointer;
+}
+
+.checkbox-label span {
+    user-select: none;
+}
+
+/* Generate Tab Styles */
+.generate-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1rem;
+    border-bottom: 2px solid #e0e0e0;
+}
+
+.generate-header h2 {
+    margin: 0;
+    color: #2c3e50;
+    font-size: 1.75rem;
+}
+
+.generate-content {
+    padding: 1rem;
+}
+
+.download-instructions {
+    margin-bottom: 1.5rem;
+    padding: 1rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+    color: #666;
+    line-height: 1.6;
+}
+
+.download-instructions p {
+    margin: 0 0 0.5rem 0;
+}
+
+.download-instructions p:last-child {
+    margin-bottom: 0;
+}
+
+.install-note-small {
+    font-size: 0.9rem;
+    color: #999;
+}
+
+.download-links {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.download-link-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    background: white;
+    transition: all 0.2s ease;
+}
+
+.download-link-item:hover {
+    border-color: #007bff;
+    box-shadow: 0 2px 8px rgba(0, 123, 255, 0.1);
+}
+
+.download-link-info {
+    flex: 1;
+}
+
+.download-link-name {
+    font-weight: 600;
+    color: #333;
+    margin-bottom: 0.25rem;
+}
+
+.download-link-description {
+    font-size: 0.875rem;
+    color: #666;
+    line-height: 1.5;
+    margin-top: 0.25rem;
+}
+
+.download-link-button {
+    padding: 0.5rem 1.5rem;
+    background: #007bff;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    font-weight: 500;
+    transition: background 0.2s ease;
+}
+
+.download-link-button:hover {
+    background: #0056b3;
+}
+
+.download-separator {
+    text-align: center;
+    color: #999;
+    font-size: 0.875rem;
+    padding: 0.5rem 0;
+    margin: 0.5rem 0;
+}
+
+.download-zip-item {
+    border-color: #28a745;
+    background: #f0fff4;
+}
+
+.download-zip-item:hover {
+    border-color: #28a745;
+    box-shadow: 0 2px 8px rgba(40, 167, 69, 0.15);
+}
+
+.download-zip-item .download-link-button {
+    background: #28a745;
+}
+
+.download-zip-item .download-link-button:hover {
+    background: #218838;
+}
+
+.download-link-item.download-unavailable {
+    border-color: #ccc;
+    background: #f5f5f5;
+    opacity: 0.7;
+}
+
+.download-link-unavailable-badge {
+    padding: 0.5rem 1rem;
+    background: #999;
+    color: white;
+    border-radius: 4px;
+    font-size: 0.875rem;
+    font-weight: 500;
+}
+
+/* Tools Tab Styles */
 .tool-section {
     margin-bottom: 2rem;
     padding: 1.5rem;

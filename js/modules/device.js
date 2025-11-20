@@ -253,7 +253,7 @@ export class DeviceManager {
     showEmptyState() {
         const content = document.getElementById('device-content');
         if (content) {
-            content.innerHTML = '<div class="empty-state" data-testid="msg_device_empty_state">Please select a device from the Manufacturer tab</div>';
+            content.innerHTML = '<div class="empty-state" data-testid="msg_device_empty_state">Please select a device from the Load File tab</div>';
         }
 
         // Disable action buttons

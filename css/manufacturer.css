@@ -1,3 +1,71 @@
+/* Load File Tab Styles (formerly Manufacturer Tab) */
+
+/* Overview Section */
+.overview-section {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+
+.overview-section h2 {
+    margin-top: 0;
+    margin-bottom: 1rem;
+    color: #333;
+}
+
+.overview-section p {
+    margin: 0;
+    line-height: 1.6;
+    color: #666;
+}
+
+/* Upload Section */
+.upload-section {
+    margin-bottom: 2rem;
+    padding: 1.5rem;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+}
+
+.upload-section h3 {
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+    color: #333;
+}
+
+.section-description {
+    margin-bottom: 1rem;
+    color: #666;
+    font-size: 0.9rem;
+}
+
+/* Edit/Create Section */
+.edit-create-section {
+    padding: 1.5rem;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+}
+
+.edit-create-section h3 {
+    margin-top: 0;
+    margin-bottom: 0.5rem;
+    color: #333;
+}
+
+.edit-create-section h4 {
+    margin-top: 1rem;
+    margin-bottom: 0.5rem;
+    font-size: 1rem;
+    color: #555;
+}
+
+.load-file-container {
+    padding: 1rem;
+}
+
 /* Manufacturer Tab Styles */
 .manufacturer-dropdown {
     position: relative;
