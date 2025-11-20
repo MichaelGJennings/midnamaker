@@ -4,7 +4,8 @@ import { Utils } from './utils.js';
 
 export class App {
     constructor() {
-        this.currentTab = 'manufacturer';
+        this.currentTab = 'load-file';
+        this.catalogEnabled = false;
         this.init();
     }
     
@@ -72,7 +73,8 @@ export class App {
     
     loadTabData(tabName) {
         switch (tabName) {
-            case 'manufacturer':
+            case 'load-file':
+            case 'manufacturer': // Backwards compatibility
                 this.loadManufacturerData();
                 break;
             case 'device':
@@ -80,6 +82,9 @@ export class App {
                 break;
             case 'patch':
                 this.loadPatchData();
+                break;
+            case 'generate':
+                this.loadGenerateTab();
                 break;
             case 'catalog':
                 this.loadCatalogData();
@@ -188,7 +193,7 @@ export class App {
             const deviceContent = document.getElementById('device-content');
             const deviceTitle = document.getElementById('device-title');
             if (deviceContent) {
-                deviceContent.innerHTML = '<div class="empty-state">Please select a device from the Manufacturer tab</div>';
+                deviceContent.innerHTML = '<div class="empty-state">Please select a device from the Load File tab</div>';
             }
             if (deviceTitle) {
                 deviceTitle.textContent = 'Select a Device';
@@ -214,6 +219,264 @@ export class App {
         // Use the global tools manager
         if (window.toolsManager) {
             window.toolsManager.loadToolsTab();
+        }
+        
+        // Setup catalog enable/disable checkbox
+        const enableCatalogCheckbox = document.getElementById('enable-catalog-checkbox');
+        if (enableCatalogCheckbox) {
+            enableCatalogCheckbox.checked = this.catalogEnabled;
+            enableCatalogCheckbox.removeEventListener('change', this.handleCatalogToggle);
+            enableCatalogCheckbox.addEventListener('change', this.handleCatalogToggle.bind(this));
+        }
+    }
+    
+    handleCatalogToggle(e) {
+        this.catalogEnabled = e.target.checked;
+        const catalogTab = document.querySelector('[data-tab="catalog"]');
+        if (catalogTab) {
+            catalogTab.style.display = this.catalogEnabled ? '' : 'none';
+        }
+    }
+    
+    loadGenerateTab() {
+        const generateContent = document.getElementById('generate-content');
+        if (!generateContent) return;
+        
+        // Check if device is selected
+        if (!appState.selectedDevice || !appState.currentMidnam) {
+            generateContent.innerHTML = '<div class="empty-state" data-testid="msg_generate_empty">Please select a device to generate files</div>';
+            return;
+        }
+        
+        // Use device manager's showDownloadModal logic but render inline
+        this.renderGenerateContent();
+    }
+    
+    async renderGenerateContent() {
+        const generateContent = document.getElementById('generate-content');
+        if (!generateContent) return;
+        
+        const deviceId = appState.selectedDevice.id;
+        const filePath = appState.selectedDevice.file_path;
+        const manufacturer = deviceId.split('|')[0];
+        const deviceName = deviceId.split('|')[1] || 'Unknown Device';
+        
+        // Validate file path
+        if (!filePath) {
+            generateContent.innerHTML = '<div class="empty-state">Error: No file path available for this device</div>';
+            return;
+        }
+        
+        // Create download links
+        const midnamFilename = filePath.split('/').pop();
+        const middevFilename = `${manufacturer.replace(' ', '_')}.middev`;
+        const zipFilename = `${manufacturer.replace(' ', '_')}_${deviceName.replace(' ', '_')}.zip`;
+        
+        // Check if hosted version
+        const { isHostedVersion } = await import('./hosting.js');
+        const isHosted = isHostedVersion();
+        
+        let html = `
+            <div class="download-instructions" data-testid="div_generate_instructions">
+                <p>Click the links below to download your files. After downloading, you'll need to install them in your DAW.</p>
+                <p class="install-note-small">
+                    <strong>Note:</strong> Installation locations vary by operating system and DAW.
+                    See the <strong>Tools</strong> tab for more information about installation.
+                </p>
+            </div>
+            <div class="download-links" data-testid="lst_generate_links">
+        `;
+        
+        if (isHosted) {
+            // Hosted version - use in-memory data or browser storage
+            const { browserStorage } = await import('./storage.js');
+            
+            // Try to get from browser storage first (for user-created/edited devices)
+            let midnamXml = null;
+            const storedFile = await browserStorage.getMidnam(filePath);
+            
+            if (storedFile && storedFile.midnam) {
+                midnamXml = storedFile.midnam;
+            } else if (appState.currentMidnam && appState.currentMidnam.raw_xml) {
+                // Fall back to in-memory data (for built-in catalog devices)
+                midnamXml = appState.currentMidnam.raw_xml;
+            }
+            
+            // MIDNAM file
+            if (midnamXml) {
+                const blob = new Blob([midnamXml], { type: 'application/xml' });
+                const url = URL.createObjectURL(blob);
+                
+                html += this.createDownloadLinkHTML(
+                    midnamFilename, 
+                    "This file supplies your DAW with the names you've specified here.", 
+                    url
+                );
+            } else {
+                html += '<div class="empty-state">MIDNAM file not available</div>';
+            }
+            
+            // MIDDEV file - try to fetch from API or browser storage
+            let middevXml = null;
+            const middevPath = filePath.replace('.midnam', '.middev').replace(/\/[^/]+$/, `/${middevFilename}`);
+            const middevFile = await browserStorage.getMidnam(middevPath);
+            
+            if (middevFile && middevFile.midnam) {
+                middevXml = middevFile.midnam;
+            } else {
+                // Try to fetch from server API
+                try {
+                    const response = await fetch(`/api/download/middev/${encodeURIComponent(manufacturer)}`);
+                    if (response.ok) {
+                        middevXml = await response.text();
+                    }
+                } catch (error) {
+                    console.log('MIDDEV file not available:', error);
+                }
+            }
+            
+            if (middevXml) {
+                const blob = new Blob([middevXml], { type: 'application/xml' });
+                const url = URL.createObjectURL(blob);
+                
+                html += this.createDownloadLinkHTML(
+                    middevFilename, 
+                    `This is a sort of catalog of devices produced by a manufacturer, in this case ${Utils.escapeHtml(manufacturer)}. Unless you've simply updated an existing .midnam file, you'll need to include this file along with others like it. .middev files are usually in the same directory as .midnam files, or else one folder level above them.`, 
+                    url
+                );
+            }
+            
+            // ZIP download for hosted version
+            if (midnamXml) {
+                html += `
+                    <div class="download-separator" data-testid="div_download_separator">
+                        — or download both in one file —
+                    </div>
+                `;
+                
+                // Create ZIP using JSZip or manual approach
+                html += await this.createHostedZipDownload(zipFilename, midnamXml, middevXml, manufacturer);
+            }
+        } else {
+            // Server version - use proper API endpoints
+            const midnamUrl = `/api/download/midnam/${encodeURIComponent(deviceId)}?file=${encodeURIComponent(filePath)}`;
+            html += this.createDownloadLinkHTML(
+                midnamFilename, 
+                "This file supplies your DAW with the names you've specified here.", 
+                midnamUrl
+            );
+            
+            // Check if MIDDEV file exists before showing the link
+            const middevExists = await this.checkMiddevExists(manufacturer);
+            
+            if (middevExists) {
+                // MIDDEV file exists
+                const middevUrl = `/api/download/middev/${encodeURIComponent(manufacturer)}`;
+                html += this.createDownloadLinkHTML(
+                    middevFilename, 
+                    `This is a sort of catalog of devices produced by a manufacturer, in this case ${Utils.escapeHtml(manufacturer)}. Unless you've simply updated an existing .midnam file, you'll need to include this file along with others like it. .middev files are usually in the same directory as .midnam files, or else one folder level above them.`, 
+                    middevUrl
+                );
+            } else {
+                // MIDDEV file doesn't exist - show unavailable message
+                html += `
+                    <div class="download-link-item download-unavailable" data-testid="itm_generate_link_unavailable">
+                        <div class="download-link-info" data-testid="div_generate_link_info">
+                            <div class="download-link-name" data-testid="div_generate_filename">${Utils.escapeHtml(middevFilename)}</div>
+                            <div class="download-link-description" data-testid="div_generate_description">This manufacturer does not have a .middev file in the catalog. If you're creating a new device, you may need to create one separately.</div>
+                        </div>
+                        <span class="download-link-unavailable-badge" data-testid="badge_unavailable">Not Available</span>
+                    </div>
+                `;
+            }
+            
+            // Separator
+            html += `
+                <div class="download-separator" data-testid="div_download_separator">
+                    — or download ${middevExists ? 'both' : 'as'} ${middevExists ? 'in one file' : 'a Zip file'} —
+                </div>
+            `;
+            
+            // ZIP file (will contain just MIDNAM if no MIDDEV exists)
+            const zipUrl = `/api/download/zip/${encodeURIComponent(deviceId)}?file=${encodeURIComponent(filePath)}`;
+            const zipDescription = middevExists 
+                ? 'This simply bundles the above two files into a Zip file.'
+                : 'This packages the .midnam file as a Zip file for convenience.';
+            html += this.createDownloadLinkHTML(
+                zipFilename, 
+                zipDescription, 
+                zipUrl,
+                true // isZip
+            );
+        }
+        
+        html += '</div>';
+        generateContent.innerHTML = html;
+    }
+    
+    createDownloadLinkHTML(filename, description, url, isZip = false) {
+        const itemClass = isZip ? 'download-link-item download-zip-item' : 'download-link-item';
+        return `
+            <div class="${itemClass}" data-testid="itm_generate_link">
+                <div class="download-link-info" data-testid="div_generate_link_info">
+                    <div class="download-link-name" data-testid="div_generate_filename">${Utils.escapeHtml(filename)}</div>
+                    <div class="download-link-description" data-testid="div_generate_description">${description}</div>
+                </div>
+                <a class="download-link-button" href="${url}" download="${filename}" data-testid="btn_generate_download">Download</a>
+            </div>
+        `;
+    }
+    
+    async checkMiddevExists(manufacturer) {
+        try {
+            const middevFilename = manufacturer.replace(' ', '_') + '.middev';
+            // Try with spaces preserved first (actual convention)
+            const middevFilenameSpaces = manufacturer + '.middev';
+            
+            // Try to fetch the file with HEAD request (doesn't download the whole file)
+            let response = await fetch(`/api/download/middev/${encodeURIComponent(manufacturer)}`, { 
+                method: 'HEAD' 
+            });
+            
+            return response.ok;
+        } catch (error) {
+            console.log('MIDDEV check failed:', error);
+            return false;
+        }
+    }
+    
+    async createHostedZipDownload(zipFilename, midnamXml, middevXml, manufacturer) {
+        try {
+            // Dynamically import JSZip
+            const JSZip = (await import('https://cdn.jsdelivr.net/npm/jszip@3.10.1/+esm')).default;
+            
+            const zip = new JSZip();
+            
+            // Add MIDNAM file
+            if (midnamXml) {
+                const midnamFilename = appState.selectedDevice.file_path.split('/').pop();
+                zip.file(midnamFilename, midnamXml);
+            }
+            
+            // Add MIDDEV file if available
+            if (middevXml) {
+                const middevFilename = `${manufacturer.replace(' ', '_')}.middev`;
+                zip.file(middevFilename, middevXml);
+            }
+            
+            // Generate ZIP blob
+            const blob = await zip.generateAsync({ type: 'blob' });
+            const url = URL.createObjectURL(blob);
+            
+            return this.createDownloadLinkHTML(
+                zipFilename,
+                'This simply bundles the above two files into a Zip file.',
+                url,
+                true // isZip
+            );
+        } catch (error) {
+            console.error('Error creating ZIP:', error);
+            return '<div class="empty-state">ZIP creation failed</div>';
         }
     }
     

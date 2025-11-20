@@ -25,6 +25,10 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
         self.send_response(200)
         self.end_headers()
     
+    def do_HEAD(self):
+        # Handle HEAD requests - same as GET but without body
+        self.do_GET()
+    
     def do_GET(self):
         # Strip query parameters for path matching
         path_without_query = self.path.split('?')[0]
@@ -35,7 +39,7 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
             self.serve_manufacturers()
         elif path_without_query.startswith('/api/device/'):
             self.serve_device_details()
-        elif path_without_query == '/midnam_catalog':
+        elif path_without_query == '/midnam_catalog' or path_without_query == '/api/midnam_catalog':
             self.serve_midnam_catalog()
         elif path_without_query.startswith('/analyze_file/'):
             self.analyze_midnam_file()
@@ -304,8 +308,8 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                 for cmd in frontend_bank['midi_commands']:
                     if cmd.get('type') == 'ControlChange':
                         cc_elem = ET.SubElement(midi_commands_elem, 'ControlChange')
-                        cc_elem.set('Control', str(cmd.get('control', '0')))
-                        cc_elem.set('Value', str(cmd.get('value', '0')))
+                        cc_elem.set('control', str(cmd.get('control', '0')))
+                        cc_elem.set('value', str(cmd.get('value', '0')))
         
         # Update patches
         if 'patch' in frontend_bank:
@@ -322,7 +326,7 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                     patch_elem.set('ProgramChange', str(patch_data.get('programChange', '')))
     
     def _create_patch_bank(self, parent_elem, frontend_bank):
-        """Helper method to create a new PatchBank element"""
+        """Helper method to create a new PatchBank DEFINITION (with all children)"""
         import xml.etree.ElementTree as ET
         
         # Create new PatchBank element
@@ -335,8 +339,8 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
             for cmd in frontend_bank['midi_commands']:
                 if cmd.get('type') == 'ControlChange':
                     cc_elem = ET.SubElement(midi_commands_elem, 'ControlChange')
-                    cc_elem.set('Control', str(cmd.get('control', '0')))
-                    cc_elem.set('Value', str(cmd.get('value', '0')))
+                    cc_elem.set('control', str(cmd.get('control', '0')))
+                    cc_elem.set('value', str(cmd.get('value', '0')))
         
         # Add PatchNameList
         patch_name_list = ET.SubElement(new_patch_bank, 'PatchNameList')
@@ -350,6 +354,15 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                 patch_elem.set('ProgramChange', str(patch_data.get('programChange', '')))
         
         return new_patch_bank
+    
+    def _create_patch_bank_reference(self, parent_elem, bank_name):
+        """Helper method to create a PatchBank REFERENCE (empty element with just Name)"""
+        import xml.etree.ElementTree as ET
+        
+        # Create empty PatchBank reference element
+        ref = ET.SubElement(parent_elem, 'PatchBank')
+        ref.set('Name', bank_name)
+        return ref
     
     def _ensure_dtd_compliance(self, root):
         """
@@ -499,31 +512,49 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
             # Update the XML with changes from midnam structure
             # Handle hierarchical ChannelNameSet structure
             for master_device in root.findall('.//MasterDeviceNames'):
-                # First update ChannelNameSets' AvailableForChannels
+                # First handle ChannelNameSets
                 if 'channelNameSets' in midnam:
-                    for channel_name_set in master_device.findall('.//ChannelNameSet'):
-                        name_set_name = channel_name_set.get('Name')
+                    existing_name_sets = {ns.get('Name'): ns for ns in master_device.findall('.//ChannelNameSet')}
+                    frontend_name_sets = {ns.get('name'): ns for ns in midnam['channelNameSets']}
+                    
+                    # Remove ChannelNameSets that no longer exist
+                    for name_set_name in list(existing_name_sets.keys()):
+                        if name_set_name not in frontend_name_sets:
+                            master_device.remove(existing_name_sets[name_set_name])
+                            print(f"[save_midnam_structure] Removed ChannelNameSet: {name_set_name}")
+                    
+                    # Update existing or create new ChannelNameSets
+                    for frontend_name_set in midnam['channelNameSets']:
+                        name_set_name = frontend_name_set.get('name')
+                        channel_name_set = existing_name_sets.get(name_set_name)
                         
-                        # Find corresponding NameSet in frontend data
-                        frontend_name_set = next((ns for ns in midnam['channelNameSets'] if ns.get('name') == name_set_name), None)
+                        if channel_name_set is None:
+                            # Create new ChannelNameSet
+                            channel_name_set = ET.SubElement(master_device, 'ChannelNameSet')
+                            channel_name_set.set('Name', name_set_name)
+                            print(f"[save_midnam_structure] Created new ChannelNameSet: {name_set_name}")
                         
-                        if frontend_name_set and 'available_channels' in frontend_name_set:
-                            # Update AvailableForChannels
+                        # Update AvailableForChannels
+                        if 'available_channels' in frontend_name_set:
                             available_for_channels = channel_name_set.find('AvailableForChannels')
-                            if available_for_channels is not None:
+                            if available_for_channels is None:
+                                available_for_channels = ET.SubElement(channel_name_set, 'AvailableForChannels')
+                            else:
                                 # Clear existing channels
                                 available_for_channels.clear()
-                                
-                                # Add updated channels
-                                for ch in frontend_name_set['available_channels']:
-                                    channel_elem = ET.SubElement(available_for_channels, 'AvailableChannel')
-                                    channel_elem.set('Channel', str(ch.get('channel', '1')))
-                                    channel_elem.set('Available', 'true' if ch.get('available') else 'false')
-                                
-                                print(f"[save_midnam_structure] Updated AvailableForChannels for NameSet: {name_set_name}")
+                            
+                            # Add channels
+                            for ch in frontend_name_set['available_channels']:
+                                channel_elem = ET.SubElement(available_for_channels, 'AvailableChannel')
+                                channel_elem.set('Channel', str(ch.get('channel', '1')))
+                                channel_elem.set('Available', 'true' if ch.get('available') else 'false')
+                            
+                            print(f"[save_midnam_structure] Updated AvailableForChannels for NameSet: {name_set_name}")
                 
-                # Now handle patch banks - organize by ChannelNameSet
-                if 'patchList' in midnam and 'channelNameSets' in midnam:
+                # Now handle patch banks - Save FULL PatchBank elements inside ChannelNameSets
+                # According to the DTD, PatchBank elements must have content and belong inside ChannelNameSet
+                
+                if 'patchList' in midnam:
                     # Group patch banks by their ChannelNameSet
                     banks_by_nameset = {}
                     for bank in midnam['patchList']:
@@ -533,39 +564,33 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                                 banks_by_nameset[name_set] = []
                             banks_by_nameset[name_set].append(bank)
                     
-                    # Update each ChannelNameSet's patch banks
+                    # Remove any PatchBank elements at MasterDeviceNames level (incorrect location)
+                    existing_banks_at_root = [b for b in master_device if b.tag == 'PatchBank']
+                    for existing_bank in existing_banks_at_root:
+                        bank_name = existing_bank.get('Name')
+                        master_device.remove(existing_bank)
+                        print(f"[save_midnam_structure] Removed incorrectly placed PatchBank '{bank_name}' from MasterDeviceNames level")
+                    
+                    # Save FULL PatchBank definitions inside their respective ChannelNameSets
                     for channel_name_set in master_device.findall('.//ChannelNameSet'):
                         name_set_name = channel_name_set.get('Name')
                         frontend_banks = banks_by_nameset.get(name_set_name, [])
-                        existing_banks = channel_name_set.findall('./PatchBank')  # Direct children only
                         
-                        # Remove banks that no longer exist in this NameSet
+                        # Remove ALL existing PatchBank elements from this ChannelNameSet
+                        existing_banks = channel_name_set.findall('./PatchBank')
                         for existing_bank in existing_banks:
                             bank_name = existing_bank.get('Name')
-                            # Check if this bank still exists in frontend for this NameSet
-                            if not any(fb.get('name') == bank_name for fb in frontend_banks):
-                                channel_name_set.remove(existing_bank)
-                                print(f"[save_midnam_structure] Removed bank '{bank_name}' from NameSet '{name_set_name}'")
+                            channel_name_set.remove(existing_bank)
+                            print(f"[save_midnam_structure] Removed PatchBank '{bank_name}' from ChannelNameSet '{name_set_name}' (will recreate)")
                         
-                        # Update or add banks for this NameSet
+                        # Create FULL PatchBank elements (with MIDICommands and PatchNameList) for this NameSet
+                        # Must insert after AvailableForChannels and any Uses* elements, before other content
                         for frontend_bank in frontend_banks:
                             bank_name = frontend_bank.get('name')
                             
-                            # Find existing bank by name
-                            existing_bank = None
-                            for bank in channel_name_set.findall('./PatchBank'):
-                                if bank.get('Name') == bank_name:
-                                    existing_bank = bank
-                                    break
-                            
-                            if existing_bank:
-                                # Update existing bank
-                                self._update_patch_bank(existing_bank, frontend_bank)
-                                print(f"[save_midnam_structure] Updated bank '{bank_name}' in NameSet '{name_set_name}'")
-                            else:
-                                # Create new bank
-                                new_bank = self._create_patch_bank(channel_name_set, frontend_bank)
-                                print(f"[save_midnam_structure] Created new bank '{bank_name}' in NameSet '{name_set_name}'")
+                            # Create full PatchBank with all content
+                            self._create_patch_bank(channel_name_set, frontend_bank)
+                            print(f"[save_midnam_structure] Created full PatchBank '{bank_name}' inside ChannelNameSet '{name_set_name}'")
             
             # Update NoteNameLists
             for master_device in root.findall('.//MasterDeviceNames'):
@@ -1239,6 +1264,7 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                     device_details['standardDeviceModeName'] = mode_name
             
             # Extract ChannelNameSets with their PatchBanks
+            # PatchBanks are now stored INSIDE ChannelNameSets (per DTD spec)
             device_details['channel_name_sets'] = []
             channel_name_sets = root_elem.findall('.//ChannelNameSet')
             
@@ -1255,10 +1281,16 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                         'available': available.lower() == 'true'
                     })
                 
-                # Extract PatchBanks from this ChannelNameSet
+                # Extract PatchBank elements from this ChannelNameSet (they should have full content)
                 patch_banks = []
                 for bank in name_set.findall('./PatchBank'):  # Use ./ to get direct children only
                     bank_name = bank.get('Name', 'Unnamed Bank')
+                    
+                    # Check if this is a full definition (has children) or an empty reference
+                    if len(bank) == 0:
+                        print(f"Warning: Empty PatchBank reference '{bank_name}' found in ChannelNameSet '{name_set_name}' - skipping")
+                        continue
+                    
                     bank_patches = bank.findall('.//Patch')
                     
                     # Extract MIDI commands for this bank
@@ -1266,8 +1298,9 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                     midi_commands_elem = bank.find('./MIDICommands')
                     if midi_commands_elem is not None:
                         for control_change in midi_commands_elem.findall('.//ControlChange'):
-                            control = control_change.get('Control', '')
-                            value = control_change.get('Value', '')
+                            # Try both lowercase and capitalized (for compatibility)
+                            control = control_change.get('control', control_change.get('Control', ''))
+                            value = control_change.get('value', control_change.get('Value', ''))
                             midi_commands.append({
                                 'type': 'ControlChange',
                                 'control': control,
@@ -2713,21 +2746,39 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                     file_path = os.path.join('patchfiles', filename)
                     
                     # Check if file already exists
-                    if os.path.exists(file_path):
-                        errors.append(f"File already exists: {filename}")
-                        continue
+                    file_existed = os.path.exists(file_path)
+                    action = 'replaced' if file_existed else 'uploaded'
                     
-                    # Write file
+                    # Write file (overwrites if exists)
                     with open(file_path, 'wb') as f:
                         f.write(content)
+                    
+                    # Extract manufacturer and model from MIDNAM files for auto-loading
+                    manufacturer = None
+                    model = None
+                    if filename.endswith('.midnam'):
+                        try:
+                            import xml.etree.ElementTree as ET
+                            root = ET.fromstring(content)
+                            manufacturer_elem = root.find('.//Manufacturer')
+                            model_elem = root.find('.//Model')
+                            if manufacturer_elem is not None:
+                                manufacturer = manufacturer_elem.text
+                            if model_elem is not None:
+                                model = model_elem.text
+                        except Exception as parse_error:
+                            print(f"[upload_files] Warning: Could not parse {filename}: {parse_error}")
                     
                     uploaded_files.append({
                         'filename': filename,
                         'path': file_path,
-                        'size': len(content)
+                        'size': len(content),
+                        'action': action,
+                        'manufacturer': manufacturer,
+                        'model': model
                     })
                     
-                    print(f"[upload_files] Uploaded: {file_path} ({len(content)} bytes)")
+                    print(f"[upload_files] {action.capitalize()}: {file_path} ({len(content)} bytes)")
                     
                 except Exception as e:
                     errors.append(f"Error processing file: {str(e)}")
@@ -2834,11 +2885,29 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
             manufacturer = self.path.replace('/api/download/middev/', '')
             manufacturer = urllib.parse.unquote(manufacturer)
             
-            # Find .middev file
+            # Try multiple possible filenames and locations
             filename = manufacturer.replace(' ', '_') + '.middev'
-            file_path = os.path.join('patchfiles', filename)
+            possible_paths = [
+                os.path.join('patchfiles', filename),
+                os.path.join('patchfiles', manufacturer + '.middev'),
+            ]
             
-            if not os.path.exists(file_path):
+            # Also search subdirectories
+            for root, dirs, files in os.walk('patchfiles'):
+                for file in files:
+                    if file.lower() == filename.lower() or file.lower() == (manufacturer + '.middev').lower():
+                        possible_paths.insert(0, os.path.join(root, file))
+                        break
+            
+            file_path = None
+            for path in possible_paths:
+                if os.path.exists(path):
+                    file_path = path
+                    break
+            
+            if not file_path:
+                print(f"[download_middev] File not found for manufacturer: {manufacturer}")
+                print(f"[download_middev] Searched: {possible_paths}")
                 self.send_error(404, f"File not found: {filename}")
                 return
             
@@ -2846,10 +2915,13 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
             with open(file_path, 'rb') as f:
                 content = f.read()
             
+            # Use the actual filename from the found path (preserves spaces)
+            actual_filename = os.path.basename(file_path)
+            
             # Send file
             self.send_response(200)
             self.send_header('Content-Type', 'application/xml')
-            self.send_header('Content-Disposition', f'attachment; filename="{filename}"')
+            self.send_header('Content-Disposition', f'attachment; filename="{actual_filename}"')
             self.send_header('Content-Length', str(len(content)))
             self.end_headers()
             self.wfile.write(content)
@@ -2909,8 +2981,31 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
             
             # Extract manufacturer from device ID
             manufacturer = device_id.split('|')[0]
-            middev_filename = manufacturer.replace(' ', '_') + '.middev'
-            middev_file_path = os.path.join('patchfiles', middev_filename)
+            
+            # Try multiple filename variations (with and without space replacement)
+            middev_filename_underscore = manufacturer.replace(' ', '_') + '.middev'
+            middev_filename_spaces = manufacturer + '.middev'
+            
+            # Try multiple locations for .middev file
+            middev_file_path = None
+            possible_paths = [
+                # Try with spaces first (this is the actual convention)
+                os.path.join('patchfiles', middev_filename_spaces),
+                os.path.join(os.path.dirname(midnam_file_path), middev_filename_spaces),
+                # Then try with underscores
+                os.path.join('patchfiles', middev_filename_underscore),
+                os.path.join(os.path.dirname(midnam_file_path), middev_filename_underscore),
+            ]
+            
+            for path in possible_paths:
+                if os.path.exists(path):
+                    middev_file_path = path
+                    print(f"[download_zip] Found middev file at: {path}")
+                    break
+            
+            if not middev_file_path:
+                print(f"[download_zip] WARNING: .middev file not found for manufacturer: {manufacturer}")
+                print(f"[download_zip] Searched in: {possible_paths}")
             
             # Create zip file in memory
             zip_buffer = io.BytesIO()
@@ -2919,11 +3014,17 @@ class MIDINameHandler(http.server.SimpleHTTPRequestHandler):
                 midnam_filename = os.path.basename(midnam_file_path)
                 with open(midnam_file_path, 'rb') as f:
                     zip_file.writestr(midnam_filename, f.read())
+                    print(f"[download_zip] Added to zip: {midnam_filename}")
                 
                 # Add .middev file if it exists
-                if os.path.exists(middev_file_path):
+                if middev_file_path:
+                    # Use the actual filename from the path (preserves spaces)
+                    actual_middev_filename = os.path.basename(middev_file_path)
                     with open(middev_file_path, 'rb') as f:
-                        zip_file.writestr(middev_filename, f.read())
+                        zip_file.writestr(actual_middev_filename, f.read())
+                        print(f"[download_zip] Added to zip: {actual_middev_filename}")
+                else:
+                    print(f"[download_zip] Skipping middev file (not found)")
             
             # Get zip content
             zip_content = zip_buffer.getvalue()

@@ -17,12 +17,20 @@ document.addEventListener('DOMContentLoaded', () => {
             tabManager = {
                 registerTabCallback: () => { },
                 switchTab: () => { },
-                getCurrentTab: () => 'manufacturer',
+                getCurrentTab: () => 'load-file',
                 isTabActive: () => false
             };
         }
 
         // Register tab callbacks with fallbacks
+        tabManager.registerTabCallback('load-file', () => {
+            const mgr = window.manufacturerManager;
+            if (mgr && mgr.loadManufacturers) {
+                mgr.loadManufacturers();
+            }
+        });
+        
+        // Backwards compatibility for old 'manufacturer' tab name
         tabManager.registerTabCallback('manufacturer', () => {
             const mgr = window.manufacturerManager;
             if (mgr && mgr.loadManufacturers) {
@@ -41,6 +49,13 @@ document.addEventListener('DOMContentLoaded', () => {
             const mgr = window.patchManager;
             if (mgr && mgr.loadPatchTab) {
                 mgr.loadPatchTab();
+            }
+        });
+        
+        tabManager.registerTabCallback('generate', () => {
+            const app = window.app;
+            if (app && app.loadGenerateTab) {
+                app.loadGenerateTab();
             }
         });
 

@@ -1,7 +1,7 @@
 // Tab navigation component
 export class TabManager {
     constructor() {
-        this.currentTab = 'manufacturer';
+        this.currentTab = 'load-file';
         this.tabCallbacks = new Map();
         this.init();
     }

@@ -43,62 +43,157 @@
     </div>
 
     <div class="tabs" data-testid="sec_tabs">
-        <div class="tab active" data-tab="manufacturer" data-testid="tab_manufacturer">Manufacturer</div>
+        <div class="tab active" data-tab="load-file" data-testid="tab_load_file">Load File</div>
         <div class="tab" data-tab="device" data-testid="tab_device">Device</div>
         <div class="tab" data-tab="patch" data-testid="tab_patch">Patch</div>
-        <div class="tab" data-tab="catalog" data-testid="tab_catalog">Catalog</div>
+        <div class="tab" data-tab="generate" data-testid="tab_generate">Generate</div>
         <div class="tab" data-tab="tools" data-testid="tab_tools">Tools</div>
+        <div class="tab" data-tab="catalog" data-testid="tab_catalog" style="display: none;">Catalog</div>
     </div>
 
-    <!-- Manufacturer Selection Tab -->
-    <div class="tab-content active" id="manufacturer-tab" data-testid="sec_manufacturer_tab">
-        <div class="manufacturer-tab-container" data-testid="sec_manufacturer_container">
-            <!-- Collapsible Manufacturer Section -->
-            <div class="manufacturer-section-collapsible" id="manufacturer-section-collapsible"
-                data-testid="sec_manufacturer_collapsible">
-                <div class="manufacturer-section-header" id="manufacturer-section-header"
-                    data-testid="hdr_manufacturer_section">
-                    <h3 data-testid="hdr_manufacturer_title">Select Manufacturer</h3>
-                    <div class="manufacturer-header-actions" data-testid="grp_manufacturer_actions">
-                        <button type="button" class="btn btn-small btn-primary" id="add-manufacturer-btn"
-                            title="Create new manufacturer file" data-testid="btn_add_manufacturer">+</button>
-                        <button type="button" class="btn-toggle-manufacturer-list" id="toggle-manufacturer-list"
-                            style="display: none;" data-testid="btn_toggle_manufacturer_list">
-                            <span class="toggle-icon" data-testid="icn_toggle_manufacturer">▼</span>
-                        </button>
-                    </div>
+    <!-- Load File Tab (formerly Manufacturer) -->
+    <div class="tab-content active" id="load-file-tab" data-testid="sec_load_file_tab">
+        <div class="load-file-container" data-testid="sec_load_file_container">
+            <!-- Overview Section -->
+            <div class="overview-section" data-testid="sec_overview">
+                <h2 data-testid="hdr_overview">Overview</h2>
+                <p data-testid="div_overview_content">
+                <p><strong>It's a pain when your DAW displays things from your MIDI devices that don't match the names
+                        in the
+                        device itself. It is creatively disruptive to have to remember that the patch select buttons
+                        equate
+                        to continuous controller 70, or Bank 1 in the DAW corresponds to "User Bank" on your device. Or
+                        when trying to set up patch changes and you have to remember that patch change 12 is the drum
+                        kit
+                        patch. And few things are as frustrating as seeing the piano keys at the left of your drum
+                        editor,
+                        and instead of displaying "Big Kick", "Gated Snare" etc., you're just seeing pitch names like
+                        "D#1".
+                        Sure, you can manually type the names in, but what about the other tracks that aren't using that
+                        template?</strong></p>
+
+                <p>The MIDI Name Document is a standard way of describing a device's particular banks, patches,
+                    controller names and even note names. In some DAWs (notably Pro Tools and Digital Performer), these
+                    files provide automatic access to patch banks and individual patch names within the DAW. Pro Tools
+                    even shows you individual note names in piano roll editors (think drum kits or noteswitches). (Hey
+                    MOTU! Get this working again!)</p>
+
+                <p>Midnamaker is a comprehensive web-based editor for creating and editing MIDI Name Documents (.midnam
+                    files). This tool provides an intuitive interface for managing MIDI device configurations, patch
+                    names, controller names and note mappings. It includes a great many commonly available .midnam files
+                    for vintage MIDI devices. With this tool you can update and extend existing ones, and customize them
+                    to your exact patch names, etc. Then you can generate an updated .midnam file and install it into
+                    your DAW.</p>
+
+                <p>On this tab you can choose to either upload an existing .midnam file to edit it, or load an existing
+                    one from the catalog. You can also create a new .midnam file from scratch by simply defining a new
+                    device for a manufacturer, or even an entirely new manufacturer.</p>
+
+                <p>Once you've loaded a device on this <span class="tab-name">Load File</span> tab, you can edit the
+                    device's patch names on the
+                    <span class="tab-name">Device</span> tab. You can add or rename new patch banks, add or rename
+                    patches, and specify continuous controller names. You can also add more technical details like
+                    Channel Name Sets and
+                    MIDI assignments, specify support for General MIDI and more.
+                </p>
+
+                <p>The <span class="tab-name">Patch</span> tab shows details about an individual patch, including
+                    providing an editor for
+                    note name lists for drum kits and the like.</p>
+
+                <p>When you're finished you can save your changes to the .midnam file, and download the updated file on
+                    the <span class="tab-name">Generate</span> tab to install into your DAW.</p>
+
+                <p>The <span class="tab-name">Tools</span> tab has miscellaneous advanced features like a catalog
+                    viewer, a note name
+                    consistency tool, and a debug console.</p>
+
+                <p>This is a Web application that runs entirely in your browser. It does not store any data on the
+                    server. All data is stored in your browser's local storage. You can clear your browser's local
+                    storage at any time to start fresh.</p>
+
+                <p>This application is open source and available on GitHub. You can find the source code and contribute
+                    to the project at https://github.com/midnamaker/midnamaker.</p>
+
+                <p><em>This application is not affiliated with any commercial entity. It is a personal project and is
+                        not
+                        intended for commercial use.</em></p>
+
+                </p>
+            </div>
+
+            <!-- Upload Section -->
+            <div class="upload-section" data-testid="sec_upload_section">
+                <h3 data-testid="hdr_upload_section">Upload a .midnam File for Editing</h3>
+                <p class="section-description" data-testid="div_upload_section_desc">
+                    Upload an existing .midnam file to edit it.
+                </p>
+                <div class="upload-area" data-testid="sec_upload_area">
+                    <input type="file" id="file-upload-input" accept=".midnam,.middev" multiple style="display: none;"
+                        data-testid="npt_file_upload">
+                    <button type="button" class="btn btn-primary" id="file-upload-btn" data-testid="btn_choose_files">
+                        <span data-testid="icn_file_upload">📁</span> Choose File to Upload
+                    </button>
+                    <div id="file-upload-list" class="file-upload-list" data-testid="lst_upload_files"></div>
+                    <button type="button" class="btn btn-success" id="upload-files-btn" style="display: none;"
+                        data-testid="btn_upload_files">Upload Selected Files</button>
                 </div>
+            </div>
+            <h3>…Or…</h3><br <!-- Edit/Create Section -->
+            <div class="edit-create-section" data-testid="sec_edit_create">
+                <h3 data-testid="hdr_edit_create_section">Edit/Create a .midnam File</h3>
+                <p class="section-description" data-testid="div_edit_create_desc">
+                    Select a manufacturer and device to edit or create a new .midnam file.
+                </p>
 
-                <div class="manufacturer-section-content" id="manufacturer-section-content"
-                    data-testid="sec_manufacturer_content">
-                    <!-- Search/Filter Section -->
-                    <div class="manufacturer-filter-section" data-testid="sec_manufacturer_filter">
-                        <input type="text" id="manufacturer-filter" class="manufacturer-filter-input"
-                            placeholder="Filter manufacturers..." autocomplete="off"
-                            data-testid="npt_manufacturer_filter">
+                <!-- Collapsible Manufacturer Section -->
+                <div class="manufacturer-section-collapsible" id="manufacturer-section-collapsible"
+                    data-testid="sec_manufacturer_collapsible">
+                    <div class="manufacturer-section-header" id="manufacturer-section-header"
+                        data-testid="hdr_manufacturer_section">
+                        <h4 data-testid="hdr_manufacturer_title">Select Manufacturer</h4>
+                        <div class="manufacturer-header-actions" data-testid="grp_manufacturer_actions">
+                            <button type="button" class="btn btn-small btn-primary" id="add-manufacturer-btn"
+                                title="Create new manufacturer file" data-testid="btn_add_manufacturer">+</button>
+                            <button type="button" class="btn-toggle-manufacturer-list" id="toggle-manufacturer-list"
+                                style="display: none;" data-testid="btn_toggle_manufacturer_list">
+                                <span class="toggle-icon" data-testid="icn_toggle_manufacturer">▼</span>
+                            </button>
+                        </div>
                     </div>
 
-                    <!-- Manufacturer List -->
-                    <div class="manufacturer-list-container" data-testid="sec_manufacturer_list_container">
-                        <div id="manufacturer-list" class="manufacturer-list" data-testid="lst_manufacturers">
-                            <div class="loading" data-testid="msg_manufacturer_loading">Loading manufacturers...</div>
+                    <div class="manufacturer-section-content" id="manufacturer-section-content"
+                        data-testid="sec_manufacturer_content">
+                        <!-- Search/Filter Section -->
+                        <div class="manufacturer-filter-section" data-testid="sec_manufacturer_filter">
+                            <input type="text" id="manufacturer-filter" class="manufacturer-filter-input"
+                                placeholder="Filter manufacturers..." autocomplete="off"
+                                data-testid="npt_manufacturer_filter">
+                        </div>
+
+                        <!-- Manufacturer List -->
+                        <div class="manufacturer-list-container" data-testid="sec_manufacturer_list_container">
+                            <div id="manufacturer-list" class="manufacturer-list" data-testid="lst_manufacturers">
+                                <div class="loading" data-testid="msg_manufacturer_loading">Loading manufacturers...
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Device List (shown when manufacturer is selected) -->
-            <div class="device-list-container" id="device-list-container" style="display: none;"
-                data-testid="sec_device_list_container">
-                <div class="device-list-header" data-testid="hdr_device_list">
-                    <h3 id="selected-manufacturer-name" data-testid="hdr_selected_manufacturer">Devices</h3>
-                    <div class="device-header-actions" data-testid="grp_device_list_actions">
-                        <button type="button" class="btn btn-small btn-primary" id="add-device-btn"
-                            title="Add new device to manufacturer" data-testid="btn_add_device">+</button>
+                <!-- Device List (shown when manufacturer is selected) -->
+                <div class="device-list-container" id="device-list-container" style="display: none;"
+                    data-testid="sec_device_list_container">
+                    <div class="device-list-header" data-testid="hdr_device_list">
+                        <h3 id="selected-manufacturer-name" data-testid="hdr_selected_manufacturer">Devices</h3>
+                        <div class="device-header-actions" data-testid="grp_device_list_actions">
+                            <button type="button" class="btn btn-small btn-primary" id="add-device-btn"
+                                title="Add new device to manufacturer" data-testid="btn_add_device">+</button>
+                        </div>
                     </div>
-                </div>
-                <div id="device-list" class="device-list" data-testid="lst_devices">
-                    <!-- Device list will be populated here -->
+                    <div id="device-list" class="device-list" data-testid="lst_devices">
+                        <!-- Device list will be populated here -->
+                    </div>
                 </div>
             </div>
         </div>
@@ -159,6 +254,17 @@
         </div>
     </div>
 
+    <!-- Generate Tab -->
+    <div class="tab-content" id="generate-tab" data-testid="sec_generate_tab">
+        <div class="generate-header" data-testid="hdr_generate">
+            <h2 data-testid="hdr_generate_title">Generate Files</h2>
+        </div>
+
+        <div class="generate-content" id="generate-content" data-testid="sec_generate_content">
+            <div class="empty-state" data-testid="msg_generate_empty">Please select a device to generate files</div>
+        </div>
+    </div>
+
     <!-- Catalog Tab -->
     <div class="tab-content" id="catalog-tab" data-testid="sec_catalog_tab">
         <div class="catalog-header" data-testid="hdr_catalog">
@@ -180,6 +286,18 @@
     <!-- Tools Tab -->
     <div class="tab-content" id="tools-tab" data-testid="sec_tools_tab">
         <div class="tools-content" id="tools-content" data-testid="sec_tools_content">
+            <!-- Catalog Viewer Control -->
+            <div class="tool-section" data-testid="sec_catalog_control">
+                <h3 data-testid="hdr_catalog_control">Catalog Viewer</h3>
+                <p class="tool-description" data-testid="div_catalog_control_desc">
+                    Enable the Catalog tab to view all available MIDI devices in the catalog.
+                </p>
+                <label class="checkbox-label" data-testid="lbl_enable_catalog">
+                    <input type="checkbox" id="enable-catalog-checkbox" data-testid="chk_enable_catalog">
+                    <span class="tab-name">Enable Catalog Viewer</span>
+                </label>
+            </div>
+
             <!-- My Edits Section (Browser Storage) -->
             <div class="tool-section my-edits-section" id="my-edits-section" style="display: none;"
                 data-testid="sec_my_edits">
@@ -204,46 +322,31 @@
                 </div>
             </div>
 
-            <!-- File Upload Section -->
-            <div class="tool-section" data-testid="sec_tool_upload">
-                <h3 data-testid="hdr_upload_files">Upload Files</h3>
-                <p class="tool-description" data-testid="div_upload_description">
-                    Upload .midnam and .middev files to add them to the catalog.
-                    This is useful if you're running the app in a hosted environment or want to import files from
-                    elsewhere.
-                </p>
-                <div class="upload-area" data-testid="sec_upload_area">
-                    <input type="file" id="file-upload-input" accept=".midnam,.middev" multiple style="display: none;"
-                        data-testid="npt_file_upload">
-                    <button type="button" class="btn btn-primary" id="file-upload-btn" data-testid="btn_choose_files">
-                        <span data-testid="icn_file_upload">📁</span> Choose Files to Upload
-                    </button>
-                    <div id="file-upload-list" class="file-upload-list" data-testid="lst_upload_files"></div>
-                    <button type="button" class="btn btn-success" id="upload-files-btn" style="display: none;"
-                        data-testid="btn_upload_files">Upload Selected Files</button>
-                </div>
-            </div>
-
             <!-- Installation Instructions Section -->
             <div class="tool-section" data-testid="sec_tool_install_instructions">
                 <h3 data-testid="hdr_install_instructions">Installation Instructions</h3>
                 <p class="tool-description" data-testid="div_install_description">
                     After downloading your .midnam and .middev files, you'll need to install them in your DAW.
-                    <strong>The installation process varies by operating system and DAW environment.</strong>
+                    <span class="tab-name">The installation process varies by operating system and DAW
+                        environment.</span>
                 </p>
                 <div class="install-info" data-testid="sec_install_info">
                     <p data-testid="div_install_locations_intro">Common installation locations:</p>
                     <ul data-testid="lst_install_locations">
-                        <li data-testid="itm_install_macos"><strong>macOS:</strong>
-                            <code>~/Library/Audio/MIDI Devices/</code></li>
-                        <li data-testid="itm_install_windows"><strong>Windows:</strong>
-                            <code>C:\ProgramData\Avid\Audio\MIDIDevices\</code> or DAW-specific directories</li>
-                        <li data-testid="itm_install_linux"><strong>Linux:</strong> Varies by DAW (check your DAW
+                        <li data-testid="itm_install_macos"><span class="tab-name">macOS:</span>
+                            <code>~/Library/Audio/MIDI Devices/</code>
+                        </li>
+                        <li data-testid="itm_install_windows"><span class="tab-name">Windows:</span>
+                            <code>C:\ProgramData\Avid\Audio\MIDIDevices\</code> or DAW-specific directories
+                        </li>
+                        <li data-testid="itm_install_linux"><span class="tab-name">Linux:</span> Varies by DAW (check
+                            your DAW
                             documentation)</li>
                     </ul>
                     <p class="install-note" data-testid="div_install_note">
-                        <strong>Note:</strong> For specific installation instructions, please search for
-                        "<em>[Your DAW Name] MIDNAM installation</em>" online, as the exact process depends on
+                        <span class="tab-name">Note:</span> For specific installation instructions, please search for
+                        "<span class="tab-name">[Your DAW Name] MIDNAM installation</span>" online, as the exact process
+                        depends on
                         your specific software and operating system configuration.
                     </p>
                 </div>
@@ -317,8 +420,8 @@
                     DAW.
                 </p>
                 <p class="install-note-small" data-testid="div_download_note">
-                    <strong>Note:</strong> Installation locations vary by operating system and DAW.
-                    See the <strong>Tools</strong> tab for more information about installation.
+                    <span class="tab-name">Note:</span> Installation locations vary by operating system and DAW.
+                    See the <span class="tab-name">Tools</span> tab for more information about installation.
                 </p>
                 <div id="download-links" class="download-links" data-testid="lst_download_links">
                     <!-- Links will be populated dynamically -->

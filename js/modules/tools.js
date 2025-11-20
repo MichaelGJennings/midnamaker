@@ -895,8 +895,27 @@ export class ToolsManager {
             const result = await response.json();
 
             if (result.success) {
-                Utils.showNotification(result.message, 'success');
-                this.logToDebugConsole(`Uploaded ${result.uploaded_files.length} file(s)`, 'success');
+                // Show detailed messages about what happened
+                const replacedFiles = result.uploaded_files.filter(f => f.action === 'replaced');
+                const newFiles = result.uploaded_files.filter(f => f.action === 'uploaded');
+
+                let message = '';
+                if (newFiles.length > 0) {
+                    message += `Uploaded ${newFiles.length} new file(s)`;
+                }
+                if (replacedFiles.length > 0) {
+                    if (message) message += ', ';
+                    message += `Replaced ${replacedFiles.length} existing file(s)`;
+                }
+
+                Utils.showNotification(message || result.message, 'success');
+                this.logToDebugConsole(message, 'success');
+
+                // Log individual files
+                result.uploaded_files.forEach(file => {
+                    const actionText = file.action === 'replaced' ? 'Replaced' : 'Uploaded';
+                    this.logToDebugConsole(`${actionText}: ${file.filename}`, 'info');
+                });
 
                 if (result.errors && result.errors.length > 0) {
                     result.errors.forEach(error => {
@@ -910,14 +929,41 @@ export class ToolsManager {
                 if (fileInput) fileInput.value = '';
                 this.handleFileSelection([]);
 
+                // Reload manufacturers list first (this updates the catalog)
+                if (window.manufacturerManager) {
+                    await window.manufacturerManager.loadManufacturers();
+                }
+
                 // Refresh catalog if catalog manager is available
                 if (window.catalogManager) {
                     window.catalogManager.loadCatalogData();
                 }
 
-                // Reload manufacturers list
-                if (window.manufacturerManager) {
-                    window.manufacturerManager.loadManufacturers();
+                // Auto-load the first uploaded MIDNAM file
+                const firstMidnam = result.uploaded_files.find(f => f.filename.endsWith('.midnam'));
+                if (firstMidnam && firstMidnam.manufacturer && firstMidnam.model) {
+                    this.logToDebugConsole(`Auto-loading: ${firstMidnam.manufacturer} - ${firstMidnam.model}`, 'info');
+
+                    const deviceId = `${firstMidnam.manufacturer}|${firstMidnam.model}`;
+                    const deviceInfo = {
+                        file_path: firstMidnam.path,
+                        id: deviceId
+                    };
+
+                    // Load the device directly with the file path we already have
+                    if (window.manufacturerManager && window.manufacturerManager.loadDeviceFile) {
+                        try {
+                            await window.manufacturerManager.loadDeviceFile(
+                                deviceInfo,
+                                deviceId,
+                                firstMidnam.manufacturer,
+                                firstMidnam.model
+                            );
+                        } catch (error) {
+                            console.error('Error auto-loading device:', error);
+                            this.logToDebugConsole(`Failed to auto-load device: ${error.message}`, 'error');
+                        }
+                    }
                 }
             } else {
                 Utils.showNotification('Upload failed', 'error');
@@ -944,6 +990,8 @@ export class ToolsManager {
         const errors = [];
 
         try {
+            const { browserStorage } = await import('../core/storage.js');
+
             for (const file of this.selectedFiles) {
                 try {
                     const fileText = await file.text();
@@ -966,8 +1014,11 @@ export class ToolsManager {
                     // Build file path identifier
                     const filePath = `patchfiles/${manufacturer}_${model}.${file.name.endsWith('.middev') ? 'middev' : 'midnam'}`;
 
-                    // Save to browser storage
-                    const { browserStorage } = await import('../core/storage.js');
+                    // Check if file already exists in browser storage
+                    const existingFile = await browserStorage.getMidnam(filePath);
+                    const action = existingFile ? 'replaced' : 'uploaded';
+
+                    // Save to browser storage (overwrites if exists)
                     await browserStorage.saveMidnam({
                         file_path: filePath,
                         midnam: fileText, // Store raw XML
@@ -975,8 +1026,16 @@ export class ToolsManager {
                         model: model
                     });
 
-                    uploadedFiles.push(filePath);
-                    this.logToDebugConsole(`Parsed and saved ${file.name}`, 'success');
+                    uploadedFiles.push({
+                        filename: file.name,
+                        path: filePath,
+                        action: action,
+                        manufacturer: manufacturer,
+                        model: model
+                    });
+
+                    const actionText = action === 'replaced' ? 'Replaced' : 'Saved';
+                    this.logToDebugConsole(`${actionText}: ${file.name}`, 'success');
                 } catch (error) {
                     errors.push(`${file.name}: ${error.message}`);
                     this.logToDebugConsole(`Error processing ${file.name}: ${error.message}`, 'error');
@@ -984,7 +1043,20 @@ export class ToolsManager {
             }
 
             if (uploadedFiles.length > 0) {
-                Utils.showNotification(`Uploaded ${uploadedFiles.length} file(s) to browser storage`, 'success');
+                // Show detailed messages about what happened
+                const replacedFiles = uploadedFiles.filter(f => f.action === 'replaced');
+                const newFiles = uploadedFiles.filter(f => f.action === 'uploaded');
+
+                let message = '';
+                if (newFiles.length > 0) {
+                    message += `Saved ${newFiles.length} new file(s) to browser storage`;
+                }
+                if (replacedFiles.length > 0) {
+                    if (message) message += ', ';
+                    message += `Replaced ${replacedFiles.length} existing file(s)`;
+                }
+
+                Utils.showNotification(message, 'success');
 
                 // Clear file selection
                 this.selectedFiles = [];
@@ -992,13 +1064,42 @@ export class ToolsManager {
                 if (fileInput) fileInput.value = '';
                 this.handleFileSelection([]);
 
+                // Reload manufacturers list to include new/updated files
+                if (window.manufacturerManager) {
+                    await window.manufacturerManager.loadManufacturers();
+                }
+
                 // Refresh "My Edits" section if available
                 if (window.myEditsManager) {
                     await window.myEditsManager.loadSavedEdits();
                 }
 
-                // Note: Catalog won't update automatically in hosted mode since files aren't on server
-                // User can reload the page or manually refresh if needed
+                // Auto-load the first uploaded MIDNAM file
+                const firstMidnam = uploadedFiles.find(f => f.filename.endsWith('.midnam'));
+                if (firstMidnam && firstMidnam.manufacturer && firstMidnam.model) {
+                    this.logToDebugConsole(`Auto-loading: ${firstMidnam.manufacturer} - ${firstMidnam.model}`, 'info');
+
+                    const deviceId = `${firstMidnam.manufacturer}|${firstMidnam.model}`;
+                    const deviceInfo = {
+                        file_path: firstMidnam.path,
+                        id: deviceId
+                    };
+
+                    // Load the device directly with the file path we already have
+                    if (window.manufacturerManager && window.manufacturerManager.loadDeviceFile) {
+                        try {
+                            await window.manufacturerManager.loadDeviceFile(
+                                deviceInfo,
+                                deviceId,
+                                firstMidnam.manufacturer,
+                                firstMidnam.model
+                            );
+                        } catch (error) {
+                            console.error('Error auto-loading device:', error);
+                            this.logToDebugConsole(`Failed to auto-load device: ${error.message}`, 'error');
+                        }
+                    }
+                }
             }
 
             if (errors.length > 0) {
